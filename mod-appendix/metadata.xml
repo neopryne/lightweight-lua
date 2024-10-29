@@ -1,0 +1,11 @@
+<metadata>
+  <title><![CDATA[ Lightweight Lua]]></title>
+  <threadUrl><![CDATA[https://ftlmultiverse.boards.net/thread/115/mv-5-less-managable-crew]]></threadUrl>
+  <author><![CDATA[ Limrix ]]></author>
+  <version><![CDATA[ 0.1 ]]></version>
+  <description>
+<![CDATA[
+Two libraries in one.  Lightweight lua (lwl) for a number of utility functions, and Lightweight 3d (lw3) for barebones 3d rendering.
+]]>
+  </description>
+</metadata>

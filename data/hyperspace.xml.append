@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<FTL>
+	<mod:findLike type="scripts">
+		<mod-append:script>data/ll_scripts/3d_lib.lua</mod-append:script>
+		<mod-append:script>data/ll_scripts/utils.lua</mod-append:script>
+	</mod:findLike>
+</FTL>
