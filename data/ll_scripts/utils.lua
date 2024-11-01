@@ -64,6 +64,14 @@ function mods.lightweight_lua.deepCopyTable(t)
     return copy
 end
 
+--takes an integer value
+function mods.lightweight_lua.setMetavar(name, value)
+    if (value ~= nil) then
+        Hyperspace.metaVariables[name] = value
+    end
+    return (value ~= nil)
+end
+
 --returns a merged deep copy of both tables.  Non-table objects will not be deep-copied.
 function mods.lightweight_lua.deepTableMerge(t1, t2)
     t1Copy = mods.lightweight_lua.deepCopyTable(t1)
@@ -71,7 +79,24 @@ function mods.lightweight_lua.deepTableMerge(t1, t2)
     return mods.lightweight_lua.tableMerge(t1Copy, t2Copy)
 end
 
-
+--returns all crew belonging to the given ship on all ships
+function mods.lightweight_lua.getAllMemberCrew(shipManager)
+    memberCrew = {}
+    for crewmem in vter(shipManager.vCrewList) do
+        if (crewmem.iShipId == shipManager.iShipId) then
+            table.insert(memberCrew, crewmem)
+        end
+    end
+    otherShipManager = Hyperspace.ships(1 - shipManager.iShipId)
+    if (otherShipManager ~= nil) then
+        for crewmem in vter(otherShipManager.vCrewList) do
+            if (crewmem.iShipId == shipManager.iShipId) then
+                table.insert(memberCrew, crewmem)
+            end
+        end
+    end
+    return memberCrew
+end
 
 --returns all crew on ship that belong to crewShip.
 function mods.lightweight_lua.getCrewOnSameShip(shipManager, crewShipManager)
