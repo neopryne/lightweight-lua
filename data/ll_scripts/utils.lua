@@ -3,7 +3,15 @@ mods.lightweight_lua = {}
 --[[Usage:
     local lwl = mods.lightweight_lua
     lwl.whatever()
+
+Table of Contents (Search for these strings to go to category header)
+    TABLE UTILS
+    LOGGING UTILS
+    CREW UTILS
+    GEOMETRY UTILS
+    EVENT INTERACTION UTILS
 ]]--
+
 local vter = mods.multiverse.vter
 local get_room_at_location = mods.vertexutil.get_room_at_location
 
@@ -12,14 +20,53 @@ local global = Hyperspace.Global.GetInstance()
 local TAU = math.pi * 2
 local ENEMY_SHIP = 1
 local TILE_SIZE = 35
-mods.lightweight_lua.TILE_SIZE = 35
+--Breaking change, this is now a function.
+--mods.lightweight_lua.TILE_SIZE = TILE_SIZE --Deprecated, use mods.lightweight_lua.sTILE_SIZE() instead.
+function mods.lightweight_lua.TILE_SIZE() return TILE_SIZE end --getter to preserve immutible value.
 
+local SYS_SHIELDS = 0
+local SYS_ENGINES = 1
+local SYS_OXYGEN = 2
+local SYS_WEAPONS = 3
+local SYS_DRONES = 4
+local SYS_MEDBAY = 5
+local SYS_PILOT = 6
+local SYS_SENSORS = 7
+local SYS_DOORS = 8
+local SYS_TELEPORTER = 9
+local SYS_CLOAKING = 10
+local SYS_ARTILLERY = 11
+local SYS_BATTERY = 12
+local SYS_CLONEBAY = 13
+local SYS_MIND = 14
+local SYS_HACKING = 15
+local SYS_TEMPORAL = 20
+function mods.lightweight_lua.SYS_SHIELDS() return SYS_SHIELDS end
+function mods.lightweight_lua.SYS_ENGINES() return SYS_ENGINES end
+function mods.lightweight_lua.SYS_OXYGEN() return SYS_OXYGEN end
+function mods.lightweight_lua.SYS_WEAPONS() return SYS_WEAPONS end
+function mods.lightweight_lua.SYS_DRONES() return SYS_DRONES end
+function mods.lightweight_lua.SYS_MEDBAY() return SYS_MEDBAY end
+function mods.lightweight_lua.SYS_PILOT() return SYS_PILOT end
+function mods.lightweight_lua.SYS_SENSORS() return SYS_SENSORS end
+function mods.lightweight_lua.SYS_DOORS() return SYS_DOORS end
+function mods.lightweight_lua.SYS_TELEPORTER() return SYS_TELEPORTER end
+function mods.lightweight_lua.SYS_CLOAKING() return SYS_CLOAKING end
+function mods.lightweight_lua.SYS_ARTILLERY() return SYS_ARTILLERY end
+function mods.lightweight_lua.SYS_BATTERY() return SYS_BATTERY end
+function mods.lightweight_lua.SYS_CLONEBAY() return SYS_CLONEBAY end
+function mods.lightweight_lua.SYS_MIND() return SYS_MIND end
+function mods.lightweight_lua.SYS_HACKING() return SYS_HACKING end
+function mods.lightweight_lua.SYS_TEMPORAL() return SYS_TEMPORAL end
+
+
+--This might be overkill, but it works
 function mods.lightweight_lua.isPaused()
     local commandGui = Hyperspace.Global.GetInstance():GetCApp().gui
-    --return false
     return commandGui.bPaused or commandGui.bAutoPaused or commandGui.event_pause or commandGui.menu_pause
 end
 
+--[[  TABLE UTILS  ]]--
 --for use in printing all of a table
 function mods.lightweight_lua.dumpObject(o)
    if type(o) == 'table' then
@@ -64,6 +111,19 @@ function mods.lightweight_lua.deepCopyTable(t)
     return copy
 end
 
+--returns nil if table is empty
+function mods.lightweight_lua.getRandomKey(table)
+    local keys = {}
+    for key in pairs(table) do
+        keys[#keys + 1] = key
+    end
+    if #keys == 0 then 
+        return nil 
+    end
+    local randomIndex = math.random(#keys)
+    return keys[randomIndex]
+end
+
 --takes an integer value
 function mods.lightweight_lua.setMetavar(name, value)
     if (value ~= nil) then
@@ -79,6 +139,58 @@ function mods.lightweight_lua.deepTableMerge(t1, t2)
     return mods.lightweight_lua.tableMerge(t1Copy, t2Copy)
 end
 
+--[[  LOGGING UTILS  ]]--
+--needs to be a metavar actually, or it can turn off randomly
+mods.lightweight_lua.LOG_LEVEL = 1 --Higher is more verbose, feel free to modify this.
+--[[
+    0 -- NO logs, not even errors, not recommended.
+    1 -- Errors only
+    2 -- Adds Warnings
+    3 -- Adds Debug
+    4 -- Adds Info
+    5 -- Verbose
+    
+    Usage:
+    MY_MOD_LOG_LEVEL = 3
+    
+    lwl.logWarn("oh no, this will use the globally defined debug level anyone can modify!") -- Not recommended
+    lwl.logWarn("oh no, this will use my debug level!", MY_MOD_LOG_LEVEL) -- Recommended
+--]]
+local LOG_LEVELS = {
+    {text="ERROR", level=1},
+    {text="WARN", level=2},
+    {text="DEBUG", level=3},
+    {text="INFO", level=4},
+    {text="VERBOSE", level=5}}
+local function logInternal(tag, text, logLevel, optionalLogLevel)
+    local maxLogLevel = optionalLogLevel
+    if (maxLogLevel == nil) then
+        maxLogLevel = mods.lightweight_lua.LOG_LEVEL
+    end
+    if (logLevel <= maxLogLevel) then
+        print(LOG_LEVELS[logLevel].text..": "..tag.." - "..text)
+    end
+end
+--Optionally, pass the desired log level.  This lets you store that locally and change it in your mod.
+--It might seem silly to pass values you know will fail, but that's the point, so you can enable debug easily when you want to change things,
+--and turn it off when you want to ship.
+function mods.lightweight_lua.logError(tag, text, optionalLogLevel)
+    logInternal(tag, text, 1, optionalLogLevel)
+end
+function mods.lightweight_lua.logWarn(tag, text, optionalLogLevel)
+    logInternal(tag, text, 2, optionalLogLevel)
+end
+function mods.lightweight_lua.logDebug(tag, text, optionalLogLevel)
+    logInternal(tag, text, 3, optionalLogLevel)
+end
+function mods.lightweight_lua.logInfo(tag, text, optionalLogLevel)
+    logInternal(tag, text, 4, optionalLogLevel)
+end
+function mods.lightweight_lua.logVerbose(tag, text, optionalLogLevel)
+    logInternal(tag, text, 5, optionalLogLevel)
+end
+
+--[[  CREW UTILS  ]]--
 --returns all crew belonging to the given ship on all ships
 function mods.lightweight_lua.getAllMemberCrew(shipManager)
     memberCrew = {}
@@ -200,6 +312,7 @@ function mods.lightweight_lua.random_point_circle(origin, radius)
     return Hyperspace.Pointf(origin.x + r*math.cos(theta), origin.y + r*math.sin(theta))
 end
 
+--[[  GEOMETRY UTILS  ]]--
 -- Generate a random point within the radius of a given point
 --modified from vertexUtils random_point_radius
 function mods.lightweight_lua.random_point_adjacent(origin)
@@ -262,5 +375,59 @@ function mods.lightweight_lua.randomSlotRoom(roomNumber, shipId)
     local count_of_tiles_in_room = width * height
     return math.floor(math.random() * count_of_tiles_in_room) --zero indexed
 end
-    
 
+
+
+--[[  EVENT INTERACTION UTILS  ]]--
+--toggle with INSert key, because this can be quite verbose
+--storage checks, sylvan, and the starting beacon are all very long.
+--Call the internal version instead if you ALWAYS want to print
+function mods.lightweight_lua.printChoiceInternal(choice, level) end
+function mods.lightweight_lua.printEventInternal(locationEvent, level) end
+mods.lightweight_lua.PRINT_EVENTS = false
+
+script.on_internal_event(Defines.InternalEvents.ON_KEY_DOWN, function(key)
+        if (key == Defines.SDL.KEY_INSERT) then
+            mods.lightweight_lua.PRINT_EVENTS = (not mods.lightweight_lua.PRINT_EVENTS)
+            print("Set event logging ", mods.lightweight_lua.PRINT_EVENTS)
+        end
+    end)
+
+local function indentPrint(text, indentLevel)
+    prefix = ""
+    for i = 0,indentLevel do
+        prefix = prefix.."\t"
+    end
+    print(prefix..text)
+end
+
+function mods.lightweight_lua.printEvent(locationEvent)
+    if mods.lightweight_lua.PRINT_EVENTS then
+        mods.lightweight_lua.printEventInternal(locationEvent, 0)
+    end
+end
+
+function mods.lightweight_lua.printChoice(choice)
+    if mods.lightweight_lua.PRINT_EVENTS then
+        mods.lightweight_lua.printChoiceInternal(choice, 0)
+    end
+end
+
+--somehow this doesn't cause issues with recursive checks.
+mods.lightweight_lua.printChoiceInternal = function(choice, level)
+    indentPrint("Choice Text: "..choice.text.data.." Requirement: "..choice.requirement.object.." min "..choice.requirement.min_level.." max "..choice.requirement.max_level.." max choice num "..choice.requirement.max_group, level)
+    choiceEvent = choice.event
+    if (choiceEvent ~= nil) then
+        mods.lightweight_lua.printEventInternal(choiceEvent, level + 1)
+    end
+end
+
+mods.lightweight_lua.printEventInternal = function(locationEvent, level)
+    --recursive print through all event trees, using level to indent with tabs and newlines.
+    indentPrint("Event Name: "..locationEvent.eventName, level)
+    indentPrint("Event Text: "..locationEvent.text.data, level)
+    local choices = locationEvent:GetChoices()
+    for choice in vter(choices) do
+        mods.lightweight_lua.printChoiceInternal(choice, level + 1)
+    end
+end
