@@ -66,6 +66,14 @@ function mods.lightweight_lua.isPaused()
     return commandGui.bPaused or commandGui.bAutoPaused or commandGui.event_pause or commandGui.menu_pause
 end
 
+--usage: object = nilSet(object, value)
+function mods.lightweight_lua.nilSet(object, value)
+    if (object == nil) then
+        object = value
+    end
+    return object
+end
+
 --[[  TABLE UTILS  ]]--
 --for use in printing all of a table
 function mods.lightweight_lua.dumpObject(o)
@@ -122,6 +130,31 @@ function mods.lightweight_lua.getRandomKey(table)
     end
     local randomIndex = math.random(#keys)
     return keys[randomIndex]
+end
+
+function mods.lightweight_lua.setIntersectionTable(table1, table2)
+   local interSet = {}
+   for i = 1,#table1 do
+       local value = table1[i]
+       for j = 1,#table2 do
+           if (value == table2[j]) then
+               table.insert(interSet, value)
+           end
+       end
+   end
+   return interSet
+end
+
+function mods.lightweight_lua.setIntersectionVter(userdata1, userdata2)
+   local interSet = {}
+   for door1 in vter(userdata1) do
+       for door2 in vter(userdata2) do
+           if (door1 == door2) then
+               table.insert(interSet, door1)
+           end
+       end
+   end
+   return interSet
 end
 
 --takes an integer value
@@ -249,6 +282,15 @@ function mods.lightweight_lua.getRoomAtCrewmember(crewmem)
     room = get_room_at_location(shipManager, crewmem:GetPosition(), true)
     --print(crewmem:GetLongName(), ", Room: ", room, " at ", crewmem:GetPosition().x, crewmem:GetPosition().y)
     return room
+end
+
+--If two rooms have multiple doors, returns all of them.
+function mods.lightweight_lua.getSharedDoors(shipId, roomIdFirst, roomIdSecond)
+    local shipGraph = Hyperspace.ShipGraph.GetShipInfo(shipId)
+    local doorList = shipGraph:GetDoors(roomIdFirst)
+    local doorList2 = shipGraph:GetDoors(roomIdSecond)
+    local sharedDoors = mods.lightweight_lua.setIntersectionVter(doorList, doorList2)
+    return sharedDoors 
 end
 
 --returns true if it did anything and false otherwise
