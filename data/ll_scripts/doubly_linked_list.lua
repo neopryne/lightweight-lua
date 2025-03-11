@@ -186,7 +186,6 @@ print("List length:", list:length())
 
 --First describe the problem space for yourself and describe the tests in your own words.  Give this to the AI and ask it to generate these tests, and also the code that satisfies them.
 --See if that works.
---Ask it to write a test suite for the given problem space.
 
 -- Test Suite for mods.lightweight_doublylinkedlist
 

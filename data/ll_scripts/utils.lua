@@ -66,7 +66,7 @@ function mods.lightweight_lua.isPaused()
     return commandGui.bPaused or commandGui.bAutoPaused or commandGui.event_pause or commandGui.menu_pause
 end
 
---usage: object = nilSet(object, value)
+--usage: object = nilSet(object, value) TODO rename setIfNil
 function mods.lightweight_lua.nilSet(object, value)
     if (object == nil) then
         object = value
