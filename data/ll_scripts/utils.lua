@@ -1,4 +1,5 @@
 mods.lightweight_lua = {}
+local lwl = mods.lightweight_lua
 
 --[[Usage:
     local lwl = mods.lightweight_lua
@@ -23,6 +24,11 @@ local TILE_SIZE = 35
 --Breaking change, this is now a function.
 --mods.lightweight_lua.TILE_SIZE = TILE_SIZE --Deprecated, use mods.lightweight_lua.sTILE_SIZE() instead.
 function mods.lightweight_lua.TILE_SIZE() return TILE_SIZE end --getter to preserve immutible value.
+function mods.lightweight_lua.OWNSHIP() return 0 end
+function mods.lightweight_lua.CONTACT_1() return 1 end
+function mods.lightweight_lua.UNSELECTED() return 0 end
+function mods.lightweight_lua.SELECTED() return 1 end
+function mods.lightweight_lua.SELECTED_HOVER() return 2 end
 
 local SYS_SHIELDS = 0
 local SYS_ENGINES = 1
@@ -252,6 +258,21 @@ function mods.lightweight_lua.getCrewOnSameShip(shipManager, crewShipManager)
         end
     end
     return crewList
+end
+
+function mods.lightweight_lua.getSelectedCrew(shipId, selectionState)
+    local selectedCrew = {}
+    local shipManager = Hyperspace.ships(shipId)
+    local i = 0
+    if (shipManager ~= nil) then
+        for k, crewmem in ipairs(lwl.getAllMemberCrew(shipManager)) do
+            if (crewmem.selectionState == selectionState) then --fully selected
+                table.insert(selectedCrew, crewmem)
+            end
+        end
+    end
+
+    return selectedCrew
 end
 
 -- Returns a table of all crew on shipManager ship's belonging to crewShipManager's crew on the room tile at the given point
