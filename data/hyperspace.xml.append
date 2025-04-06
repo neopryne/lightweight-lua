@@ -6,5 +6,8 @@
 		<mod-append:script>data/ll_scripts/utils.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/doubly_linked_list.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/keybinds.lua</mod-append:script>
+		<mod-append:script>data/ll_scripts/ui_lib.lua</mod-append:script>
 	</mod:findLike>
 </FTL>
+
+Flatpack still causes duplicate FM beacons, but not cura for some reason.

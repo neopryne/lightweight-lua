@@ -19,6 +19,7 @@ local get_room_at_location = mods.vertexutil.get_room_at_location
 local global = Hyperspace.Global.GetInstance()
 
 local TAU = math.pi * 2
+local OWNSHIP = 0
 local ENEMY_SHIP = 1
 local TILE_SIZE = 35
 --Breaking change, this is now a function.
@@ -64,7 +65,6 @@ function mods.lightweight_lua.SYS_CLONEBAY() return SYS_CLONEBAY end
 function mods.lightweight_lua.SYS_MIND() return SYS_MIND end
 function mods.lightweight_lua.SYS_HACKING() return SYS_HACKING end
 function mods.lightweight_lua.SYS_TEMPORAL() return SYS_TEMPORAL end
-
 
 --This might be overkill, but it works
 function mods.lightweight_lua.isPaused()
@@ -494,3 +494,43 @@ mods.lightweight_lua.printEventInternal = function(locationEvent, level)
         mods.lightweight_lua.printChoiceInternal(choice, level + 1)
     end
 end
+
+mods.lightweight_lua.METAVAR_NUM_CREW_PLAYER = "lightweightlua_NUM_CREW_PLAYER"
+mods.lightweight_lua.METAVAR_CREW_ID_PLAYER = "lightweightlua_CREW_ID_PLAYER"
+
+
+function mods.lightweight_lua.getPersistedCrewIds()
+    crewIds = {}
+    numCrew = Hyperspace.metaVariables[lwl.METAVAR_NUM_CREW_PLAYER]
+    for i=1,#numCrew do
+        table.insert(crewIds, Hyperspace.metaVariables[lwl.METAVAR_CREW_ID_PLAYER..i])
+    end
+    return crewIds
+end
+
+
+--[[ Neat idea, but it needs to many layers of encapsulation to be a good idiom.
+local function waitForInitialization(blockedFunction, localVar, varGetter)
+    if localVar == nil then
+        localVar = varGetter()
+    else
+        blockedFunction
+    end
+end
+--]]
+
+--Here lives the crew metavars.  Use these to find the list of crewmembers persisted over saves.
+--todo do I need to do this every step?
+local ownshipManager
+script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+        --Get all crew on your ship
+        if ownshipManager == nil then
+            ownshipManager = global:GetShipManager(OWNSHIP)
+        else
+            crewList = lwl.getAllMemberCrew(ownshipManager)
+            Hyperspace.metaVariables[lwl.METAVAR_NUM_CREW_PLAYER] = #crewList
+            for i=1,#crewList do
+                Hyperspace.metaVariables[lwl.METAVAR_CREW_ID_PLAYER..i] = crewList[i].extend.selfId
+            end
+        end
+        end)
