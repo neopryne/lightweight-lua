@@ -4,6 +4,15 @@ local lwui = mods.lightweight_user_interface
 local lwl = mods.lightweight_lua
 
 --[[
+
+TODO: Image-based rendering, and scroll bar skin packs.
+Gonna make the one arc uses the default one as it's pretty good.
+Does mean I need a way to stretch an image.  I wonder if GL will just do that for me.
+
+Radio buttons maybe?  You can do this yourself, but I'll see if it seems worth putting here when I build it.
+
+
+
 For usage examples, please refer to Grimdark Expy.
 
 
@@ -26,11 +35,14 @@ scroll buttons must be square.  That's the law, it will throw you an error other
 
 local function NOOP() end
 local MIN_FONT_SIZE = 5
+local FULL_SCREEN_MASK
+local function FULL_SCREEN_MASK_FUNCTION() return FULL_SCREEN_MASK end
 
 local mTopLevelRenderList = {}
 local mHoveredButton = nil
 local mHoveredScrollContainer = nil
 local mClickedButton = nil --mouseUp will be called on this.
+
 
 function lwui.isWithinMask(mousePos, mask)
     return mousePos.x >= mask.getPos().x and mousePos.x <= mask.getPos().x + mask.width and
@@ -192,7 +204,7 @@ function lwui.buildContainer(x, y, width, height, visibilityFunction, renderFunc
     --todo should this logic be moved into addObject?
     --Right now it won't be called on things added with addObject()
     local function setMaskFunction(maskFunc)
-        if container.renderOutsideBounds then return end
+        --if container.renderOutsideBounds then return end
         container.maskFunction = maskFunc
         for _, object in ipairs(container.objects) do
             object.setMaskFunction(combineMasks(container, object))
@@ -215,7 +227,7 @@ function lwui.buildContainer(x, y, width, height, visibilityFunction, renderFunc
         --adjust visibilityFunction
         --object is only visible if partially inside container.
         local oldVisibilityFunction = object.visibilityFunction
-        function containedVisibilityFunction()
+        function containedVisibilityFunction()--TODO is this outdated?
             local retVal = false
             if container.renderOutsideBounds then return true end
             if ((object.getPos().x > container.getPos().x + container.width) or (object.getPos().x + object.width < container.getPos().x) or
@@ -242,6 +254,9 @@ function lwui.buildContainer(x, y, width, height, visibilityFunction, renderFunc
     container.renderOutsideBounds = renderOutsideBounds
     container.sizeToContent = sizeToContent
     container.setMaskFunction = setMaskFunction
+    if renderOutsideBounds then
+        container.maskFunction = FULL_SCREEN_MASK_FUNCTION
+    end
     --container.setMaskFunction(container.maskFunction)--todo comment out
     for _, object in ipairs(objects) do
         addObject(object)
@@ -471,7 +486,7 @@ end
 
 --I might actually put this in the UI library, it's pretty useful.
 --todo is this also a container for the item?
-function lwui.buildInventoryButton(name, x, y, height, width, visibilityFunction, renderFunction, allowedItemsFunction)
+function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction, renderFunction, allowedItemsFunction)
     --todo custom logic has to go somewhere else, as these need to work even when the button isn't rendered.
     local button
     
@@ -504,7 +519,7 @@ function lwui.buildInventoryButton(name, x, y, height, width, visibilityFunction
             print("added item ",  button.item.name)
             return true
         end
-        print("item type not allowed.")
+        print("item type not allowed: ", item)
         return false
     end
     
@@ -516,7 +531,7 @@ function lwui.buildInventoryButton(name, x, y, height, width, visibilityFunction
         end
     end
     
-    button = lwui.buildButton(x, y, height, width, visibilityFunction, buttonRender, onClick, onRelease)
+    button = lwui.buildButton(x, y, width, height, visibilityFunction, buttonRender, onClick, onRelease)
     button.addItem = addItem
     button.allowedItemsFunction = allowedItemsFunction
     
@@ -532,7 +547,7 @@ end
 --This needs to set its height dynamically and be used inside a scroll bar, or change font size dynamically.
 --This one actually is local, the other ones are what I'll expose for use.
 --textColor (GL_Color) controls the color of the text.
-local function buildTextBox(x, y, height, width, visibilityFunction, renderFunction, fontSize)
+local function buildTextBox(x, y, width, height, visibilityFunction, renderFunction, fontSize)
     local textBox
     
     local function renderText(mask)
@@ -553,7 +568,7 @@ local function buildTextBox(x, y, height, width, visibilityFunction, renderFunct
         Graphics.CSurface.GL_PopStencilMode()
     end
     
-    textBox = lwui.buildObject(x, y, height, width, visibilityFunction, renderText)
+    textBox = lwui.buildObject(x, y, width, height, visibilityFunction, renderText)
     textBox.text = ""
     textBox.fontSize = fontSize
     textBox.textColor = Graphics.GL_Color(1, 1, 1, 1)
@@ -562,19 +577,19 @@ end
 
 --Minimum font size is five, choosing smaller will make it bigger than five.
 --You can put this one inside of a scroll window for good effect
-function lwui.buildDynamicHeightTextBox(x, y, height, width, visibilityFunction, fontSize)
+function lwui.buildDynamicHeightTextBox(x, y, width, height, visibilityFunction, fontSize)
     local textBox
     local function expandingRenderFunction()
         local lowestY = Graphics.freetype.easy_printAutoNewlines(textBox.fontSize, 5000, textBox.getPos().y, textBox.width, textBox.text).y
         textBox.height = lowestY - textBox.getPos().y
     end
     
-    textBox = buildTextBox(x, y, height, width, visibilityFunction, expandingRenderFunction, fontSize)
+    textBox = buildTextBox(x, y, width, height, visibilityFunction, expandingRenderFunction, fontSize)
     return textBox
 end
 
 --Font shrinks to accomidate text, I don't think this one looks as good generally, but I wanted to make it available.
-function lwui.buildFixedTextBox(x, y, height, width, visibilityFunction, maxFontSize)
+function lwui.buildFixedTextBox(x, y, width, height, visibilityFunction, maxFontSize)
     local textBox
     local function scalingFontRenderFunction()
         --textBox.text = textBox.text.."f"
@@ -596,7 +611,7 @@ function lwui.buildFixedTextBox(x, y, height, width, visibilityFunction, maxFont
         end
     end
     
-    textBox = buildTextBox(x, y, height, width, visibilityFunction, scalingFontRenderFunction, maxFontSize)
+    textBox = buildTextBox(x, y, width, height, visibilityFunction, scalingFontRenderFunction, maxFontSize)
     textBox.maxFontSize = maxFontSize
     textBox.lastLength = #textBox.text
     return textBox
@@ -636,7 +651,7 @@ function lwui.spriteRenderFunction(spritePath)
     end
 end
 
-
+FULL_SCREEN_MASK = lwui.buildObject(0, 0, 5000, 5000, NOOP, NOOP)
 ------------------------------------RENDERING LOGIC----------------------------------------------------------
 --this makes the z-ordering of buttons based on the order of the sButtonList, Lower values on top.
 function renderObjects()

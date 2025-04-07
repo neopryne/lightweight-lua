@@ -520,7 +520,7 @@ end
 --]]
 
 --Here lives the crew metavars.  Use these to find the list of crewmembers persisted over saves.
---todo do I need to do this every step?
+--todo do I need to do this every step?  Also does this actually work how I'm trying to use it?  I need it for GEx, so I'll find out soon.
 local ownshipManager
 script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
         --Get all crew on your ship
