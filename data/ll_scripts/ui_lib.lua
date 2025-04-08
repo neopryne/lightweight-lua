@@ -34,6 +34,7 @@ scroll buttons must be square.  That's the law, it will throw you an error other
 --]]
 
 local function NOOP() end
+local function GEN_NOOP() return NOOP end
 local MIN_FONT_SIZE = 5
 local FULL_SCREEN_MASK
 local function FULL_SCREEN_MASK_FUNCTION() return FULL_SCREEN_MASK end
@@ -83,7 +84,7 @@ function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunctio
             return true
         end
         if object.visibilityFunction() then
-            return renderFunction(object.maskFunction())
+            return renderFunction(object)
         end
     end
     
@@ -133,7 +134,7 @@ function lwui.buildButton(x, y, width, height, visibilityFunction, renderFunctio
                 mHoveredButton = button
             end
         end
-        renderFunction(button.maskFunction())
+        renderFunction(button)
         return hovering
     end
     
@@ -180,7 +181,7 @@ function lwui.buildContainer(x, y, width, height, visibilityFunction, renderFunc
     local container
     --Append container rendering behavior to whatever function the user wants (if any) to show up as the container's background.
     local function renderContainer(mask)
-        renderFunction(container.maskFunction())
+        renderFunction(container)
         local hovering = false
         --todo Render contents, shifting window to cut off everything outside it., setting hovering to true as in the tab render
         --This will obfuscate the fact that buttons are wonky near container edges, so I should TODO go back and fix this.
@@ -192,7 +193,7 @@ function lwui.buildContainer(x, y, width, height, visibilityFunction, renderFunc
                 container.width = math.max(container.width, object.x + object.width)
             end
             --print("render object at ", object.getPos().x, ", ", object.getPos().y)
-            if object.renderFunction(object.maskFunction()) then
+            if object.renderFunction(object) then
                 hovering = true
             end
             i = i + 1
@@ -312,7 +313,7 @@ end
 --Content is a single item with a y coordinate of 0. It can have variable size, and can be longer than the scroll container, but not wider.
 --scroll bars always grow to fit their content, if you want one that doesn't, ping me.
 --NOTE: the contained elements of the scroll bar are refered to statically here, but I don't see a reason why they would be replaced, so I'm leaving it.
-function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFunction, content)
+function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFunction, content, scrollBarSkin)
     local barWidth = 12
     local scrollIncrement = 30
     --scrollValue is absolute position of the scroll bar.
@@ -366,15 +367,16 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
     end
     
     scrollBar = lwui.buildObject(width - barWidth, 0, barWidth, height, visibilityFunction,
-        lwui.solidRectRenderFunction(Graphics.GL_Color(.5, .5, .5, .8)))
+        scrollBarSkin.barRender)
     --TODO disable buttons if scrolling is impossible?
     scrollUpButton = lwui.buildButton(width - barWidth, 0, barWidth, barWidth, visibilityFunction,
-        lwui.solidRectRenderFunction(Graphics.GL_Color(0, 1, 1, 1)), scrollDown, NOOP)
+        scrollBarSkin.upButtonRender, scrollDown, NOOP)
     scrollDownButton = lwui.buildButton(width - barWidth, height - barWidth, barWidth, barWidth, visibilityFunction,
-        lwui.solidRectRenderFunction(Graphics.GL_Color(0, 1, 1, 1)), scrollUp, NOOP)
+        scrollBarSkin.upButtonRender, scrollUp, NOOP)--TODO fix
     scrollNub = lwui.buildButton(width - barWidth, barWidth, barWidth, barWidth, visibilityFunction,
-        lwui.solidRectRenderFunction(Graphics.GL_Color(.4, .1, 1, 1)), nubClicked, nubReleased)
+        scrollBarSkin.nubRender, nubClicked, nubReleased)
     scrollNub.mouseTracking = false
+    scrollNub.scrollContainer = scrollContainer
     
     --todo nub should change size based on scrollDelta, clamped to barWidth and  contentContainer.height - (barWidth * 2)
     local function renderContent()
@@ -385,6 +387,7 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
         
         --need to fix my scrollbar math.
         local scrollWindowRange = maxWindowScroll() - minWindowScroll()
+        scrollContainer.scrollWindowRange = scrollWindowRange
         --scrollbar slider size TODO fix this math too.
         scrollNub.height = scrollContainer.height / math.max(1, scrollWindowRange)
         scrollNub.height = math.max(barWidth, math.min(contentContainer.height - (barWidth * 2), scrollNub.height))
@@ -407,9 +410,9 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
         --print("Rendering content level")
     end
     
-    
+    --todo decide about scroll bar backgrounds
     contentContainer = lwui.buildContainer(0, 0, width - barWidth, height, visibilityFunction, renderContent, {content}, false, false)
-    scrollContainer = lwui.buildContainer(x, y, width, height, visibilityFunction, lwui.solidRectRenderFunction(Graphics.GL_Color(.2, .8, .8, .3)),
+    scrollContainer = lwui.buildContainer(x, y, width, height, visibilityFunction, scrollBarSkin.backgroundRender,
         {contentContainer, scrollBar, scrollUpButton, scrollDownButton, scrollNub}, false, false)
     scrollContainer.scrollValue = barWidth
     scrollContainer.scrollUp = scrollUp
@@ -459,7 +462,7 @@ function lwui.buildItem(name, itemType, width, height, visibilityFunction, rende
             item.x = item.containingButton.getPos().x
             item.y = item.containingButton.getPos().y
         end
-        renderFunction(item.maskFunction())
+        renderFunction(item)
     end
     
     local function itemMask()
@@ -524,10 +527,10 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
     end
     
     local function buttonRender()
-        renderFunction(button.maskFunction())
+        renderFunction(button)
         if (button.item) then
             --print("rendering item ", button.item.name)
-            button.item.renderFunction(button.item.maskFunction())
+            button.item.renderFunction(button.item)
         end
     end
     
@@ -619,11 +622,35 @@ end
 
 
 ------------------------------------RENDER FUNCTIONS----------------------------------------------------------
+local primitiveList = {}
+--Allows a render event to refer to an already-existing primitive of a png file if possible to avoid creating duplicates.
+local function primitiveListManager(string)
+    if not primitiveList[string] then
+        local stringID = Hyperspace.Resources:GetImageId(string)
+        primitiveList[string] = Hyperspace.Resources:CreateImagePrimitiveString(
+            string,
+            0 - stringID.width/2,
+            0 - stringID.height/2,
+            0,
+            Graphics.GL_Color(1, 1, 1, 1),
+            1.0,
+            false
+        )
+    end
+    return primitiveList[string]
+end
 
 --hey uh b1 was only moving horiz when I direct registered it to a scroll bar.
 --needs a pointer to an object, not the object itself.
+--Ok thinking of an overhaul: objects pass themselves to the returned function, and we have to get the mask from there.
+--We have need of the information in the object.
 function lwui.solidRectRenderFunction(glColor)
-    return function(mask)
+    return function(object)
+        if object == nil then
+            print("Error: Object was nil!")
+            return
+        end
+        local mask = object.maskFunction()
         Graphics.CSurface.GL_DrawRect(mask.getPos().x, mask.getPos().y, mask.width, mask.height, glColor)
     end
 end
@@ -632,7 +659,8 @@ end
 --This one isn't done yet, don't use it.
 function lwui.spriteRenderFunction(spritePath)
     --this needs to use the stencil mode.  I could use it for both, but it seems more efficient not to.  I could be wrong.
-    return function(mask)
+    return function(object)
+        local mask = object.maskFunction()
         Graphics.CSurface.GL_PushStencilMode()
         Graphics.CSurface.GL_SetStencilMode(1,1,1)
         Graphics.CSurface.GL_ClearAll()
@@ -642,16 +670,63 @@ function lwui.spriteRenderFunction(spritePath)
         Graphics.CSurface.GL_DrawRect(mask.getPos().x, mask.getPos().y, mask.width, mask.height, textBox.textColor)
         Graphics.CSurface.GL_PopMatrix()
         Graphics.CSurface.GL_SetStencilMode(2,1,1)
-        --Render sprite image
-        --Graphics.CSurface.GL_RenderPrimitive(primitiveListManager(spritePath)) TODO get brightness integration
+        --Render sprite image, might be larger than the stencil
+        Graphics.CSurface.GL_PushMatrix()
+        --TODO scale primative to the size of the object, but for now just get it working rendering images for things.
+        local primitive = primitiveListManager(spritePath)
+        Graphics.CSurface.GL_Translate(object.getPos().x, object.getPos().y, 0)
+        Graphics.CSurface.GL_RenderPrimitive()
+        Graphics.CSurface.GL_PopMatrix()
         Graphics.CSurface.GL_SetStencilMode(0,1,1)
         Graphics.CSurface.GL_PopStencilMode()
-        
-        Graphics.CSurface.GL_DrawRect(mask.getPos().x, mask.getPos().y, mask.width, mask.height, glColor)
     end
 end
 
 FULL_SCREEN_MASK = lwui.buildObject(0, 0, 5000, 5000, NOOP, NOOP)
+
+--pretty minor but I want this
+function lwui.constructScrollBarSkin(upButtonRender, nubRender, barRender, backgroundRender) 
+    return {upButtonRender=upButtonRender, nubRender=nubRender, barRender=barRender, backgroundRender=backgroundRender}
+end
+
+
+local GL_WHITE = Graphics.GL_Color(1, 1, 1, 1)
+local GL_TRAVELLER_GRAY = Graphics.GL_Color(160/255, 162/255, 171/255, 1)
+local GL_TRAVELLER_BLUE = Graphics.GL_Color(58/255, 127/255, 255/255, 1)
+function lwui.travellerScrollNubRender() --TODO only works for vertical ones.  Todo button rotation also.
+    
+    return function(object)--the only way to do this is with back references.  The nub needs a reference to the scrollContainer.
+        local mask = object.maskFunction()
+        local nubColor = GL_WHITE
+        --If object is hovered
+        if mHoveredButton == object then
+            nubColor = GL_TRAVELLER_BLUE
+        end
+        --If object cannae scroll
+        if (object.scrollContainer.scrollWindowRange < 1) then
+            nubColor = GL_TRAVELLER_GRAY
+        end
+        
+        Graphics.CSurface.GL_DrawRect(mask.getPos().x, mask.getPos().y + 1, mask.width, mask.height - 2, nubColor)
+        Graphics.CSurface.GL_DrawRect(mask.getPos().x + 1, mask.getPos().y, mask.width - 2, 1, nubColor)
+        Graphics.CSurface.GL_DrawRect(mask.getPos().x + 1, mask.getPos().y + mask.height - 1, mask.width - 2, 1, nubColor)
+    end
+end
+
+--uh this is hard because things might not line up with their sizes and require stretching or scaling to fit.
+--So that means I need to...  Uh...  I need to make a render function that tesselates the image?
+--I need to pass more values to spriteRenderFunction, like the initial size of the thing being rendered so it knows how to operate.
+--Check GL methods
+lwui.defaultScrollBarSkin = lwui.constructScrollBarSkin(
+        lwui.spriteRenderFunction("scrollbarStyles/traveller/scroll_up_on.png"),
+        lwui.travellerScrollNubRender(),
+        lwui.spriteRenderFunction("scrollbarStyles/traveller/scroll_bar.png"),
+        GEN_NOOP)
+
+lwui.testScrollBarSkin = lwui.constructScrollBarSkin(lwui.solidRectRenderFunction(Graphics.GL_Color(0, 1, 1, 1)),
+        lwui.solidRectRenderFunction(Graphics.GL_Color(.4, .1, 1, 1)),
+        lwui.solidRectRenderFunction(Graphics.GL_Color(.5, .5, .5, .8)),
+        lwui.solidRectRenderFunction(Graphics.GL_Color(.2, .8, .8, .3)))
 ------------------------------------RENDERING LOGIC----------------------------------------------------------
 --this makes the z-ordering of buttons based on the order of the sButtonList, Lower values on top.
 function renderObjects()
@@ -660,7 +735,7 @@ function renderObjects()
     local i = 1
     for _, object in ipairs(mTopLevelRenderList) do
         --print("render object"..i)
-        if object.renderFunction(object.maskFunction()) then
+        if object.renderFunction(object) then
             hovering = true
         end
         i = i + 1
@@ -680,7 +755,8 @@ if (script) then
 
 --yeah, select those items and hold them!
     script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
-        print("click, button_hovered ", mHoveredButton)
+        local mousePos = Hyperspace.Mouse.position
+        print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", mHoveredButton)
         if mHoveredButton then
             print("clicked ", mHoveredButton)
             mHoveredButton.onClick(x, y)
