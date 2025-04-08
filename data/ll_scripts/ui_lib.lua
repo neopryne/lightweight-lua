@@ -39,6 +39,10 @@ local MIN_FONT_SIZE = 5
 local FULL_SCREEN_MASK
 local function FULL_SCREEN_MASK_FUNCTION() return FULL_SCREEN_MASK end
 
+local GL_WHITE = Graphics.GL_Color(1, 1, 1, 1)
+local GL_TRAVELLER_GRAY = Graphics.GL_Color(160/255, 162/255, 171/255, 1)
+local GL_TRAVELLER_BLUE = Graphics.GL_Color(58/255, 127/255, 255/255, 1)
+
 local mTopLevelRenderList = {}
 local mHoveredButton = nil
 local mHoveredScrollContainer = nil
@@ -314,8 +318,8 @@ end
 --scroll bars always grow to fit their content, if you want one that doesn't, ping me.
 --NOTE: the contained elements of the scroll bar are refered to statically here, but I don't see a reason why they would be replaced, so I'm leaving it.
 function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFunction, content, scrollBarSkin)
-    local barWidth = 12
-    local scrollIncrement = 30
+    local barWidth = scrollBarSkin.barWidth
+    local scrollIncrement = 30 --seems fine
     --scrollValue is absolute position of the scroll bar.
     local scrollContainer
     local contentContainer
@@ -376,7 +380,6 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
     scrollNub = lwui.buildButton(width - barWidth, barWidth, barWidth, barWidth, visibilityFunction,
         scrollBarSkin.nubRender, nubClicked, nubReleased)
     scrollNub.mouseTracking = false
-    scrollNub.scrollContainer = scrollContainer
     
     --todo nub should change size based on scrollDelta, clamped to barWidth and  contentContainer.height - (barWidth * 2)
     local function renderContent()
@@ -418,7 +421,7 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
     scrollContainer.scrollUp = scrollUp
     scrollContainer.scrollDown = scrollDown
     scrollContainer.contentContainer = contentContainer
-    
+    scrollNub.scrollContainer = scrollContainer
     return scrollContainer
 end
 
@@ -629,8 +632,8 @@ local function primitiveListManager(string)
         local stringID = Hyperspace.Resources:GetImageId(string)
         primitiveList[string] = Hyperspace.Resources:CreateImagePrimitiveString(
             string,
-            0 - stringID.width/2,
-            0 - stringID.height/2,
+            0,
+            0,
             0,
             Graphics.GL_Color(1, 1, 1, 1),
             1.0,
@@ -667,7 +670,7 @@ function lwui.spriteRenderFunction(spritePath)
         Graphics.CSurface.GL_SetStencilMode(1,1,1)
         Graphics.CSurface.GL_PushMatrix()
         --Stencil of the size of the box
-        Graphics.CSurface.GL_DrawRect(mask.getPos().x, mask.getPos().y, mask.width, mask.height, textBox.textColor)
+        Graphics.CSurface.GL_DrawRect(mask.getPos().x, mask.getPos().y, mask.width, mask.height, GL_WHITE)
         Graphics.CSurface.GL_PopMatrix()
         Graphics.CSurface.GL_SetStencilMode(2,1,1)
         --Render sprite image, might be larger than the stencil
@@ -675,7 +678,7 @@ function lwui.spriteRenderFunction(spritePath)
         --TODO scale primative to the size of the object, but for now just get it working rendering images for things.
         local primitive = primitiveListManager(spritePath)
         Graphics.CSurface.GL_Translate(object.getPos().x, object.getPos().y, 0)
-        Graphics.CSurface.GL_RenderPrimitive()
+        Graphics.CSurface.GL_RenderPrimitive(primitive)
         Graphics.CSurface.GL_PopMatrix()
         Graphics.CSurface.GL_SetStencilMode(0,1,1)
         Graphics.CSurface.GL_PopStencilMode()
@@ -685,14 +688,12 @@ end
 FULL_SCREEN_MASK = lwui.buildObject(0, 0, 5000, 5000, NOOP, NOOP)
 
 --pretty minor but I want this
-function lwui.constructScrollBarSkin(upButtonRender, nubRender, barRender, backgroundRender) 
-    return {upButtonRender=upButtonRender, nubRender=nubRender, barRender=barRender, backgroundRender=backgroundRender}
+function lwui.constructScrollBarSkin(upButtonRender, nubRender, barRender, backgroundRender, barWidth) 
+    return {upButtonRender=upButtonRender, nubRender=nubRender, barRender=barRender, backgroundRender=backgroundRender, barWidth=barWidth}
 end
 
 
-local GL_WHITE = Graphics.GL_Color(1, 1, 1, 1)
-local GL_TRAVELLER_GRAY = Graphics.GL_Color(160/255, 162/255, 171/255, 1)
-local GL_TRAVELLER_BLUE = Graphics.GL_Color(58/255, 127/255, 255/255, 1)
+
 function lwui.travellerScrollNubRender() --TODO only works for vertical ones.  Todo button rotation also.
     
     return function(object)--the only way to do this is with back references.  The nub needs a reference to the scrollContainer.
@@ -721,12 +722,14 @@ lwui.defaultScrollBarSkin = lwui.constructScrollBarSkin(
         lwui.spriteRenderFunction("scrollbarStyles/traveller/scroll_up_on.png"),
         lwui.travellerScrollNubRender(),
         lwui.spriteRenderFunction("scrollbarStyles/traveller/scroll_bar.png"),
-        GEN_NOOP)
+        GEN_NOOP,
+        16)
 
 lwui.testScrollBarSkin = lwui.constructScrollBarSkin(lwui.solidRectRenderFunction(Graphics.GL_Color(0, 1, 1, 1)),
         lwui.solidRectRenderFunction(Graphics.GL_Color(.4, .1, 1, 1)),
         lwui.solidRectRenderFunction(Graphics.GL_Color(.5, .5, .5, .8)),
-        lwui.solidRectRenderFunction(Graphics.GL_Color(.2, .8, .8, .3)))
+        lwui.solidRectRenderFunction(Graphics.GL_Color(.2, .8, .8, .3)),
+        12)
 ------------------------------------RENDERING LOGIC----------------------------------------------------------
 --this makes the z-ordering of buttons based on the order of the sButtonList, Lower values on top.
 function renderObjects()
