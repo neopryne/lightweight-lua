@@ -44,9 +44,9 @@ local GL_TRAVELLER_GRAY = Graphics.GL_Color(160/255, 162/255, 171/255, 1)
 local GL_TRAVELLER_BLUE = Graphics.GL_Color(58/255, 127/255, 255/255, 1)
 
 local mTopLevelRenderList = {}
-local mHoveredButton = nil
+lwui.mHoveredButton = nil
 local mHoveredScrollContainer = nil
-local mClickedButton = nil --mouseUp will be called on this.
+lwui.mClickedButton = nil --mouseUp will be called on this.
 local mItemList = {}
 
 
@@ -135,9 +135,9 @@ function lwui.buildButton(x, y, width, height, visibilityFunction, renderFunctio
         local buttonMask = button.maskFunction()
         if lwui.isWithinMask(mousePos, buttonMask) then
             hovering = true
-            if not (mHoveredButton == button) then
+            if not (lwui.mHoveredButton == button) then
                 print("button_hovered ", button)
-                mHoveredButton = button
+                lwui.mHoveredButton = button
             end
         end
         renderFunction(button)
@@ -515,8 +515,8 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
         local mousePos = Hyperspace.Mouse.position
         if (button.item) then
             button.item.trackMouse = false
-            if (mHoveredButton and mHoveredButton.addItem) then
-                if (mHoveredButton.addItem(button.item)) then
+            if (lwui.mHoveredButton and lwui.mHoveredButton.addItem) then
+                if (lwui.mHoveredButton.addItem(button.item)) then
                     button.item = nil
                 end
             end
@@ -719,7 +719,7 @@ function lwui.travellerScrollNubRender() --TODO only works for vertical ones.  T
         local mask = object.maskFunction()
         local nubColor = GL_WHITE
         --If object is hovered
-        if mHoveredButton == object then
+        if lwui.mHoveredButton == object then
             nubColor = GL_TRAVELLER_BLUE
         end
         --If object cannae scroll
@@ -763,7 +763,7 @@ function renderObjects()
         i = i + 1
     end
     if not hovering then
-        mHoveredButton = nil
+        lwui.mHoveredButton = nil
     end
     Graphics.CSurface.GL_PopMatrix()
 end
@@ -784,20 +784,20 @@ if (script) then
 --yeah, select those items and hold them!
     script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
         local mousePos = Hyperspace.Mouse.position
-        print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", mHoveredButton)
-        if mHoveredButton then
-            print("clicked ", mHoveredButton)
-            mHoveredButton.onClick(x, y)
-            mClickedButton = mHoveredButton
+        print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
+        if lwui.mHoveredButton then
+            print("clicked ", lwui.mHoveredButton)
+            lwui.mHoveredButton.onClick(x, y)
+            lwui.mClickedButton = lwui.mHoveredButton
         end
 
         return Defines.Chain.CONTINUE
     end)
 
     script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x,y)
-        if (mClickedButton) then
-            mClickedButton.onRelease()
-            mClickedButton = nil
+        if (lwui.mClickedButton) then
+            lwui.mClickedButton.onRelease()
+            lwui.mClickedButton = nil
         end
         return Defines.Chain.CONTINUE
     end)
