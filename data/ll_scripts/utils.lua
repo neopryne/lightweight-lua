@@ -138,6 +138,23 @@ function mods.lightweight_lua.getRandomKey(table)
     return keys[randomIndex]
 end
 
+function mods.lightweight_lua.getNewElements(newSet, initialSet)
+    elements = {}
+    for _, newElement in ipairs(newSet) do
+        local wasPresent = false
+        for _, oldElement in ipairs(initialSet) do
+            if (oldElement == newElement) then
+                wasPresent = true
+                break
+            end
+        end
+        if not wasPresent then
+            table.insert(elements, newElement)
+        end
+    end
+    return elements
+end
+
 function mods.lightweight_lua.setIntersectionTable(table1, table2)
    local interSet = {}
    for i = 1,#table1 do
