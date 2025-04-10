@@ -47,6 +47,7 @@ local mTopLevelRenderList = {}
 local mHoveredButton = nil
 local mHoveredScrollContainer = nil
 local mClickedButton = nil --mouseUp will be called on this.
+local mItemList = {}
 
 
 function lwui.isWithinMask(mousePos, mask)
@@ -113,6 +114,7 @@ function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunctio
     object.renderFunction = renderObject
     object.setMaskFunction = setMaskFunction
     object.maskFunction = maskFunctionNoOp --call this each frame to get the mask to pass to render func.
+    object.className = "object"
     return object
 end
 
@@ -145,6 +147,7 @@ function lwui.buildButton(x, y, width, height, visibilityFunction, renderFunctio
     button = lwui.buildObject(x, y, width, height, visibilityFunction, renderButton)
     button.onClick = buttonClick
     button.onRelease = onRelease
+    button.className = "button"
     return button
 end
 
@@ -288,6 +291,7 @@ function lwui.buildVerticalContainer(x, y, width, height, visibilityFunction, re
     end
     container = lwui.buildContainer(x, y, width, height, visibilityFunction, verticalSnapRender, objects, renderOutsideBounds, sizeToContent)
     container.padding = padding
+    container.className = "verticalContainer"
     return container
 end
 
@@ -305,6 +309,7 @@ function lwui.buildHorizontalContainer(x, y, width, height, visibilityFunction, 
     end
     container = lwui.buildContainer(x, y, width, height, visibilityFunction, horizontalSnapRender, objects, renderOutsideBounds, sizeToContent)
     container.padding = padding
+    container.className = "horizontalContainer"
     return container
 end
 
@@ -422,6 +427,7 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
     scrollContainer.scrollDown = scrollDown
     scrollContainer.contentContainer = contentContainer
     scrollNub.scrollContainer = scrollContainer
+    scrollContainer.className = "scrollContainer"
     return scrollContainer
 end
 
@@ -438,13 +444,13 @@ A mechanical item knows lots of things about itself, and maybe is important for 
 
 --]]
 --[[
-    onCreate()
+    onCreate(self)
         --set up variables specific to this object's implementation.  Check that this is actually a good way of doing this, vs decoupling the object instance from the logic it uses
         --That version would involve each crewmem looking up their equipped items in the persisted values, and is probably better as a first guess at what a good model looks like.
         If it isn't, we can just combine the objects.
     end
     
-    onTick()
+    onTick(self)
         if (item.crewmem) then
             --do item stuff
         end
@@ -486,13 +492,16 @@ function lwui.buildItem(name, itemType, width, height, visibilityFunction, rende
     item.maskFunction = itemMask
     
     item.onCreate(item)
+    table.insert(mItemList, item)
+    item.className = "item"
     return item
 end
 
 
 --I might actually put this in the UI library, it's pretty useful.
 --todo is this also a container for the item?
-function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction, renderFunction, allowedItemsFunction)
+--onItemAddedFunction: called with (button, item) when an item is added to this button successfully.
+function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction, renderFunction, allowedItemsFunction, onItemAddedFunction)
     --todo custom logic has to go somewhere else, as these need to work even when the button isn't rendered.
     local button
     
@@ -523,9 +532,10 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
             button.item = item
             item.containingButton = button
             print("added item ",  button.item.name)
+            button.onItemAddedFunction(button, item)
             return true
         end
-        print("item type not allowed: ", item)
+        print("item type not allowed: ", item.itemType)
         return false
     end
     
@@ -540,7 +550,8 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
     button = lwui.buildButton(x, y, width, height, visibilityFunction, buttonRender, onClick, onRelease)
     button.addItem = addItem
     button.allowedItemsFunction = allowedItemsFunction
-    
+    button.onItemAddedFunction = onItemAddedFunction
+    button.className = "inventoryButton"
     return button
 end
 
@@ -578,6 +589,7 @@ local function buildTextBox(x, y, width, height, visibilityFunction, renderFunct
     textBox.text = ""
     textBox.fontSize = fontSize
     textBox.textColor = Graphics.GL_Color(1, 1, 1, 1)
+    textBox.className = "textBox"
     return textBox
 end
 
@@ -591,6 +603,7 @@ function lwui.buildDynamicHeightTextBox(x, y, width, height, visibilityFunction,
     end
     
     textBox = buildTextBox(x, y, width, height, visibilityFunction, expandingRenderFunction, fontSize)
+    textBox.className = "dynamicTextBox"
     return textBox
 end
 
@@ -620,6 +633,7 @@ function lwui.buildFixedTextBox(x, y, width, height, visibilityFunction, maxFont
     textBox = buildTextBox(x, y, width, height, visibilityFunction, scalingFontRenderFunction, maxFontSize)
     textBox.maxFontSize = maxFontSize
     textBox.lastLength = #textBox.text
+    textBox.className = "fixedTextBox"
     return textBox
 end
 
@@ -683,6 +697,11 @@ function lwui.spriteRenderFunction(spritePath)
         Graphics.CSurface.GL_SetStencilMode(0,1,1)
         Graphics.CSurface.GL_PopStencilMode()
     end
+end
+
+local function animRenderFunction(animation)
+    --todo maybe use brightness or something, idk?
+    --Don't really know how to get a crew member's animations.
 end
 
 FULL_SCREEN_MASK = lwui.buildObject(0, 0, 5000, 5000, NOOP, NOOP)
@@ -750,6 +769,12 @@ function renderObjects()
 end
 
 if (script) then
+    script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+        for _, item in ipairs(mItemList) do
+            item.onTick(item)
+        end
+    end)
+    
     script.on_render_event(Defines.RenderEvents.TABBED_WINDOW, function() 
         --inMenu = true --todo why?
     end, function(tabName)
