@@ -394,28 +394,20 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
             mHoveredScrollContainer = scrollContainer
         end
         
-        --need to fix my scrollbar math.
         local scrollWindowRange = maxWindowScroll() - minWindowScroll()
         scrollContainer.scrollWindowRange = scrollWindowRange
-        --scrollbar slider size TODO fix this math too.
+        --scrollbar slider size
         local maxNubSize = contentContainer.height - (barWidth * 2)
         local nubSize = 50 * maxNubSize / math.max(1, scrollWindowRange)
         scrollNub.height = math.max(10, nubSize) --clamp to container
-        print(scrollWindowRange, scrollNub.height, nubSize)
         
         if (scrollNub.mouseTracking) then
             scrollNub.y = mousePos.y - scrollContainer.y - scrollNub.mouseOffset
-             --clamp to bar length TODO nub centering
-            --math out
             scrollContainer.scrollValue = nubToScroll(scrollNub.y)
         end
         
-        --print("scrollValue: ", scrollContainer.scrollValue, " maxValue ", maxWindowScroll()) --todo one of these shouldn't be needed if I'm converting right.  the other one I think.
         scrollContainer.scrollValue = math.max(minWindowScroll(), math.min(maxWindowScroll(), scrollContainer.scrollValue))
-        --TODO convert scrollValue to nubPos and apply to
         scrollNub.y = scrollToNub(scrollContainer.scrollValue)
-        --scrollNub.y = math.max(nubMinPos(), math.min(nubMaxPos(), scrollNub.y))
-        --print("scrollValue: ", scrollContainer.scrollValue, " nubPos ", scrollNub.y, "nubMaxPos ", nubMaxPos())
         
         content.y = -scrollContainer.scrollValue
         --print("Rendering content level")
@@ -440,11 +432,6 @@ Items are tables with the following properties
 itemType: describes what kind of thing the item is, used for determing which inventory buttons can hold which kinds of items. (type is a reserved word)
 name: what exactly you have stored in that slot.
 renderFunction: hopefully a png that's the same size as their button.
-
-todo iterate through items attached to people.  This is probably a property of the people list, not the item.
-The name of the item is for lookup in the mechanical table of items.
-A mechanical item knows lots of things about itself, and maybe is important for lots of stuff.
-
 --]]
 --[[
     onCreate(self)
@@ -452,17 +439,10 @@ A mechanical item knows lots of things about itself, and maybe is important for 
         --That version would involve each crewmem looking up their equipped items in the persisted values, and is probably better as a first guess at what a good model looks like.
         If it isn't, we can just combine the objects.
     end
-    
-    onTick(self)
-        if (item.crewmem) then
-            --do item stuff
-        end
-    end
 --]]
 --visibility function inherited from the button they're attached to.
 --containingButton is the inventoryButton that holds this item.  render won't be called if this is nil as said button is the thing that calls it.
 --onTick takes no arguments, onCreate is passed the item being created so it can modify it.
---TODO needs two mask functions, one for when it's being held, and its mask is itself.  One for when it is not being held, and its mask is its containing button's mask.
 function lwui.buildItem(name, itemType, width, height, visibilityFunction, renderFunction, description, onCreate, onTick)
     local item
     local function itemRender()
@@ -570,7 +550,8 @@ end
 local function buildTextBox(x, y, width, height, visibilityFunction, renderFunction, fontSize)
     local textBox
     
-    local function renderText(mask)
+    local function renderText()
+        local mask = textBox.maskFunction()
         renderFunction()
         --todo stencil this out, text has no interactivity so it's fine. based on mask.
         Graphics.CSurface.GL_PushStencilMode()
@@ -599,10 +580,10 @@ end
 --Minimum font size is five, choosing smaller will make it bigger than five.
 --You can put this one inside of a scroll window for good effect
 function lwui.buildDynamicHeightTextBox(x, y, width, height, visibilityFunction, fontSize)
-    local textBox
+    local textBox   
     local function expandingRenderFunction()
-        local lowestY = Graphics.freetype.easy_printAutoNewlines(textBox.fontSize, 5000, textBox.getPos().y, textBox.width, textBox.text).y
-        textBox.height = lowestY - textBox.getPos().y
+        --local lowestY = Graphics.freetype.easy_printAutoNewlines(textBox.fontSize, 5000, textBox.getPos().y, textBox.width, textBox.text).y
+        --textBox.height = lowestY - textBox.getPos().y
     end
     
     textBox = buildTextBox(x, y, width, height, visibilityFunction, expandingRenderFunction, fontSize)
