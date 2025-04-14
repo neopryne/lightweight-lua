@@ -11,7 +11,7 @@ Does mean I need a way to stretch an image.  I wonder if GL will just do that fo
 
 Radio buttons maybe?  You can do this yourself, but I'll see if it seems worth putting here when I build it.
 
-
+todo if holding an item and hovering a full button that can hold it, switch them
 
 For usage examples, please refer to Grimdark Expy.
 
@@ -333,10 +333,10 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
     local scrollDownButton
     local scrollNub
     local function scrollUp()
-        scrollContainer.scrollValue = scrollContainer.scrollValue + scrollIncrement
+        scrollContainer.scrollValue = scrollContainer.scrollValue - scrollIncrement
     end
     local function scrollDown()
-        scrollContainer.scrollValue = scrollContainer.scrollValue - scrollIncrement
+        scrollContainer.scrollValue = scrollContainer.scrollValue + scrollIncrement
     end
     
     local function nubClicked() --Don't use the values passed here, they break when resizing the window.  Use the one Hyperspace gives you.
@@ -375,13 +375,14 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
         return minWindowScroll() + ((nubPosition - nubMinPos()) / math.max(1, (nubMaxPos() - nubMinPos())) * (maxWindowScroll() - minWindowScroll()))
     end
     
-    scrollBar = lwui.buildObject(width - barWidth, 0, barWidth, height, visibilityFunction,
+    scrollBar = lwui.buildObject(width - barWidth, barWidth, barWidth, height - (barWidth * 2), visibilityFunction,
         scrollBarSkin.barRender)
     --TODO disable buttons if scrolling is impossible?
-    scrollUpButton = lwui.buildButton(width - barWidth, 0, barWidth, barWidth, visibilityFunction,
-        scrollBarSkin.upButtonRender, scrollDown, NOOP)
+    
+    scrollUpButton = lwui.buildButton(width - barWidth, 0, barWidth, barWidth, visibilityFunction, --TODO are these backwards?
+        scrollBarSkin.upButtonRender, scrollUp, NOOP)
     scrollDownButton = lwui.buildButton(width - barWidth, height - barWidth, barWidth, barWidth, visibilityFunction,
-        scrollBarSkin.upButtonRender, scrollUp, NOOP)--TODO fix
+        scrollBarSkin.downButtonRender, scrollDown, NOOP)--TODO fix
     scrollNub = lwui.buildButton(width - barWidth, barWidth, barWidth, barWidth, visibilityFunction,
         scrollBarSkin.nubRender, nubClicked, nubReleased)
     scrollNub.mouseTracking = false
@@ -397,8 +398,10 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
         local scrollWindowRange = maxWindowScroll() - minWindowScroll()
         scrollContainer.scrollWindowRange = scrollWindowRange
         --scrollbar slider size TODO fix this math too.
-        scrollNub.height = scrollContainer.height / math.max(1, scrollWindowRange)
-        scrollNub.height = math.max(barWidth, math.min(contentContainer.height - (barWidth * 2), scrollNub.height))
+        local maxNubSize = contentContainer.height - (barWidth * 2)
+        local nubSize = 50 * maxNubSize / math.max(1, scrollWindowRange)
+        scrollNub.height = math.max(10, nubSize) --clamp to container
+        print(scrollWindowRange, scrollNub.height, nubSize)
         
         if (scrollNub.mouseTracking) then
             scrollNub.y = mousePos.y - scrollContainer.y - scrollNub.mouseOffset
@@ -657,19 +660,28 @@ local function primitiveListManager(string)
     return primitiveList[string]
 end
 
---hey uh b1 was only moving horiz when I direct registered it to a scroll bar.
---needs a pointer to an object, not the object itself.
---Ok thinking of an overhaul: objects pass themselves to the returned function, and we have to get the mask from there.
---We have need of the information in the object.
 function lwui.solidRectRenderFunction(glColor)
     return function(object)
         if object == nil then
-            print("Error: Object was nil!")
+            print("Error in solidRectRenderFunction: Object was nil!")
             return
         end
         local mask = object.maskFunction()
         Graphics.CSurface.GL_DrawRect(mask.getPos().x, mask.getPos().y, mask.width, mask.height, glColor)
     end
+end
+
+function lwui.inventoryButtonDefault(object)
+    if object == nil then
+        print("Error in inventoryButtonDefault: Object was nil!")
+        return
+    end
+    local mask = object.maskFunction()
+    local xScaling = math.floor(.08 * mask.width)
+    local yScaling = math.floor(.08 * mask.height)
+    Graphics.CSurface.GL_DrawRect(mask.getPos().x, mask.getPos().y, mask.width, mask.height, Graphics.GL_Color(63/255, 63/255, 67/255, 1))
+    Graphics.CSurface.GL_DrawRect(mask.getPos().x + xScaling, mask.getPos().y + yScaling,
+        mask.width - xScaling, mask.height - yScaling, Graphics.GL_Color(4/255, 8/255, 13/255, 1))
 end
 
 --spritePath is the path under your /img/ folder.  If the sprite is larger than the mask rendering it, it will be cut off, so create objects with the same size of the sprites you want them to use.
@@ -707,14 +719,11 @@ end
 FULL_SCREEN_MASK = lwui.buildObject(0, 0, 5000, 5000, NOOP, NOOP)
 
 --pretty minor but I want this
-function lwui.constructScrollBarSkin(upButtonRender, nubRender, barRender, backgroundRender, barWidth) 
-    return {upButtonRender=upButtonRender, nubRender=nubRender, barRender=barRender, backgroundRender=backgroundRender, barWidth=barWidth}
+function lwui.constructScrollBarSkin(upButtonRender, downButtonRender, nubRender, barRender, backgroundRender, barWidth)
+    return {upButtonRender=upButtonRender, downButtonRender=downButtonRender, nubRender=nubRender, barRender=barRender, backgroundRender=backgroundRender, barWidth=barWidth}
 end
 
-
-
-function lwui.travellerScrollNubRender() --TODO only works for vertical ones.  Todo button rotation also.
-    
+function lwui.travellerScrollNubRender() --TODO only works for vertical ones.  Todo button rotation also.    
     return function(object)--the only way to do this is with back references.  The nub needs a reference to the scrollContainer.
         local mask = object.maskFunction()
         local nubColor = GL_WHITE
@@ -739,12 +748,15 @@ end
 --Check GL methods
 lwui.defaultScrollBarSkin = lwui.constructScrollBarSkin(
         lwui.spriteRenderFunction("scrollbarStyles/traveller/scroll_up_on.png"),
+        lwui.spriteRenderFunction("scrollbarStyles/traveller/scroll_down_on.png"),
         lwui.travellerScrollNubRender(),
         lwui.spriteRenderFunction("scrollbarStyles/traveller/scroll_bar.png"),
         GEN_NOOP,
         16)
 
-lwui.testScrollBarSkin = lwui.constructScrollBarSkin(lwui.solidRectRenderFunction(Graphics.GL_Color(0, 1, 1, 1)),
+lwui.testScrollBarSkin = lwui.constructScrollBarSkin(
+        lwui.solidRectRenderFunction(Graphics.GL_Color(0, 1, 1, 1)),
+        lwui.solidRectRenderFunction(Graphics.GL_Color(0, 1, 1, 1)),
         lwui.solidRectRenderFunction(Graphics.GL_Color(.4, .1, 1, 1)),
         lwui.solidRectRenderFunction(Graphics.GL_Color(.5, .5, .5, .8)),
         lwui.solidRectRenderFunction(Graphics.GL_Color(.2, .8, .8, .3)),
@@ -769,12 +781,7 @@ function renderObjects()
 end
 
 if (script) then
-    script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
-        for _, item in ipairs(mItemList) do
-            item.onTick(item)
-        end
-    end)
-    
+    --item ticking should be left up to the consumers.
     script.on_render_event(Defines.RenderEvents.TABBED_WINDOW, function() 
         --inMenu = true --todo why?
     end, function(tabName)
