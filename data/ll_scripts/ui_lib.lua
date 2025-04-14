@@ -582,8 +582,8 @@ end
 function lwui.buildDynamicHeightTextBox(x, y, width, height, visibilityFunction, fontSize)
     local textBox   
     local function expandingRenderFunction()
-        --local lowestY = Graphics.freetype.easy_printAutoNewlines(textBox.fontSize, 5000, textBox.getPos().y, textBox.width, textBox.text).y
-        --textBox.height = lowestY - textBox.getPos().y
+        local lowestY = Graphics.freetype.easy_printAutoNewlines(textBox.fontSize, 5000, textBox.getPos().y, textBox.width, textBox.text).y
+        textBox.height = lowestY - textBox.getPos().y
     end
     
     textBox = buildTextBox(x, y, width, height, visibilityFunction, expandingRenderFunction, fontSize)
