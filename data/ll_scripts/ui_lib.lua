@@ -136,7 +136,7 @@ function lwui.buildButton(x, y, width, height, visibilityFunction, renderFunctio
         if lwui.isWithinMask(mousePos, buttonMask) then
             hovering = true
             if not (lwui.mHoveredButton == button) then
-                print("button_hovered ", button)
+                --print("button_hovered ", button)
                 lwui.mHoveredButton = button
             end
         end
@@ -343,7 +343,7 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
         local mousePos = Hyperspace.Mouse.position
         scrollNub.mouseTracking = true
         scrollNub.mouseOffset = mousePos.y - scrollNub.getPos().y
-        print("mouse offset: ", mousePos.y - scrollNub.getPos().y, " mousePos ", mousePos.y, " scrollNub ", scrollNub.getPos().y)
+        --print("mouse offset: ", mousePos.y - scrollNub.getPos().y, " mousePos ", mousePos.y, " scrollNub ", scrollNub.getPos().y)
     end
     local function nubReleased()
         scrollNub.mouseTracking = false
@@ -399,7 +399,7 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
         --scrollbar slider size
         local maxNubSize = contentContainer.height - (barWidth * 2)
         local nubSize = 50 * maxNubSize / math.max(1, scrollWindowRange)
-        scrollNub.height = math.max(10, nubSize) --clamp to container
+        scrollNub.height = math.max(10, math.min(maxNubSize, nubSize)) --clamp to container
         
         if (scrollNub.mouseTracking) then
             scrollNub.y = mousePos.y - scrollContainer.y - scrollNub.mouseOffset
@@ -442,8 +442,8 @@ renderFunction: hopefully a png that's the same size as their button.
 --]]
 --visibility function inherited from the button they're attached to.
 --containingButton is the inventoryButton that holds this item.  render won't be called if this is nil as said button is the thing that calls it.
---onTick takes no arguments, onCreate is passed the item being created so it can modify it.
-function lwui.buildItem(name, itemType, width, height, visibilityFunction, renderFunction, description, onCreate, onTick)
+--onCreate is passed the item, all others are for external use, and it's up to you to define their signatures and what they do.
+function lwui.buildItem(name, itemType, width, height, visibilityFunction, renderFunction, description, onCreate, onTick, onEquip, onRemove)
     local item
     local function itemRender()
         if (item.trackMouse) then
@@ -472,6 +472,9 @@ function lwui.buildItem(name, itemType, width, height, visibilityFunction, rende
     item.description = description
     item.onCreate = onCreate
     item.onTick = onTick
+    item.onEquip = onEquip
+    item.onEquip = onEquip
+    item.onRemove = onRemove
     item.maskFunction = itemMask
     
     item.onCreate(item)
@@ -508,17 +511,17 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
     
     local function addItem(item)
         if button.item then
-            print("iButton already contains ", button.item.name)
+            --print("iButton already contains ", button.item.name)
             return false
         end
         if allowedItemsFunction(item) then
             button.item = item
             item.containingButton = button
-            print("added item ",  button.item.name)
+            --print("added item ",  button.item.name)
             button.onItemAddedFunction(button, item)
             return true
         end
-        print("item type not allowed: ", item.itemType)
+        --print("item type not allowed: ", item.itemType)
         return false
     end
     
@@ -538,10 +541,9 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
     return button
 end
 
---todo some kind of typewriter print function you can pass in to text boxes.
---No actually it's just a field they have.
+--todo some kind of typewriter print function you can pass in to text boxes.  setTypewriterText that slowly changes the text to what you pass.
 
---todo some kind of a text box.  easy_printAutoNewlines lets me contstrain width, probably need a stencil for height.
+--todo fix the rendering on text boxes, right now it's not handling the size of the text correctly.
 
 --Internal fields:  text, what this will display.  I could do something clever where it tries to shrink the font size if it's too big, or another thing where I only put these inside scroll windows which would be pretty clever.
 --This needs to set its height dynamically and be used inside a scroll bar, or change font size dynamically.
@@ -602,13 +604,15 @@ function lwui.buildFixedTextBox(x, y, width, height, visibilityFunction, maxFont
             --print offscreen to avoid clutter
             while ((textBox.fontSize > MIN_FONT_SIZE) and
                     (Graphics.freetype.easy_printAutoNewlines(textBox.fontSize, 5000, textBox.getPos().y, textBox.width, textBox.text).y > textBox.getPos().y + textBox.height)) do
+                --print("Lowest Y ", Graphics.freetype.easy_printAutoNewlines(textBox.fontSize, 5000, textBox.getPos().y, textBox.width, textBox.text).y)
                 textBox.fontSize = textBox.fontSize - 1
+                --print("New Lowest Y ", Graphics.freetype.easy_printAutoNewlines(textBox.fontSize, 5000, textBox.getPos().y, textBox.width, textBox.text).y)
             end
         elseif (#textBox.text < textBox.lastLength) then
             textBox.lastLength = #textBox.text
             --check if we can increase size
             while ((textBox.fontSize < textBox.maxFontSize) and
-                    (Graphics.freetype.easy_printAutoNewlines(textBox.fontSize, 5000, textBox.getPos().y, textBox.width, textBox.text).y < textBox.getPos().y + textBox.height)) do
+                    (Graphics.freetype.easy_printAutoNewlines(textBox.fontSize + 1, 5000, textBox.getPos().y, textBox.width, textBox.text).y < textBox.getPos().y + textBox.height)) do
                 textBox.fontSize = textBox.fontSize + 1
             end
         end
@@ -774,7 +778,7 @@ if (script) then
         local mousePos = Hyperspace.Mouse.position
         print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
         if lwui.mHoveredButton then
-            print("clicked ", lwui.mHoveredButton)
+            --print("clicked ", lwui.mHoveredButton)
             lwui.mHoveredButton.onClick(x, y)
             lwui.mClickedButton = lwui.mHoveredButton
         end

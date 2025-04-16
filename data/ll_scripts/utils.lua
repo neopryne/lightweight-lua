@@ -266,6 +266,19 @@ function mods.lightweight_lua.getAllMemberCrew(shipManager)
     return memberCrew
 end
 
+--Searches all crew, both ships.  This is unique, so it can just return whatever it finds.
+function mods.lightweight_lua.getCrewById(selfId)
+    local crewmem
+    for i=0,1 do
+        local shipManager = global:GetShipManager(i)
+        for crewmem in vter(shipManager.vCrewList) do
+            if (crewmem.extend.selfId == selfId) then
+                return crewmem
+            end
+        end
+    end
+end
+
 --returns all crew on ship that belong to crewShip.
 function mods.lightweight_lua.getCrewOnSameShip(shipManager, crewShipManager)
     crewList = {}
