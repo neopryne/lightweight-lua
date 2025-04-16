@@ -708,8 +708,8 @@ function lwui.constructScrollBarSkin(upButtonRender, downButtonRender, nubRender
     return {upButtonRender=upButtonRender, downButtonRender=downButtonRender, nubRender=nubRender, barRender=barRender, backgroundRender=backgroundRender, barWidth=barWidth}
 end
 
-function lwui.travellerScrollNubRender() --TODO only works for vertical ones.  Todo button rotation also.    
-    return function(object)--the only way to do this is with back references.  The nub needs a reference to the scrollContainer.
+function lwui.travellerScrollNubRender() --TODO only works for vertical ones.  
+    return function(object)
         local mask = object.maskFunction()
         local nubColor = GL_WHITE
         --If object is hovered
@@ -767,8 +767,7 @@ end
 
 if (script) then
     --item ticking should be left up to the consumers.
-    script.on_render_event(Defines.RenderEvents.TABBED_WINDOW, function() 
-        --inMenu = true --todo why?
+    script.on_render_event(Defines.RenderEvents.TABBED_WINDOW, function()
     end, function(tabName)
         renderObjects()
     end)

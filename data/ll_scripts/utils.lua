@@ -247,21 +247,35 @@ function mods.lightweight_lua.logVerbose(tag, text, optionalLogLevel)
 end
 
 --[[  CREW UTILS  ]]--
---returns all crew belonging to the given ship on all ships
-function mods.lightweight_lua.getAllMemberCrew(shipManager)
-    memberCrew = {}
-    for crewmem in vter(shipManager.vCrewList) do
-        if (crewmem.iShipId == shipManager.iShipId) then
-            table.insert(memberCrew, crewmem)
-        end
-    end
-    otherShipManager = Hyperspace.ships(1 - shipManager.iShipId)
-    if (otherShipManager ~= nil) then
-        for crewmem in vter(otherShipManager.vCrewList) do
-            if (crewmem.iShipId == shipManager.iShipId) then
+local function getAllShipCrew(crewShipManager, targetShipManager, tracking)
+    local memberCrew = {}
+    for crewmem in vter(targetShipManager.vCrewList) do
+        if (crewmem.iShipId == crewShipManager.iShipId) then
+            if (tracking == "all") or (tracking == "crew" and not crewmem:IsDrone()) or (tracking == "drones" and crewmem:IsDrone()) then
                 table.insert(memberCrew, crewmem)
             end
         end
+    end
+    return memberCrew
+end
+
+--[[
+returns all crew belonging to the given ship on all ships
+tracking={"crew", "drones", or "all"}  If no value is passed, defaults to all.
+--]]
+function mods.lightweight_lua.getAllMemberCrew(shipManager, tracking)
+    if not tracking then 
+        tracking = "all"
+    end
+    local memberCrew = {}
+    local otherShipManager = Hyperspace.ships(1 - shipManager.iShipId)
+    local sameShipCrew = getAllShipCrew(shipManager, shipManager, tracking)
+    for _,crewmem in ipairs(sameShipCrew) do
+        table.insert(memberCrew, crewmem)
+    end
+    local otherShipCrew = getAllShipCrew(shipManager, otherShipManager, tracking)
+    for _,crewmem in ipairs(otherShipCrew) do
+        table.insert(memberCrew, crewmem)
     end
     return memberCrew
 end
