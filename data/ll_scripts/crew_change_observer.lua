@@ -28,11 +28,12 @@ if (script) then--todo optimize maybe
                 crewChangeObserver.crew = {}
                 if crewChangeObserver.shipId == 0 then
                     for _,crewmem in ipairs(playerCrew) do
-                        table.insert(crewChangeObserver.crew, crewmem)--todo check if this compares correctly.
+                        --print("player crew ", crewmem:GetName())  This is properly updating.
+                        table.insert(crewChangeObserver.crew, crewmem)
                     end
                 else
                     for _,crewmem in ipairs(enemyCrew) do
-                        table.insert(crewChangeObserver.crew, crewmem)--todo check if this compares correctly.
+                        table.insert(crewChangeObserver.crew, crewmem)
                     end
                 end
             end

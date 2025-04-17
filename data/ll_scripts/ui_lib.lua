@@ -473,8 +473,7 @@ function lwui.buildItem(name, itemType, width, height, visibilityFunction, rende
     item.onCreate = onCreate
     item.onTick = onTick
     item.onEquip = onEquip
-    item.onEquip = onEquip
-    item.onRemove = onRemove
+    item.onRemove = onRemove --todo maybe I just always have to check for crewmem to be nil here.
     item.maskFunction = itemMask
     
     item.onCreate(item)
@@ -511,17 +510,17 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
     
     local function addItem(item)
         if button.item then
-            --print("iButton already contains ", button.item.name)
+            print("iButton already contains ", button.item.name)
             return false
         end
         if allowedItemsFunction(item) then
             button.item = item
             item.containingButton = button
-            --print("added item ",  button.item.name)
+            print("added item ",  button.item.name)
             button.onItemAddedFunction(button, item)
             return true
         end
-        --print("item type not allowed: ", item.itemType)
+        print("item type not allowed: ", item.itemType)
         return false
     end
     
@@ -775,7 +774,7 @@ if (script) then
 --yeah, select those items and hold them!
     script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
         local mousePos = Hyperspace.Mouse.position
-        print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
+        --print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
         if lwui.mHoveredButton then
             --print("clicked ", lwui.mHoveredButton)
             lwui.mHoveredButton.onClick(x, y)

@@ -249,6 +249,7 @@ end
 --[[  CREW UTILS  ]]--
 local function getAllShipCrew(crewShipManager, targetShipManager, tracking)
     local memberCrew = {}
+    if not targetShipManager then return memberCrew end
     for crewmem in vter(targetShipManager.vCrewList) do
         if (crewmem.iShipId == crewShipManager.iShipId) then
             if (tracking == "all") or (tracking == "crew" and not crewmem:IsDrone()) or (tracking == "drones" and crewmem:IsDrone()) then
@@ -282,11 +283,12 @@ end
 
 --Searches all crew, both ships.  This is unique, so it can just return whatever it finds.
 function mods.lightweight_lua.getCrewById(selfId)
-    local crewmem
     for i=0,1 do
         local shipManager = global:GetShipManager(i)
         for crewmem in vter(shipManager.vCrewList) do
+            print("Checking ", crewmem:GetName(), crewmem.extend.selfId, "against ", selfId)
             if (crewmem.extend.selfId == selfId) then
+                print("Match found.")
                 return crewmem
             end
         end
