@@ -36,10 +36,10 @@ if (script) then--todo optimize maybe.  Ok actually not maybe, and instead of op
         end
         local ownshipManager = mGlobal:GetShipManager(0)
         local enemyManager = mGlobal:GetShipManager(1)
+        --[[
         --Check for teleporting crew
         if (ownshipManager) then
             --update mCrewIds
-            
             for _, crewChangeObserver in ipairs(mCrewChangeObservers) do
                 crewChangeObserver.crew = {}
                 local playerCrew = lwl.getAllMemberCrew(ownshipManager, crewChangeObserver.tracking)
@@ -71,7 +71,7 @@ if (script) then--todo optimize maybe.  Ok actually not maybe, and instead of op
                 end
             end
         end
-        
+        --]]
 
         
         --If anybody is teleporting, skip this update.

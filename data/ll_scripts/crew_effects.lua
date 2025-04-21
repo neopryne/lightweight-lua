@@ -204,6 +204,8 @@ end
 
 local knownCrew = 0
 --todo scale to real time, ie convert to 30ticks/second rather than frames.
+
+--[[
 if (script) then
     script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
         if not lwl.isPaused() then
@@ -236,5 +238,5 @@ if (script) then
             --print("Icons repositioned!")
         end
     end)
-end
+end--]]
 

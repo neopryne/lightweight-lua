@@ -355,9 +355,9 @@ function mods.lightweight_lua.getAllMemberCrew(shipManager, tracking)
         table.insert(memberCrew, crewmem)
         printString = printString..crewmem:GetName()
     end
-    if #memberCrew < 3 then
-        print("getAllMemberCrew "..printString)
-    end
+    --if #memberCrew < 3 then
+    print("getAllMemberCrew "..printString)
+    --end
     return memberCrew
 end
 
