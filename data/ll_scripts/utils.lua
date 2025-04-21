@@ -125,6 +125,24 @@ function mods.lightweight_lua.deepCopyTable(t)
     return copy
 end
 
+--https://stackoverflow.com/questions/12394841/safely-remove-items-from-an-array-table-while-iterating
+function mods.lightweight_lua.arrayRemove(table, filterFunction)
+    local j, n = 1, #table;
+    for i=1,n do
+        if (filterFunction(table, i)) then
+            -- Move i's kept value to j's position, if it's not already there.
+            if (i ~= j) then
+                table[j] = table[i];
+                table[i] = nil;
+            end
+            j = j + 1; -- Increment position of where we'll place the next kept value.
+        else
+            table[i] = nil;
+        end
+    end
+    return table;
+end
+
 --returns nil if table is empty
 function mods.lightweight_lua.getRandomKey(table)
     local keys = {}
@@ -138,6 +156,7 @@ function mods.lightweight_lua.getRandomKey(table)
     return keys[randomIndex]
 end
 
+--Returns the set of elements in newSet that are not in initialSet
 function mods.lightweight_lua.getNewElements(newSet, initialSet)
     elements = {}
     for _, newElement in ipairs(newSet) do
@@ -155,6 +174,46 @@ function mods.lightweight_lua.getNewElements(newSet, initialSet)
     return elements
 end
 
+function mods.lightweight_lua.setRemove(baseSet, elementsToRemove)
+    elements = {}
+    for _, oldElement in ipairs(baseSet) do
+        local wasPresent = false
+        for _, removeThis in ipairs(elementsToRemove) do
+            if (oldElement == removeThis) then
+                wasPresent = true
+                break
+            end
+        end
+        if not wasPresent then
+            table.insert(elements, oldElement)
+        end
+    end
+    return elements
+end
+
+function mods.lightweight_lua.setMerge(newSet, initialSet)
+    elements = lwl.deepCopyTable(initialSet)
+    for _, newElement in ipairs(newSet) do
+        local wasPresent = false
+        for _, oldElement in ipairs(initialSet) do
+            if (oldElement == newElement) then
+                wasPresent = true
+                break
+            end
+        end
+        if not wasPresent then
+            table.insert(elements, newElement)
+        end
+    end
+    return elements
+end
+
+--Returns the set intersection of two tables.
+function mods.lightweight_lua.setXor(table1, table2)
+   return lwl.setMerge(lwl.getNewElements(table1, table2), lwl.getNewElements(table2, table1))
+end
+
+--Returns the set intersection of two tables.
 function mods.lightweight_lua.setIntersectionTable(table1, table2)
    local interSet = {}
    for i = 1,#table1 do
@@ -178,6 +237,14 @@ function mods.lightweight_lua.setIntersectionVter(userdata1, userdata2)
        end
    end
    return interSet
+end
+
+function mods.lightweight_lua.countKeys(table)
+    local count = 0
+    for _ in pairs(table) do
+        count = count + 1
+    end
+    return count
 end
 
 --takes an integer value
@@ -250,13 +317,18 @@ end
 local function getAllShipCrew(crewShipManager, targetShipManager, tracking)
     local memberCrew = {}
     if not targetShipManager then return memberCrew end
+    local i = 0
+    local j = 0
     for crewmem in vter(targetShipManager.vCrewList) do
+        i=i+1
         if (crewmem.iShipId == crewShipManager.iShipId) then
+            j=j+1
             if (tracking == "all") or (tracking == "crew" and not crewmem:IsDrone()) or (tracking == "drones" and crewmem:IsDrone()) then
                 table.insert(memberCrew, crewmem)
             end
         end
     end
+    print(targetShipManager.iShipId, " Target ship has ", i, " total crew, ", j, " of which belong to ", crewShipManager.iShipId)
     return memberCrew
 end
 
@@ -268,15 +340,23 @@ function mods.lightweight_lua.getAllMemberCrew(shipManager, tracking)
     if not tracking then 
         tracking = "all"
     end
+    local printString = ""
     local memberCrew = {}
+    printString = printString.." Own Crew "
     local otherShipManager = Hyperspace.ships(1 - shipManager.iShipId)
     local sameShipCrew = getAllShipCrew(shipManager, shipManager, tracking)
     for _,crewmem in ipairs(sameShipCrew) do
         table.insert(memberCrew, crewmem)
+        printString = printString..crewmem:GetName()
     end
+    printString = printString.." Enemy Crew "
     local otherShipCrew = getAllShipCrew(shipManager, otherShipManager, tracking)
     for _,crewmem in ipairs(otherShipCrew) do
         table.insert(memberCrew, crewmem)
+        printString = printString..crewmem:GetName()
+    end
+    if #memberCrew < 3 then
+        print("getAllMemberCrew "..printString)
     end
     return memberCrew
 end
@@ -286,13 +366,12 @@ function mods.lightweight_lua.getCrewById(selfId)
     for i=0,1 do
         local shipManager = global:GetShipManager(i)
         for crewmem in vter(shipManager.vCrewList) do
-            print("Checking ", crewmem:GetName(), crewmem.extend.selfId, "against ", selfId)
             if (crewmem.extend.selfId == selfId) then
-                print("Match found.")
                 return crewmem
             end
         end
     end
+    print("ERROR: lwl could not get crew ", selfId)
 end
 
 --returns all crew on ship that belong to crewShip.
@@ -436,7 +515,7 @@ function mods.lightweight_lua.random_valid_space_point_adjacent(origin, shipMana
     for i = 0,3 do
         new_angle = theta + (i * math.pi / 2)
         point = Hyperspace.Point(origin.x + r*math.cos(new_angle), origin.y + r*math.sin(new_angle))
-        if (not (get_room_at_location(shipManager, point, true) == -1)) then
+        if (not ((get_room_at_location(shipManager, point, true) == -1))) then
             return point
         end
     end
@@ -448,12 +527,6 @@ end
 function mods.lightweight_lua.closestOpenSlot(point, shipId, isIntruder)
     local shipGraph = Hyperspace.ShipGraph.GetShipInfo(shipId)
     return shipGraph:GetClosestSlot(point, shipId. isIntruder)
-end
-
---returns the room on either ship that was clicked.
-function mods.lightweight_lua.roomAtMousePos()
-    --TODO needs HS 1.15
-    
 end
 
 --Doesn't matter who's in it, returns -1 if no room is found. For use with things like MoveToRoom
@@ -540,6 +613,84 @@ mods.lightweight_lua.printEventInternal = function(locationEvent, level)
         mods.lightweight_lua.printChoiceInternal(choice, level + 1)
     end
 end
+
+--need unique way of defining rooms.  Systems are on fire, rooms uh check CME.
+
+-- written by arc
+local function convertMousePositionToPlayerShipPosition(mousePosition)
+    local cApp = Hyperspace.Global.GetInstance():GetCApp()
+    local combatControl = cApp.gui.combatControl
+    local playerPosition = combatControl.playerShipPosition
+    return Hyperspace.Point(mousePosition.x - playerPosition.x, mousePosition.y - playerPosition.y)
+end
+
+-- written by kokoro
+local function convertMousePositionToEnemyShipPosition(mousePosition)
+    local cApp = Hyperspace.Global.GetInstance():GetCApp()
+    local combatControl = cApp.gui.combatControl
+    local position = combatControl.position
+    local targetPosition = combatControl.targetPosition
+    local enemyShipOriginX = position.x + targetPosition.x
+    local enemyShipOriginY = position.y + targetPosition.y
+    return Hyperspace.Point(mousePosition.x - enemyShipOriginX, mousePosition.y - enemyShipOriginY)
+end
+
+local mTeleportConditions = {}
+
+--nil if none exists.
+function getRoomAtLocation(position)
+    playerShipManager = global:GetShipManager(OWNSHIP)
+    enemyShipManager = global:GetShipManager(ENEMY_SHIP)
+    --Ships in mv don't overlap, so check both ships --poinf?
+    local retRoom = get_room_at_location(playerShipManager, convertMousePositionToPlayerShipPosition(mousePos), true)
+    if retRoom then return retRoom end
+    retRoom = get_room_at_location(enemyShipManager, convertMousePositionToEnemyShipPosition(mousePos), true)
+    return retRoom
+end
+
+--crewFilterFunction(crewmember): which crew this should apply to, conditionFunction(crewmember): when it should apply to them
+function mods.lightweight_lua.registerConditionalTeleport(conditionFunction, crewFilterFunction)
+    table.insert(mTeleportConditions, {conditionFunction, crewFilterFunction})
+end
+
+--Rooms on both ends must contain fire
+--Current ship is the one the crew is on, target ship is the one that has been clicked.
+local function fireTeleportCondition(crewmem)
+    local mousePos = Hyperspace.Mouse.position
+    local targetRoom = getRoomAtLocation(mousePos)
+    if not targetRoom then return false end
+    local sourceRoom = getRoomAtCrewmember(crewmem)
+    
+    return shipManager:GetFireCount(targetRoom) > 0 and shipManager:GetFireCount(sourceRoom) > 0 
+end
+
+local function laniusCondition(crewmem)
+    print("checking race of ", crewmem:GetName(), crewmem.extend:GetDefinition().race)
+    return crewmem.extend:GetDefinition().race == "lanius"
+end
+
+lwl.registerConditionalTeleport(fireTeleportCondition, laniusCondition)
+
+local function teleportCheck(crewmem)
+    for _,teleCond in ipairs(mTeleportConditions) do
+        if crewFilterFunction(crewmem) and conditionFunction(crewmem) then
+            return Defines.Chain.PREEMPT, amount, true
+        end
+    end
+    return false
+end
+
+--[[
+script.on_internal_event(Defines.InternalEvents.CALCULATE_STAT_PRE,
+                        function(crew, stat, def, amount, value)
+                            if teleportCheck(crewmem) then
+                                if stat == Hyperspace.CrewStat.TELEPORT_MOVE or stat == Hyperspace.CrewStat.TELEPORT_MOVE_OTHER_SHIP then
+                                    return Defines.Chain.PREEMPT, amount, true
+                                end
+                            end
+                            return Defines.Chain.CONTINUE, amount, value
+                        end)
+                        --]]
 
 mods.lightweight_lua.METAVAR_NUM_CREW_PLAYER = "lightweightlua_NUM_CREW_PLAYER"
 mods.lightweight_lua.METAVAR_CREW_ID_PLAYER = "lightweightlua_CREW_ID_PLAYER"

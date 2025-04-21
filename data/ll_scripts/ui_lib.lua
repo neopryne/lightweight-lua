@@ -43,14 +43,38 @@ local GL_WHITE = Graphics.GL_Color(1, 1, 1, 1)
 local GL_TRAVELLER_GRAY = Graphics.GL_Color(160/255, 162/255, 171/255, 1)
 local GL_TRAVELLER_BLUE = Graphics.GL_Color(58/255, 127/255, 255/255, 1)
 
-local mTopLevelRenderList = {}
+local RENDER_LAYERS = { --todo maybe I should actually have the ship layers be relative to their respective ships...
+    MAIN_MENU = {},
+    GUI_CONTAINER = {},
+    LAYER_BACKGROUND = {},
+    LAYER_FOREGROUND = {},
+    LAYER_ASTEROIDS = {},
+    LAYER_PLAYER = {},
+    SHIP = {},
+    SHIP_MANAGER = {},
+    SHIP_JUMP = {},
+    SHIP_HULL = {},
+    SHIP_ENGINES = {},
+    SHIP_FLOOR = {},
+    SHIP_BREACHES = {},
+    SHIP_SPARKS = {},
+    LAYER_FRONT = {},
+    SPACE_STATUS = {},
+    TABBED_WINDOW = {},
+    MOUSE_CONTROL = {}
+}
+
+local mTopLevelRenderLists = {}
 lwui.mHoveredButton = nil
 local mHoveredScrollContainer = nil
 lwui.mClickedButton = nil --mouseUp will be called on this.
 local mItemList = {}
-
+mLayersWithoutHover = 0
 
 function lwui.isWithinMask(mousePos, mask)
+    --[[print("within mask? ", mousePos.x >= mask.getPos().x and mousePos.x <= mask.getPos().x + mask.width and
+           mousePos.y >= mask.getPos().y and mousePos.y <= mask.getPos().y + mask.height
+           , mousePos.x, mousePos.y, mask.getPos().x, mask.getPos().x + mask.width, mask.getPos().y, mask.getPos().y + mask.height)--]]
     return mousePos.x >= mask.getPos().x and mousePos.x <= mask.getPos().x + mask.width and
            mousePos.y >= mask.getPos().y and mousePos.y <= mask.getPos().y + mask.height
 end
@@ -61,9 +85,16 @@ function lwui.alwaysOnVisibilityFunction()
 end
 
 --Used to register your top level objects so they render themselves / their contents.
-function lwui.addTopLevelObject(object)
-    --print("added an object", object.getPos().y)
-    table.insert(mTopLevelRenderList, object)
+function lwui.addTopLevelObject(object, renderLayer)
+    local validLayer = false
+    for name,_ in pairs(mTopLevelRenderLists) do
+        if (name == renderLayer) then
+            table.insert(mTopLevelRenderLists[renderLayer], object)
+            validLayer = true
+            return
+        end
+    end
+    print("lwui.ERROR: Invalid layer name ", renderLayer)
 end
 
 
@@ -82,7 +113,7 @@ renderFunction:
 --]]
 function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunction)
     local object = {}
-    local function renderObject(mask)
+    local function renderObject()
         --print("should render? ", visibilityFunction())
         if not object.visibilityFunction then
             print("ERROR: vis func for object ", object.getPos().x, ", ", object.getPos().y, " is nil!")
@@ -129,10 +160,11 @@ function lwui.buildButton(x, y, width, height, visibilityFunction, renderFunctio
         end
     end
     
-    local function renderButton(mask)
+    local function renderButton()
         local hovering = false
         local mousePos = Hyperspace.Mouse.position
         local buttonMask = button.maskFunction()
+        --print("rendering button ", button.getPos().x)
         if lwui.isWithinMask(mousePos, buttonMask) then
             hovering = true
             if not (lwui.mHoveredButton == button) then
@@ -510,17 +542,17 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
     
     local function addItem(item)
         if button.item then
-            print("iButton already contains ", button.item.name)
+            --print("iButton already contains ", button.item.name)
             return false
         end
         if allowedItemsFunction(item) then
             button.item = item
             item.containingButton = button
-            print("added item ",  button.item.name)
+            --print("added item ",  button.item.name)
             button.onItemAddedFunction(button, item)
             return true
         end
-        print("item type not allowed: ", item.itemType)
+        --print("item type not allowed: ", item.itemType)
         return false
     end
     
@@ -735,7 +767,7 @@ lwui.defaultScrollBarSkin = lwui.constructScrollBarSkin(
         lwui.spriteRenderFunction("scrollbarStyles/traveller/scroll_down_on.png"),
         lwui.travellerScrollNubRender(),
         lwui.spriteRenderFunction("scrollbarStyles/traveller/scroll_bar.png"),
-        GEN_NOOP,
+        GEN_NOOP, --lwui.solidRectRenderFunction(Graphics.GL_Color(.06, .06, .1, .5)),
         16)
 
 lwui.testScrollBarSkin = lwui.constructScrollBarSkin(
@@ -747,50 +779,51 @@ lwui.testScrollBarSkin = lwui.constructScrollBarSkin(
         12)
 ------------------------------------RENDERING LOGIC----------------------------------------------------------
 --this makes the z-ordering of buttons based on the order of the sButtonList, Lower values on top.
-function renderObjects()
+function renderObjects(layerName)
     local hovering = false
     Graphics.CSurface.GL_PushMatrix()
     local i = 1
-    for _, object in ipairs(mTopLevelRenderList) do
+    for _, object in ipairs(mTopLevelRenderLists[layerName]) do
         --print("render object"..i)
         if object.renderFunction(object) then
             hovering = true
         end
         i = i + 1
     end
-    if not hovering then
+    if not hovering and mLayersWithoutHover < 100 then
+        mLayersWithoutHover = mLayersWithoutHover + 1
+    else
+        mLayersWithoutHover = 0
+    end
+    if (lwui.mHoveredButton ~= nil and mLayersWithoutHover > lwl.countKeys(mTopLevelRenderLists)) then
+        --print("Went ", mLayersWithoutHover, "layers without hovering, setting hover to nil.")
         lwui.mHoveredButton = nil
     end
     Graphics.CSurface.GL_PopMatrix()
 end
 
-if (script) then
-    --item ticking should be left up to the consumers.
-    script.on_render_event(Defines.RenderEvents.TABBED_WINDOW, function()
-    end, function(tabName)
-        renderObjects()
-    end)
+--item ticking should be left up to the consumers.
 
 --yeah, select those items and hold them!
-    script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
-        local mousePos = Hyperspace.Mouse.position
-        --print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
-        if lwui.mHoveredButton then
-            --print("clicked ", lwui.mHoveredButton)
-            lwui.mHoveredButton.onClick(x, y)
-            lwui.mClickedButton = lwui.mHoveredButton
-        end
+script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
+    local mousePos = Hyperspace.Mouse.position
+    --print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
+    if lwui.mHoveredButton then
+        --print("clicked ", lwui.mHoveredButton)
+        lwui.mHoveredButton.onClick(x, y)
+        lwui.mClickedButton = lwui.mHoveredButton
+    end
 
-        return Defines.Chain.CONTINUE
-    end)
+    return Defines.Chain.CONTINUE
+end)
 
-    script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x,y)
-        if (lwui.mClickedButton) then
-            lwui.mClickedButton.onRelease()
-            lwui.mClickedButton = nil
-        end
-        return Defines.Chain.CONTINUE
-    end)
+script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x,y)
+    if (lwui.mClickedButton) then
+        lwui.mClickedButton.onRelease()
+        lwui.mClickedButton = nil
+    end
+    return Defines.Chain.CONTINUE
+end)
 
 --[[
 TODO add this when hyperspace adds the event for scrolling
@@ -802,4 +835,16 @@ TODO add this when hyperspace adds the event for scrolling
     end)
 --todo add scroll wheel scrolling to scroll bars, prioritizing the lowest level one.
 --]]
+local function registerRenderEvents(eventList)
+    for name, _ in pairs(eventList) do
+        mTopLevelRenderLists[name] = {}
+        mTopLevelRenderLists[name.."_PRE"] = {}
+        script.on_render_event(Defines.RenderEvents[name], function(_)
+            renderObjects(name .. "_PRE")
+        end, function(_)
+            renderObjects(name)
+        end)
+    end
 end
+registerRenderEvents(RENDER_LAYERS)
+
