@@ -126,10 +126,12 @@ function mods.lightweight_lua.deepCopyTable(t)
 end
 
 --https://stackoverflow.com/questions/12394841/safely-remove-items-from-an-array-table-while-iterating
+--The filter function is which ones to keep
 function mods.lightweight_lua.arrayRemove(table, filterFunction)
     local j, n = 1, #table;
     for i=1,n do
         if (filterFunction(table, i)) then
+            print("keeping this one")
             -- Move i's kept value to j's position, if it's not already there.
             if (i ~= j) then
                 table[j] = table[i];
@@ -328,7 +330,7 @@ local function getAllShipCrew(crewShipManager, targetShipManager, tracking)
             end
         end
     end
-    print(targetShipManager.iShipId, " Target ship has ", i, " total crew, ", j, " of which belong to ", crewShipManager.iShipId)
+    --print(targetShipManager.iShipId, " Target ship has ", i, " total crew, ", j, " of which belong to ", crewShipManager.iShipId)
     return memberCrew
 end
 
@@ -356,7 +358,7 @@ function mods.lightweight_lua.getAllMemberCrew(shipManager, tracking)
         printString = printString..crewmem:GetName()
     end
     --if #memberCrew < 3 then
-    print("getAllMemberCrew "..printString)
+    --print("getAllMemberCrew "..printString)
     --end
     return memberCrew
 end

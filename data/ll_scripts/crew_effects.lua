@@ -28,19 +28,20 @@ lwce.KEY_CORRUPTION = "corruption"
 
 
 --A crew object will look something like this effect_crew = {crewmem=, bleed={}, effect2={}}
-local mCrewList = {} --all the crew, both sides.  indexed by id? no
+local mCrewList = {} --all the crew, both sides.  indexed by id?  todo it's just an ID list
 local mScaledLocalTime = 0
-local mCrewChangeObserver = lwcco.createCrewChangeObserver("crew", -2)
+local mCrewChangeObserver = lwcco.createCrewChangeObserver("crew", -2)  --This is probably caused by some BS involving crew objects.  Consider using selfId and lwl.getCrewById instead.
 local mEffectDefinitions = {}
+--this is going to error out on the frames crew are missing regardless, isn't it?  Hard to solve.
 
 --A fun thing might look at how many effects are on a given crew.  It should be easy to get the list of effects on a given crew.  PRetty sure it is as written.
 
 --Strongly recommend that if you're creating effects with this, add them to this library instead of your mod if they don't have too many dependencies.
 -----------------------------HELPER FUNCTIONS--------------------------------------
 local function getListCrew(crewmem)
-    for _,crew in ipairs(mCrewList) do
-        if crew.crewmem.extend.selfId == crewmem.extend.selfId then
-            return crew
+    for _,listCrew in ipairs(mCrewList) do
+        if crew.id == crewmem.extend.selfId then
+            return listCrew
         end
     end
 end
@@ -64,13 +65,15 @@ end
 ------------------BLEED------------------
 local function tickBleed(effect_crew)
     local bleed = effect_crew.bleed
-    effect_crew.crewmem:DirectModifyHealth(-.03 * (1 - bleed.resist))
+    local crewmem = lwl.getCrewById(effect_crew.id)
+    crewmem:DirectModifyHealth(-.03 * (1 - bleed.resist))
     tickDownEffectStandard(effect_crew, bleed)
 end
 
 ------------------CONFUSION------------------
 local function tickConfusion(effect_crew)
     local confusion = effect_crew.confusion
+    local crewmem = lwl.getCrewById(effect_crew.id)
     --todo this needs to use the HS statboost logic.
     tickDownEffectStandard(effect_crew, confusion)
 end
@@ -82,7 +85,8 @@ end
 --Certain effects give corrpution, which is a stacking effect not removed through normal means.  
 local function tickCorruption(effect_crew)
     local corruption = effect_crew.corruption
-    effect_crew.crewmem:DirectModifyHealth(-.004 * corruption.value)
+    local crewmem = lwl.getCrewById(effect_crew.id)
+    crewmem:DirectModifyHealth(-.004 * corruption.value)
     tickEffectStandard(effect_crew, corruption)
 end
 
@@ -148,11 +152,11 @@ lwce.createCrewEffectDefinition(lwce.KEY_CORRUPTION, tickCorruption, NOOP, NOOP)
 --vs I know exactly how to do this in brightness.
 --Ok let's brightness, and maybe I'll find a good way to combine these.
 local function repositionEffectStack(listCrew)
-    local crewmem = listCrew.crewmem
+    local crewmem = lwl.getCrewById(listCrew.id)
     local i = 1
     for key,effect in pairs(listCrew) do
         --print("loop ", i, key)
-        if not (key == "crewmem") then
+        if not (key == "id") then
             particle = effect.icon
             particle.space = crewmem.currentShipId            
             position_x = crewmem:GetPosition().x + FIRST_SYMBOL_RELATIVE_X + (((i + 1) % 2) * SYMBOL_OFFSET_X)
@@ -175,7 +179,7 @@ local function tickEffects()
     --print("ticking effects")
     for _,effect_crew in ipairs(mCrewList) do
         for key,effect in pairs(effect_crew) do
-            if not (key == "crewmem") then
+            if not (key == "id") then
                 --print("ticking ", effect.name)
                 effect.onTick(effect_crew)
             end
@@ -183,10 +187,11 @@ local function tickEffects()
     end
 end
 
-local function renderEffectIcons() --buffer layer
+--[[
+local function renderEffectIcons() --buffer layer todo I did this elsewhere with Brightness
     for _,effect_crew in ipairs(mCrewList) do
         for key,effect in pairs(effect_crew) do
-            if not (key == "crewmem") then
+            if not (key == "id") then
                 --render the effect icon
                 --except instead of brightness this time we're using lwui for the object hover functionality.
                 --actually... This functionality doesn't exist in either library, so why should I just not use the brightness code
@@ -194,49 +199,51 @@ local function renderEffectIcons() --buffer layer
             end
         end
     end
-end
+end--]]
 
-local function generatCrewMatchFilter(crewmem)
+local function generatCrewMatchFilter(crewId)
     return function(table, i)
-        return table[i].crewmem.extend.selfId == crewmem.extend.selfId
+        --print("filter comparing ", crewId, table[i].id)
+        return table[i].id ~= crewId
     end
 end
 
 local knownCrew = 0
 --todo scale to real time, ie convert to 30ticks/second rather than frames.
 
---[[
-if (script) then
-    script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
-        if not lwl.isPaused() then
-            mScaledLocalTime = mScaledLocalTime + (Hyperspace.FPS.SpeedFactor * 16)
-            if (mScaledLocalTime > 1) then
-                tickEffects()
-                --print("Effects ticked!")
-                mScaledLocalTime = 0
-                
-                for _,crewmem in ipairs(mCrewChangeObserver.getAddedCrew()) do
-                    table.insert(mCrewList, {crewmem=crewmem}) --probably never added any crew 
-                end
-                for _,crewmem in ipairs(mCrewChangeObserver.getRemovedCrew()) do
-                    lwl.arrayRemove(mCrewList, generatCrewMatchFilter(crewmem))
-                end
-                mCrewChangeObserver.saveLastSeenState()
-                local crewString = ""
-                print("EQUIPMENT: Compare ", #mCrewList, knownCrew, knownCrew == #mCrewList)
-                if not (knownCrew == #mCrewList) then
-                    for i=1,#mCrewList do
-                        crewString = crewString..mCrewList[i].crewmem:GetName()
-                    end
-                    print("EFFECTS: There are now this many crew known about: ", #mCrewList, crewString)
-                    knownCrew = #mCrewList
-                end
-            end
-            for _,listCrew in ipairs(mCrewList) do
-                repositionEffectStack(listCrew)
-            end
-            --print("Icons repositioned!")
+
+
+script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+    if lwl.isPaused() or not mCrewChangeObserver.isInitialized() then return end
+    mScaledLocalTime = mScaledLocalTime + (Hyperspace.FPS.SpeedFactor * 16)
+    if (mScaledLocalTime > 1) then
+        tickEffects()
+        --print("Effects ticked!")
+        mScaledLocalTime = 0
+        
+        for _,crewId in ipairs(mCrewChangeObserver.getAddedCrew()) do
+            print("EFFECT Added crew: ", lwl.getCrewById(crewId):GetName())
+            table.insert(mCrewList, {id=crewId}) --probably never added any crew 
         end
-    end)
-end--]]
+        for _,crewId in ipairs(mCrewChangeObserver.getRemovedCrew()) do
+            print("EFFECT Removed crew: ", crewId)
+            lwl.arrayRemove(mCrewList, generatCrewMatchFilter(crewId))
+            print("EFFECT after removing ", crewId, " there are now ", #mCrewList, " crew left")
+        end
+        mCrewChangeObserver.saveLastSeenState()
+        local crewString = ""
+        print("EFFECTS: Compare ", #mCrewList, knownCrew, knownCrew == #mCrewList)
+        if not (knownCrew == #mCrewList) then
+            for i=1,#mCrewList do
+                crewString = crewString..lwl.getCrewById(mCrewList[i].id):GetName()
+            end
+            print("EFFECTS: There are now this many crew known about: ", #mCrewList, crewString)
+            knownCrew = #mCrewList
+        end
+    end
+    for _,listCrew in ipairs(mCrewList) do
+        repositionEffectStack(listCrew)
+    end
+    --print("Icons repositioned!")
+end)
 
