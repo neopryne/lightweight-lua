@@ -168,7 +168,7 @@ function lwui.buildButton(x, y, width, height, visibilityFunction, renderFunctio
         if lwui.isWithinMask(mousePos, buttonMask) then
             hovering = true
             if not (lwui.mHoveredButton == button) then
-                --print("button_hovered ", button)
+                print("button_hovered ", button)
                 lwui.mHoveredButton = button
             end
         end
@@ -790,13 +790,13 @@ function renderObjects(layerName)
         end
         i = i + 1
     end
-    if not hovering and mLayersWithoutHover < 100 then
+    if not hovering and mLayersWithoutHover < 100 then --todo probably some reason this is large, kludgy.
         mLayersWithoutHover = mLayersWithoutHover + 1
     else
         mLayersWithoutHover = 0
     end
-    if (lwui.mHoveredButton ~= nil and mLayersWithoutHover > lwl.countKeys(mTopLevelRenderLists)) then
-        --print("Went ", mLayersWithoutHover, "layers without hovering, setting hover to nil.")
+    if (lwui.mHoveredButton ~= nil and mLayersWithoutHover > 2 * lwl.countKeys(mTopLevelRenderLists)) then
+        print("Went ", mLayersWithoutHover, "layers without hovering, setting hover to nil.")
         lwui.mHoveredButton = nil
     end
     Graphics.CSurface.GL_PopMatrix()
@@ -807,9 +807,9 @@ end
 --yeah, select those items and hold them!
 script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
     local mousePos = Hyperspace.Mouse.position
-    --print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
+    print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
     if lwui.mHoveredButton then
-        --print("clicked ", lwui.mHoveredButton)
+        print("clicked ", lwui.mHoveredButton)
         lwui.mHoveredButton.onClick(x, y)
         lwui.mClickedButton = lwui.mHoveredButton
     end
