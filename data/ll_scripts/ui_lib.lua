@@ -848,3 +848,13 @@ local function registerRenderEvents(eventList)
 end
 registerRenderEvents(RENDER_LAYERS)
 
+
+
+
+---------------------------BRIGHTNESS PARTICLES SUPPORT--------------------------------
+
+if (mods.Brightness) then
+    --todo Define methods for registering brightness particles as objects.  They still primarily render via brightness
+    --I can probably grab control of whatever elements of brightness I need to like unset the particles path maybe ?
+    
+end

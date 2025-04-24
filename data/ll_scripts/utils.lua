@@ -17,6 +17,7 @@ local vter = mods.multiverse.vter
 local get_room_at_location = mods.vertexutil.get_room_at_location
 
 local global = Hyperspace.Global.GetInstance()
+local mCrewMemberFactory = global:GetCrewFactory()
 
 local TAU = math.pi * 2
 local OWNSHIP = 0
@@ -131,7 +132,7 @@ function mods.lightweight_lua.arrayRemove(table, filterFunction)
     local j, n = 1, #table;
     for i=1,n do
         if (filterFunction(table, i)) then
-            print("keeping this one")
+            --print("keeping this one")
             -- Move i's kept value to j's position, if it's not already there.
             if (i ~= j) then
                 table[j] = table[i];
@@ -338,6 +339,23 @@ end
 returns all crew belonging to the given ship on all ships
 tracking={"crew", "drones", or "all"}  If no value is passed, defaults to all.
 --]]
+function mods.lightweight_lua.getAllMemberCrewFromFactory(shipManager, tracking)
+    if not tracking then 
+        tracking = "all"
+    end
+    local memberCrew = {}
+    for _,crewmem in mCrewMemberFactory.crewMembers do
+        if (crewmem.iShipId == shipManager.iShipId) and
+            ((crewmem:IsDrone() and (tracking == "all" or tracking == "drones")) or
+            (((not crewmem:IsDrone()) and (tracking == "all" or tracking == "crew")))) then
+            table.insert(memberCrew, crewmem)
+        end
+    end
+    
+    return memberCrew
+end
+
+
 function mods.lightweight_lua.getAllMemberCrew(shipManager, tracking)
     if not tracking then 
         tracking = "all"
@@ -410,7 +428,7 @@ function mods.lightweight_lua.get_ship_crew_point(shipManager, crewShipManager, 
     res = {}
     x = x//TILE_SIZE
     y = y//TILE_SIZE
-    for crewmem in vter(shipManager.vCrewList) do
+    for crewmem in vter(shipManager.vCrewList) do--todo use the Factory instead.  Factory you can rely on.  Switch the whole library over to it.
         if crewmem.iShipId == crewShipManager.iShipId and x == crewmem.x//TILE_SIZE and y == crewmem.y//TILE_SIZE then
             if ((crewmem:IsDrone() and (getDrones == nil or getDrones) or ((not crewmem:IsDrone()) and (getNonDrones == nil or getNonDrones)))) then
                 table.insert(res, crewmem)
@@ -421,6 +439,21 @@ function mods.lightweight_lua.get_ship_crew_point(shipManager, crewShipManager, 
         end
     end
     return res
+end
+
+--Relative to the ship crewmem is on
+function mods.lightweight_lua.getFoesAtSpace(crewmem, location)
+    local enemyList = {}
+    local currentShipManager = global:GetShipManager(crewmem.currentShipId)
+    local foeShipManager = global:GetShipManager(1 - crewmem.iShipId)
+    if (currentShipManager and foeShipManager) then
+        enemyList = mods.lightweight_lua.get_ship_crew_point(currentShipManager, foeShipManager, location.x, location.y)
+    end
+    return enemyList
+end
+
+function mods.lightweight_lua.getFoesAtSelf(crewmem)
+    return lwl.getFoesAtSpace(crewmem, crewmem:GetPosition())
 end
 
 -- -1 in the unlikely event no room is found
@@ -443,20 +476,14 @@ end
 
 --returns true if it did anything and false otherwise
 function mods.lightweight_lua.damageFoesAtSpace(crewmem, location, damage, stunTime, directDamage)
-    local foundFoe = false
-    local currentShipManager = global:GetShipManager(crewmem.currentShipId)
-    local foeShipManager = global:GetShipManager(1 - crewmem.iShipId)
-    if (currentShipManager and foeShipManager) then --null if not in combat
-        foes_at_point = mods.lightweight_lua.get_ship_crew_point(currentShipManager, foeShipManager, location.x, location.y)
-        for j = 1, #foes_at_point do
-            local foe = foes_at_point[j]
-            foe.fStunTime = foe.fStunTime + stunTime
-            foe:ModifyHealth(-damage)
-            foe:DirectModifyHealth(-directDamage)
-            foundFoe = true
-        end
+    local foes_at_point = lwl.getFoesAtSpace(crewmem, location)
+    for j = 1, #foes_at_point do
+        local foe = foes_at_point[j]
+        foe.fStunTime = foe.fStunTime + stunTime
+        foe:ModifyHealth(-damage)
+        foe:DirectModifyHealth(-directDamage)
     end
-    return foundFoe
+    return #foes_at_point > 0
 end
 
 --returns true if it did anything and false otherwise

@@ -40,7 +40,7 @@ local mEffectDefinitions = {}
 -----------------------------HELPER FUNCTIONS--------------------------------------
 local function getListCrew(crewmem)
     for _,listCrew in ipairs(mCrewList) do
-        if crew.id == crewmem.extend.selfId then
+        if listCrew.id == crewmem.extend.selfId then
             return listCrew
         end
     end
@@ -232,7 +232,7 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
         end
         mCrewChangeObserver.saveLastSeenState()
         local crewString = ""
-        print("EFFECTS: Compare ", #mCrewList, knownCrew, knownCrew == #mCrewList)
+        --print("EFFECTS: Compare ", #mCrewList, knownCrew, knownCrew == #mCrewList)
         if not (knownCrew == #mCrewList) then
             for i=1,#mCrewList do
                 crewString = crewString..lwl.getCrewById(mCrewList[i].id):GetName()
