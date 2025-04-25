@@ -168,7 +168,7 @@ function lwui.buildButton(x, y, width, height, visibilityFunction, renderFunctio
         if lwui.isWithinMask(mousePos, buttonMask) then
             hovering = true
             if not (lwui.mHoveredButton == button) then
-                print("button_hovered ", button)
+                --print("button_hovered ", button)
                 lwui.mHoveredButton = button
             end
         end
@@ -807,9 +807,9 @@ end
 --yeah, select those items and hold them!
 script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
     local mousePos = Hyperspace.Mouse.position
-    print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
+    --print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
     if lwui.mHoveredButton then
-        print("clicked ", lwui.mHoveredButton)
+        --print("clicked ", lwui.mHoveredButton)
         lwui.mHoveredButton.onClick(x, y)
         lwui.mClickedButton = lwui.mHoveredButton
     end

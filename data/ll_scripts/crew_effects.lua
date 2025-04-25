@@ -27,7 +27,7 @@ lwce.KEY_CONFUSION = "confusion"
 lwce.KEY_CORRUPTION = "corruption"
 
 
---A crew object will look something like this effect_crew = {crewmem=, bleed={}, effect2={}}
+--A crew object will look something like this effect_crew = {id=, bleed={}, effect2={}}
 local mCrewList = {} --all the crew, both sides.  indexed by id?  todo it's just an ID list
 local mScaledLocalTime = 0
 local mCrewChangeObserver = lwcco.createCrewChangeObserver("crew", -2)  --This is probably caused by some BS involving crew objects.  Consider using selfId and lwl.getCrewById instead.
@@ -38,6 +38,11 @@ local mEffectDefinitions = {}
 
 --Strongly recommend that if you're creating effects with this, add them to this library instead of your mod if they don't have too many dependencies.
 -----------------------------HELPER FUNCTIONS--------------------------------------
+local function createIcon(crewmem, effect)
+    effect.icon = Brightness.create_particle("particles/effects/"..effect.name, 1, 60, crewmem:GetPosition(), 0, crewmem.currentShipId, "SHIP_MANAGER")
+    effect.icon.persists = true
+end
+
 local function getListCrew(crewmem)
     for _,listCrew in ipairs(mCrewList) do
         if listCrew.id == crewmem.extend.selfId then
@@ -47,17 +52,24 @@ local function getListCrew(crewmem)
 end
 
 local function tickEffectStandard(effect_crew, effect)
-    effect.renderNext = true
-    if (effect.value < 0) then
+    if (effect.value <= 0) then
         effect.onEnd(effect_crew)
-        Brightness.destroy_particle(effect.icon)
-        effect_crew[effect.name] = nil
+        if effect.icon then
+            Brightness.destroy_particle(effect.icon)
+            effect.icon = nil
+        end
+        --effect_crew[effect.name] = nil
+    else
+        if not effect.icon then
+            local crewmem = lwl.getCrewById(effect_crew.id)
+            createIcon(crewmem, effect)
+        end
     end
 end
 
 --Some effects have a timer.  This is for those effects.  Other effects build up, or have other ways to remove them.
 local function tickDownEffectStandard(effect_crew, effect)
-    effect.value = effect.value - 1
+    effect.value = math.max(0, effect.value - 1)
     tickEffectStandard(effect_crew, effect)
 end
 
@@ -65,15 +77,19 @@ end
 ------------------BLEED------------------
 local function tickBleed(effect_crew)
     local bleed = effect_crew.bleed
-    local crewmem = lwl.getCrewById(effect_crew.id)
-    crewmem:DirectModifyHealth(-.03 * (1 - bleed.resist))
+    if bleed.value > 0 then
+        local crewmem = lwl.getCrewById(effect_crew.id)
+        crewmem:DirectModifyHealth(-.03 * (1 - bleed.resist))
+    end
     tickDownEffectStandard(effect_crew, bleed)
 end
 
 ------------------CONFUSION------------------
 local function tickConfusion(effect_crew)
     local confusion = effect_crew.confusion
-    local crewmem = lwl.getCrewById(effect_crew.id)
+    if confusion.value > 0 then
+        local crewmem = lwl.getCrewById(effect_crew.id)
+    end
     --todo this needs to use the HS statboost logic.
     tickDownEffectStandard(effect_crew, confusion)
 end
@@ -85,8 +101,10 @@ end
 --Certain effects give corrpution, which is a stacking effect not removed through normal means.  
 local function tickCorruption(effect_crew)
     local corruption = effect_crew.corruption
-    local crewmem = lwl.getCrewById(effect_crew.id)
-    crewmem:DirectModifyHealth(-.004 * corruption.value)
+    if corruption.value > 0 then
+        local crewmem = lwl.getCrewById(effect_crew.id)
+        crewmem:DirectModifyHealth(-.004 * corruption.value)
+    end
     tickEffectStandard(effect_crew, corruption)
 end
 
@@ -106,8 +124,8 @@ local function applyEffect(crewmem, amount, effectName)
         crewEffect.value = crewEffect.value + (amount * (1 - crewEffect.resist))
     else
         crewEffect = lwl.deepCopyTable(mEffectDefinitions[effectName])
-        crewEffect.icon = Brightness.create_particle("particles/effects/"..effectName, 1, 60, crewmem:GetPosition(), 0, crewmem.currentShipId, "SHIP_MANAGER")
-        crewEffect.icon.persists = true
+        crewEffect.name = effectName
+        createIcon(crewmem, crewEffect)
         crewEffect.value = amount
         crewEffect.resist = 0
         listCrew[effectName] = crewEffect
@@ -118,9 +136,7 @@ end
 function mods.lightweight_crew_effects.addResist(crewmem, effectName, amount)
     local listCrew = getListCrew(crewmem)
     local crewEffect = listCrew[effect]
-    if crewEffect then
-        crewEffect.resist = crewEffect.resist + amount
-    end
+    crewEffect.resist = crewEffect.resist + amount
 end
 
 function mods.lightweight_crew_effects.applyBleed(crewmem, amount)
@@ -157,17 +173,19 @@ local function repositionEffectStack(listCrew)
     for key,effect in pairs(listCrew) do
         --print("loop ", i, key)
         if not (key == "id") then
-            particle = effect.icon
-            particle.space = crewmem.currentShipId            
-            position_x = crewmem:GetPosition().x + FIRST_SYMBOL_RELATIVE_X + (((i + 1) % 2) * SYMBOL_OFFSET_X)
-            position_y = crewmem:GetPosition().y + FIRST_SYMBOL_RELATIVE_Y - (math.ceil(i / 2) * SYMBOL_OFFSET_Y)
-            
-            if (particle.position ~= nil) then
-                particle.position = crewmem:GetPosition()
+            local particle = effect.icon
+            if particle then
+                particle.space = crewmem.currentShipId            
+                position_x = crewmem:GetPosition().x + FIRST_SYMBOL_RELATIVE_X + (((i + 1) % 2) * SYMBOL_OFFSET_X)
+                position_y = crewmem:GetPosition().y + FIRST_SYMBOL_RELATIVE_Y - (math.ceil(i / 2) * SYMBOL_OFFSET_Y)
+                
+                if (particle.position ~= nil) then
+                    particle.position = crewmem:GetPosition()
+                end
+                particle.position.x = position_x
+                particle.position.y = position_y
+                i = i + 1
             end
-            particle.position.x = position_x
-            particle.position.y = position_y
-            i = i + 1
         end
     end
 end
@@ -224,6 +242,10 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
         for _,crewId in ipairs(mCrewChangeObserver.getAddedCrew()) do
             print("EFFECT Added crew: ", lwl.getCrewById(crewId):GetName())
             table.insert(mCrewList, {id=crewId}) --probably never added any crew 
+            --Set values
+            lwce.applyBleed(lwl.getCrewById(crewId), 0)
+            lwce.applyConfusion(lwl.getCrewById(crewId), 0)
+            lwce.applyCorruption(lwl.getCrewById(crewId), 0)
         end
         for _,crewId in ipairs(mCrewChangeObserver.getRemovedCrew()) do
             print("EFFECT Removed crew: ", crewId)
