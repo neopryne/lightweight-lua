@@ -32,7 +32,7 @@ special
 scroll buttons must be square.  That's the law, it will throw you an error otherwise. --TODO implement
 --ScrollBarGraphicAssets(scrollUp, nubImage, renderScrollButton)
 --]]
-
+local TAG = "LW UI"
 local function NOOP() end
 local function GEN_NOOP() return NOOP end
 local MIN_FONT_SIZE = 5
@@ -94,7 +94,7 @@ function lwui.addTopLevelObject(object, renderLayer)
             return
         end
     end
-    print("lwui.ERROR: Invalid layer name ", renderLayer)
+    lwl.logError(TAG, "Invalid layer name "..renderLayer)
 end
 
 
@@ -116,7 +116,7 @@ function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunctio
     local function renderObject()
         --print("should render? ", visibilityFunction())
         if not object.visibilityFunction then
-            print("ERROR: vis func for object ", object.getPos().x, ", ", object.getPos().y, " is nil!")
+            lwl.logError(TAG, "vis func for object "..object.getPos().x..", "..object.getPos().y.." is nil!")
             return true
         end
         if object.visibilityFunction() then
@@ -275,7 +275,7 @@ function lwui.buildContainer(x, y, width, height, visibilityFunction, renderFunc
                 retVal = false
             else
                 if (not oldVisibilityFunction) then
-                    print("ERROR: vis func for contained object ", object.getPos().x, ", ", object.getPos().y, " is nil!")
+                    lwl.logError(TAG, "vis func for contained object "..object.getPos().x..", "..object.getPos().y.." is nil!")
                     return true
                 end
                 retVal = oldVisibilityFunction()
@@ -679,7 +679,7 @@ end
 function lwui.solidRectRenderFunction(glColor)
     return function(object)
         if object == nil then
-            print("Error in solidRectRenderFunction: Object was nil!")
+            lwl.logError(TAG, "in solidRectRenderFunction: Object was nil!")
             return
         end
         local mask = object.maskFunction()
@@ -689,7 +689,7 @@ end
 
 function lwui.inventoryButtonDefault(object)
     if object == nil then
-        print("Error in inventoryButtonDefault: Object was nil!")
+        lwl.logError(TAG, "in inventoryButtonDefault: Object was nil!")
         return
     end
     local mask = object.maskFunction()

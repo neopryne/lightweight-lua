@@ -17,6 +17,7 @@ local Brightness = mods.brightness
 
 --Tracks an internal list of all crew, updates it when crew are lost or gained.
 --Not impelmenting persistance as a core feature.  You feel like reloading to clear statuses, go for it.
+local TAG = "LW Crew Effects"
 local function NOOP() end
 local FIRST_SYMBOL_RELATIVE_X = -9 
 local FIRST_SYMBOL_RELATIVE_Y = -5
@@ -32,9 +33,7 @@ local mCrewList = {} --all the crew, both sides.  indexed by id?  todo it's just
 local mScaledLocalTime = 0
 local mCrewChangeObserver = lwcco.createCrewChangeObserver("crew", -2)  --This is probably caused by some BS involving crew objects.  Consider using selfId and lwl.getCrewById instead.
 local mEffectDefinitions = {}
---this is going to error out on the frames crew are missing regardless, isn't it?  Hard to solve.
 
---A fun thing might look at how many effects are on a given crew.  It should be easy to get the list of effects on a given crew.  PRetty sure it is as written.
 
 --Strongly recommend that if you're creating effects with this, add them to this library instead of your mod if they don't have too many dependencies.
 -----------------------------HELPER FUNCTIONS--------------------------------------
@@ -58,7 +57,6 @@ local function tickEffectStandard(effect_crew, effect)
             Brightness.destroy_particle(effect.icon)
             effect.icon = nil
         end
-        --effect_crew[effect.name] = nil
     else
         if not effect.icon then
             local crewmem = lwl.getCrewById(effect_crew.id)
@@ -175,6 +173,12 @@ local function repositionEffectStack(listCrew)
         if not (key == "id") then
             local particle = effect.icon
             if particle then
+                --Only show icons for hovered or selected crew (or ones you can't control|select)
+                if crewmem.selectionState == lwl.UNSELECTED() then
+                    particle.visible = false
+                else
+                    particle.visible = true
+                end
                 particle.space = crewmem.currentShipId            
                 position_x = crewmem:GetPosition().x + FIRST_SYMBOL_RELATIVE_X + (((i + 1) % 2) * SYMBOL_OFFSET_X)
                 position_y = crewmem:GetPosition().y + FIRST_SYMBOL_RELATIVE_Y - (math.ceil(i / 2) * SYMBOL_OFFSET_Y)

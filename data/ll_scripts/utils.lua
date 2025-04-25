@@ -266,7 +266,6 @@ function mods.lightweight_lua.deepTableMerge(t1, t2)
 end
 
 --[[  LOGGING UTILS  ]]--
---needs to be a metavar actually, or it can turn off randomly
 mods.lightweight_lua.LOG_LEVEL = 1 --Higher is more verbose, feel free to modify this.
 --[[
     0 -- NO logs, not even errors, not recommended.
@@ -279,8 +278,8 @@ mods.lightweight_lua.LOG_LEVEL = 1 --Higher is more verbose, feel free to modify
     Usage:
     MY_MOD_LOG_LEVEL = 3
     
-    lwl.logWarn("oh no, this will use the globally defined debug level anyone can modify!") -- Not recommended
-    lwl.logWarn("oh no, this will use my debug level!", MY_MOD_LOG_LEVEL) -- Recommended
+    lwl.logWarn(MYTAG, "This will use the globally defined debug level anyone can modify!") -- Recommended for libraries
+    lwl.logWarn(MYTAG, "This will use my debug level!", MY_MOD_LOG_LEVEL) -- Recommended for standalone packages
 --]]
 local LOG_LEVELS = {
     {text="ERROR", level=1},
@@ -288,13 +287,13 @@ local LOG_LEVELS = {
     {text="DEBUG", level=3},
     {text="INFO", level=4},
     {text="VERBOSE", level=5}}
-local function logInternal(tag, text, logLevel, optionalLogLevel)
+local function logInternal(tag, text, messageLogLevel, optionalLogLevel)
     local maxLogLevel = optionalLogLevel
     if (maxLogLevel == nil) then
         maxLogLevel = mods.lightweight_lua.LOG_LEVEL
     end
-    if (logLevel <= maxLogLevel) then
-        print(LOG_LEVELS[logLevel].text..": "..tag.." - "..text)
+    if (messageLogLevel <= maxLogLevel) then
+        print(LOG_LEVELS[messageLogLevel].text..": "..tag.." - "..text)
     end
 end
 --Optionally, pass the desired log level.  This lets you store that locally and change it in your mod.

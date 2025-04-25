@@ -17,6 +17,8 @@ mods.lightweight_teleport_status_observer = {}
 local lwtso = mods.lightweight_teleport_status_observer
 local lwl = mods.lightweight_lua
 
+local TAG = "LW Tele Status Observer"
+
 local mTeleportStatusObservers = {}
 
 --Crew blink out of existance for one frame when teleporting (only on the way back???)

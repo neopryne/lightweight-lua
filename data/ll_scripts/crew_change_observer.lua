@@ -13,6 +13,8 @@ local lwcco = mods.lightweight_crew_change_observer
 local lwtso = mods.lightweight_teleport_status_observer
 local lwl = mods.lightweight_lua
 
+local TAG = "LW Crew Change Observer"
+
 local mCrewChangeObservers = {}
 local mGlobal
 local mCrewMemberFactory
