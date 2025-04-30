@@ -388,6 +388,7 @@ end
 function mods.lightweight_lua.getCrewById(selfId)
     for i=0,1 do
         local shipManager = Hyperspace.ships(i)
+        if not shipManager then return nil end
         for crewmem in vter(shipManager.vCrewList) do
             if (crewmem.extend.selfId == selfId) then
                 return crewmem

@@ -12,9 +12,18 @@ Text boxes render text
     Dynamic ones expand and use the font size specified
     Fixed size ones try to render text at the specified size, but will shrink it to fit the box.
 Items have various methods you can use to give them properties.
-Containers can hold other objects
+Containers can hold other objects by calling container.addObject(object) and/or passing them in the constructor.
     Scroll bars are containers that can deal with things larger than themselves
     Directional containers are useful for building evenly spaced layouts and dynamically adding and removing items for use with Scroll Bars.
+    
+lwui.helpBarContainer is a vertical container you can add 11x11 buttons to which will people can press to get more information about your addon.
+use --lwui.addHelpButton(helpButton).  The button must be constructed with lwui.buildButton, and must have a .lwuiHelpText field you fill out.
+
+Example:
+local function NOOP() end
+local mHelpButton = lwui.buildButton(1, 0, 11, 11, lwui.alwaysOnVisibilityFunction, lwui.solidRectRenderFunction(Graphics.GL_Color(.2, .81, .8, 1)), NOOP, NOOP)
+mHelpButton.lwuiHelpText = "your text here"
+lwui.addHelpButton(mHelpButton)
 --]]
 
 if (not mods) then mods = {} end
@@ -59,6 +68,7 @@ local FULL_SCREEN_MASK
 local function FULL_SCREEN_MASK_FUNCTION() return FULL_SCREEN_MASK end
 
 local GL_WHITE = Graphics.GL_Color(1, 1, 1, 1)
+local GL_BLACK = Graphics.GL_Color(0, 0, 0, 1)
 local GL_TRAVELLER_GRAY = Graphics.GL_Color(160/255, 162/255, 171/255, 1)
 local GL_TRAVELLER_BLUE = Graphics.GL_Color(58/255, 127/255, 255/255, 1)
 
@@ -105,11 +115,10 @@ end
 
 --Used to register your top level objects so they render themselves / their contents.
 function lwui.addTopLevelObject(object, renderLayer)
-    local validLayer = false
     for name,_ in pairs(mTopLevelRenderLists) do
         if (name == renderLayer) then
             table.insert(mTopLevelRenderLists[renderLayer], object)
-            validLayer = true
+            --print("There are now", #mTopLevelRenderLists[renderLayer], "items in", renderLayer)
             return
         end
     end
@@ -335,7 +344,6 @@ function lwui.buildVerticalContainer(x, y, width, height, visibilityFunction, re
         local maxPos = 0
         for i=1,#container.objects do
             local object = container.objects[i]
-            object.x = 0
             object.y = maxPos
             maxPos = maxPos + container.padding + object.height
         end
@@ -353,7 +361,6 @@ function lwui.buildHorizontalContainer(x, y, width, height, visibilityFunction, 
         local maxPos = 0
         for i=1,#container.objects do
             local object = container.objects[i]
-            object.y = 0
             object.x = maxPos
             maxPos = maxPos + container.padding + object.width
         end
@@ -588,6 +595,7 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
     button.allowedItemsFunction = allowedItemsFunction
     button.onItemAddedFunction = onItemAddedFunction
     button.className = "inventoryButton"
+    button.name = name --todo move or remove
     return button
 end
 
@@ -604,7 +612,7 @@ local function buildTextBox(x, y, width, height, visibilityFunction, renderFunct
     
     local function renderText()
         local mask = textBox.maskFunction()
-        renderFunction()
+        renderFunction(textBox)
         --todo stencil this out, text has no interactivity so it's fine. based on mask.
         Graphics.CSurface.GL_PushStencilMode()
         Graphics.CSurface.GL_SetStencilMode(1,1,1)
@@ -631,11 +639,12 @@ end
 
 --Minimum font size is five, choosing smaller will make it bigger than five.
 --You can put this one inside of a scroll window for good effect
-function lwui.buildDynamicHeightTextBox(x, y, width, height, visibilityFunction, fontSize)
-    local textBox   
+function lwui.buildDynamicHeightTextBox(x, y, width, height, visibilityFunction, renderFunction, fontSize)
+    local textBox
     local function expandingRenderFunction()
         local lowestY = Graphics.freetype.easy_printAutoNewlines(textBox.fontSize, 5000, textBox.getPos().y, textBox.width, textBox.text).y
         textBox.height = lowestY - textBox.getPos().y
+        renderFunction(textBox)
     end
     
     textBox = buildTextBox(x, y, width, height, visibilityFunction, expandingRenderFunction, fontSize)
@@ -644,9 +653,10 @@ function lwui.buildDynamicHeightTextBox(x, y, width, height, visibilityFunction,
 end
 
 --Font shrinks to accomidate text, I don't think this one looks as good generally, but I wanted to make it available.
-function lwui.buildFixedTextBox(x, y, width, height, visibilityFunction, maxFontSize)
+function lwui.buildFixedTextBox(x, y, width, height, visibilityFunction, renderFunction, maxFontSize)
     local textBox
     local function scalingFontRenderFunction()
+        renderFunction()
         --textBox.text = textBox.text.."f"
         if (#textBox.text > textBox.lastLength) then
             textBox.lastLength = #textBox.text
@@ -675,8 +685,11 @@ function lwui.buildFixedTextBox(x, y, width, height, visibilityFunction, maxFont
     return textBox
 end
 
-
 ------------------------------------RENDER FUNCTIONS----------------------------------------------------------
+function lwui.alwaysOnVisibilityFunction()
+    return true
+end
+
 local primitiveList = {}
 --Allows a render event to refer to an already-existing primitive of a png file if possible to avoid creating duplicates.
 local function primitiveListManager(string)
@@ -799,11 +812,12 @@ lwui.testScrollBarSkin = lwui.constructScrollBarSkin(
 ------------------------------------RENDERING LOGIC----------------------------------------------------------
 --this makes the z-ordering of buttons based on the order of the sButtonList, Lower values on top.
 function renderObjects(layerName)
+    --print("render layer "..layerName)
     local hovering = false
     Graphics.CSurface.GL_PushMatrix()
     local i = 1
     for _, object in ipairs(mTopLevelRenderLists[layerName]) do
-        --print("render object"..i)
+        --print("render object "..i.." on layer "..layerName)
         if object.renderFunction(object) then
             hovering = true
         end
@@ -826,7 +840,7 @@ end
 --yeah, select those items and hold them!
 script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
     local mousePos = Hyperspace.Mouse.position
-    --print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
+    print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
     if lwui.mHoveredButton then
         --print("clicked ", lwui.mHoveredButton)
         lwui.mHoveredButton.onClick(x, y)
@@ -868,8 +882,32 @@ end
 registerRenderEvents(RENDER_LAYERS)
 
 
+------------------------------------HELP BAR CONTAINER----------------------------------------------------------
+local mRenderHelp = false
+local function helpTextVisibilityFunction()
+    return mRenderHelp
+end
+local mHelpBarContainer = lwui.buildVerticalContainer(1264, 10, 13, 200, lwui.alwaysOnVisibilityFunction, lwui.solidRectRenderFunction(Graphics.GL_Color(.2, .3, .4, .5)), {}, false, true, 2)
+local mHelpTextBox = lwui.buildDynamicHeightTextBox(927, 25, 330, 90, helpTextVisibilityFunction, lwui.solidRectRenderFunction(Graphics.GL_Color(.1, .1, .1, .74)), 11)
+mHelpTextBox.text = "oh yeah baby this rendered some text and it's really big yo dode"
+lwui.addTopLevelObject(mHelpBarContainer, "MOUSE_CONTROL_PRE")
+lwui.addTopLevelObject(mHelpTextBox, "MOUSE_CONTROL_PRE")
+function lwui.addHelpButton(helpButton)
+    print("Added help button", helpButton.lwuiHelpText)
+    mHelpBarContainer.addObject(helpButton)
+end
 
-
+script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+    if lwui.mHoveredButton then
+        local helpText = lwui.mHoveredButton.lwuiHelpText
+        if helpText then
+            mHelpTextBox.text = helpText
+            mRenderHelp = true
+            return
+        end
+    end
+    mRenderHelp = false
+    end)
 ---------------------------BRIGHTNESS PARTICLES SUPPORT--------------------------------
 
 if (mods.Brightness) then

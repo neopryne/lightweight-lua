@@ -22,6 +22,7 @@ if (not mods) then mods = {} end
 mods.lightweight_crew_effects = {}
 local lwce = mods.lightweight_crew_effects
 local lwl = mods.lightweight_lua
+local lwui = mods.lightweight_user_interface
 local lwcco = mods.lightweight_crew_change_observer
 local Brightness = mods.brightness
 local vter = mods.multiverse.vter
@@ -42,9 +43,9 @@ lwce.KEY_BLEED = "bleed"
 lwce.KEY_CONFUSION = "confusion"
 lwce.KEY_CORRUPTION = "corruption"
 
-
+--Adding a button which describes all the effects when hovered.
 --A crew object will look something like this effect_crew = {id=, bleed={}, effect2={}}
-local mCrewList = {} --all the crew, both sides.  indexed by id?  todo it's just an ID list
+local mCrewList = {} --all the crew, both sides. it's just an ID list
 local mScaledLocalTime = 0
 local mCrewChangeObserver = lwcco.createCrewChangeObserver("crew", -2)  --This is probably caused by some BS involving crew objects.  Consider using selfId and lwl.getCrewById instead.
 local mEffectDefinitions = {}
@@ -299,9 +300,6 @@ end
 
 
 --todo scale to real time, ie convert to 30ticks/second rather than frames.
-
-
-
 script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if lwl.isPaused() or not mCrewChangeObserver.isInitialized() then return end
     mScaledLocalTime = mScaledLocalTime + (Hyperspace.FPS.SpeedFactor * 16)
@@ -344,4 +342,7 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     end
     --print("Icons repositioned!")
 end)
-
+-----------------------------LEGEND BUTTON--------------------------------------
+local mHelpButton = lwui.buildButton(1, 0, 11, 11, lwui.alwaysOnVisibilityFunction, lwui.spriteRenderFunction("icons/help/effects_help.png"), NOOP, NOOP)
+mHelpButton.lwuiHelpText = "LWCE Statuses\nBleed:\n    Temporary duration damage over time\n    Resist reduces stacks gained and damage taken\nConfusion:\n    Not implemented yet\nCorruption:\n    Permanent damage over time\n    Resist reduces stacks gained"
+lwui.addHelpButton(mHelpButton)
