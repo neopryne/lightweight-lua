@@ -2,10 +2,21 @@
   <title><![CDATA[ Lightweight Lua]]></title>
   <threadUrl><![CDATA[https://ftlmultiverse.boards.net/thread/115/mv-5-less-managable-crew]]></threadUrl>
   <author><![CDATA[ Limrix ]]></author>
-  <version><![CDATA[ 0.5 ]]></version>
+  <version><![CDATA[ 0.7 ]]></version>
   <description>
 <![CDATA[
-A number of lua utilities.  Lightweight lua (lwl) for a number of utility functions, Lightweight 3d (lw3) for barebones 3d rendering, and some data structures (currently a doubly linked list implementation).
+A number of lua utilities.  
+	Lightweight lua (lwl) for a number of utility functions
+	Lightweight 3d (lw3) for barebones 3d rendering
+	LWUI, a decently featured UI library
+	Crew Effects that you can apply to crew as you see fit
+		A help bar for information you want the player to have but not be too disruptive
+	Some data structures (currently a doubly linked list implementation).
+
+
+Requirements:
+	VertexUtils
+	Brightness Particles 1.4+
 ]]>
   </description>
 </metadata>

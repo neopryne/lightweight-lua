@@ -320,7 +320,9 @@ function mods.lightweight_lua.logVerbose(tag, text, optionalLogLevel)
 end
 
 --[[  CREW UTILS  ]]--
-local function getAllShipCrew(crewShipManager, targetShipManager, tracking)
+local function getAllShipCrew(crewShipManager, targetShipManager, tracking, includeNoWarn)
+    tracking = lwl.setIfNil(tracking, "all")
+    includeNoWarn = lwl.setIfNil(includeNoWarn, true)
     local memberCrew = {}
     if not targetShipManager then return memberCrew end
     local i = 0
@@ -329,7 +331,9 @@ local function getAllShipCrew(crewShipManager, targetShipManager, tracking)
         i=i+1
         if (crewmem.iShipId == crewShipManager.iShipId) then
             j=j+1
-            if (tracking == "all") or (tracking == "crew" and not crewmem:IsDrone()) or (tracking == "drones" and crewmem:IsDrone()) then
+            if ((tracking == "all") or (tracking == "crew" and not crewmem:IsDrone()) or (tracking == "drones" and crewmem:IsDrone()))
+                    and (not ((not includeNoWarn) and crewmem.extend:GetDefinition().noWarning))
+                    and not crewmem:OutOfGame() then
                 table.insert(memberCrew, crewmem)
             end
         end
@@ -341,16 +345,18 @@ end
 --[[
 returns all crew belonging to the given ship on all ships
 tracking={"crew", "drones", or "all"}  If no value is passed, defaults to all.
+--todo idk about this.
 --]]
-function mods.lightweight_lua.getAllMemberCrewFromFactory(shipManager, tracking)
-    if not tracking then 
-        tracking = "all"
-    end
+function mods.lightweight_lua.getAllMemberCrewFromFactory(shipManager, tracking, includeNoWarn)
+    tracking = lwl.setIfNil(tracking, "all")
+    includeNoWarn = lwl.setIfNil(includeNoWarn, true)
     local memberCrew = {}
     for _,crewmem in mCrewMemberFactory.crewMembers do
         if (crewmem.iShipId == shipManager.iShipId) and
-            ((crewmem:IsDrone() and (tracking == "all" or tracking == "drones")) or
-            (((not crewmem:IsDrone()) and (tracking == "all" or tracking == "crew")))) then
+            (((crewmem:IsDrone() and (tracking == "all" or tracking == "drones")) or
+                (((not crewmem:IsDrone()) and (tracking == "all" or tracking == "crew"))))
+            and (not ((not includeNoWarn) and crewmem.extend:GetDefinition().noWarning))
+            and not crewmem:OutOfGame()) then
             table.insert(memberCrew, crewmem)
         end
     end
@@ -359,10 +365,9 @@ function mods.lightweight_lua.getAllMemberCrewFromFactory(shipManager, tracking)
 end
 
 
-function mods.lightweight_lua.getAllMemberCrew(shipManager, tracking)
-    if not tracking then 
-        tracking = "all"
-    end
+function mods.lightweight_lua.getAllMemberCrew(shipManager, tracking, includeNoWarn)
+    tracking = lwl.setIfNil(tracking, "all")
+    includeNoWarn = lwl.setIfNil(includeNoWarn, true)
     local printString = ""
     local memberCrew = {}
     printString = printString.." Own Crew "
@@ -395,7 +400,7 @@ function mods.lightweight_lua.getCrewById(selfId)
             end
         end
     end
-    print("ERROR: lwl could not get crew ", selfId)
+    --print("ERROR: lwl could not get crew ", selfId) --This is actually kind of normal
 end
 
 --returns all crew on ship that belong to crewShip.

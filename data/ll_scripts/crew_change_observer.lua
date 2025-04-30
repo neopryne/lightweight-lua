@@ -20,8 +20,8 @@ local mGlobal
 local mCrewMemberFactory
 local mTeleportStatusObserver = lwtso.createTeleportStatusObserver()
 
---todo this conflicts with whatever I'm doing in equipment when you load a file with teleporting crew.
---Fixed it already, but one correct solution to this is not to allow effects/equipment to add duplicate crewIds.
+--todo make it ignore crew you don't have.
+--Fixed it already, but one correct solution to this is not to allow effects/equipment to add duplicate crewIds.  I think I may need to do that also.
 
 script.on_internal_event(Defines.InternalEvents.ON_TICK, function()--todo use crew factory in some smart way, maybe let the user pass in a filter function that takes this object (and other things)
     --Initialization code
@@ -37,7 +37,7 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()--todo use cr
             return 
         end
         for _,crewId in ipairs(mTeleportStatusObserver.getAddedCrew()) do
-            print(lwl.getCrewById(crewId):GetName(), " is teleporting! lwcco") --lol the error actually works as a log here.
+            --print(lwl.getCrewById(crewId):GetName(), " is teleporting! lwcco") --lol the error actually works as a log here.
             --We have to wait till this list is empty, so we never save this value.
             return
         end
@@ -46,9 +46,9 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()--todo use cr
         for _, crewChangeObserver in ipairs(mCrewChangeObservers) do
             local enemyCrew = {}
             if enemyManager then
-                enemyCrew = lwl.getAllMemberCrew(enemyManager, crewChangeObserver.tracking)
+                enemyCrew = lwl.getAllMemberCrew(enemyManager, crewChangeObserver.tracking, crewChangeObserver.includeNoWarn)
             end
-            local playerCrew = lwl.getAllMemberCrew(ownshipManager, crewChangeObserver.tracking)
+            local playerCrew = lwl.getAllMemberCrew(ownshipManager, crewChangeObserver.tracking, crewChangeObserver.includeNoWarn)
             crewChangeObserver.crew = {}
             if crewChangeObserver.shipId == 0 or crewChangeObserver.shipId == -2 then
                 for _,crewmem in ipairs(playerCrew) do
@@ -103,16 +103,19 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
 end)
 --]]
 
---[[
+--[[todo remove dead crew  :OutOfGame()?:IsDead()
+    bool :PermanentDeath()
 tracking={"crew", "drones", or "all"}  If no value is passed, defaults to all.
 shipId = {0,1} If not set, defaults to ownship.
+extend:GetDefinition().noWarning
 --]]
-function lwcco.createCrewChangeObserver(tracking, shipId)
+function lwcco.createCrewChangeObserver(tracking, shipId, includeNoWarn)
     if not tracking then tracking = "all" end
     if not shipId then shipId = 0 end
     local crewChangeObserver = {}
     crewChangeObserver.tracking = tracking
     crewChangeObserver.shipId = shipId
+    crewChangeObserver.includeNoWarn = includeNoWarn
     crewChangeObserver.crew = {}
     crewChangeObserver.lastSeenCrew = {}
     crewChangeObserver.selfIsInitialized = false
@@ -127,7 +130,7 @@ function lwcco.createCrewChangeObserver(tracking, shipId)
     local function getRemovedCrew()
         local removedCrew = lwl.getNewElements(crewChangeObserver.lastSeenCrew, crewChangeObserver.crew)
         if #removedCrew > 0 then
-            print("Removing crew ", #removedCrew)
+            --print("Removing crew ", #removedCrew)
         end
         return removedCrew
     end

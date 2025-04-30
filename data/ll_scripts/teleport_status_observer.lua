@@ -52,7 +52,7 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
             end
             for _,crewmem in ipairs(enemyCrew) do
                 if crewmem.extend.customTele.teleporting then
-                    print(crewmem:GetName(), " is teleporting!")
+                    --print(crewmem:GetName(), " is teleporting!")
                     teleportStatusObserver.teleportingCrew = lwl.setMerge(teleportStatusObserver.teleportingCrew, {crewmem.extend.selfId})
                 else
                     teleportStatusObserver.teleportingCrew = lwl.setRemove(teleportStatusObserver.teleportingCrew, {crewmem.extend.selfId})

@@ -840,7 +840,7 @@ end
 --yeah, select those items and hold them!
 script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
     local mousePos = Hyperspace.Mouse.position
-    print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
+    --print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
     if lwui.mHoveredButton then
         --print("clicked ", lwui.mHoveredButton)
         lwui.mHoveredButton.onClick(x, y)
