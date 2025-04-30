@@ -28,8 +28,8 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if not mGlobal then
         mGlobal = Hyperspace.Global.GetInstance()
     end
-    local ownshipManager = mGlobal:GetShipManager(0)
-    local enemyManager = mGlobal:GetShipManager(1)
+    local ownshipManager = Hyperspace.ships(0)
+    local enemyManager = Hyperspace.ships(1)
     
     --If anybody is teleporting, skip this update.
     if (ownshipManager) then

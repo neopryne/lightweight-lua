@@ -2,11 +2,21 @@
 This is the file that is a library of effects that can go on crew, and also tracking which crew have which effects applied to them.  This will live within LWL.
 todo add toggle to let effects be affected by time dilation
 
-effect
-    value
-    onTick()
-    onRender() --you shouldn't put functional logic here
+Usage:
+local lwce = mods.lightweight_crew_effects
+lwce.applyBleed(crewmem, amount)
+lwce.addResist(crewmem, lwce.KEY_BLEED, 1)
+This applies bleed to a crew and then makes them immune to it.  Note that not all resistances work the same.
 
+**Statuses**
+Bleed:
+    Temporary duration damage over time
+    Resist reduces stacks gained and damage taken
+Confusion:
+    Not implemented yet
+Corruption:
+    Permanent damage over time
+    Resist reduces stacks gained
 --]]
 if (not mods) then mods = {} end
 mods.lightweight_crew_effects = {}
@@ -14,6 +24,7 @@ local lwce = mods.lightweight_crew_effects
 local lwl = mods.lightweight_lua
 local lwcco = mods.lightweight_crew_change_observer
 local Brightness = mods.brightness
+local vter = mods.multiverse.vter
 
 --Tracks an internal list of all crew, updates it when crew are lost or gained.
 --Not impelmenting persistance as a core feature.  You feel like reloading to clear statuses, go for it.
@@ -23,6 +34,10 @@ local FIRST_SYMBOL_RELATIVE_X = -9
 local FIRST_SYMBOL_RELATIVE_Y = -5
 local SYMBOL_OFFSET_X = 14
 local SYMBOL_OFFSET_Y = 14
+local DECIMAL_STORAGE_PERCISION_FACTOR = 100000
+local PERSIST_KEY_NUM_CREW = "lwce_num_crew"
+local PERSIST_KEY_EFFECT_VALUE = "lwce_effect_value"
+local PERSIST_KEY_EFFECT_RESIST = "lwce_effect_resist"
 lwce.KEY_BLEED = "bleed"
 lwce.KEY_CONFUSION = "confusion"
 lwce.KEY_CORRUPTION = "corruption"
@@ -33,7 +48,10 @@ local mCrewList = {} --all the crew, both sides.  indexed by id?  todo it's just
 local mScaledLocalTime = 0
 local mCrewChangeObserver = lwcco.createCrewChangeObserver("crew", -2)  --This is probably caused by some BS involving crew objects.  Consider using selfId and lwl.getCrewById instead.
 local mEffectDefinitions = {}
-
+local mGlobal = Hyperspace.Global.GetInstance()
+local mCrewFactory = mGlobal:GetCrewFactory()
+local knownCrew = 0
+local mInitialized = false
 
 --Strongly recommend that if you're creating effects with this, add them to this library instead of your mod if they don't have too many dependencies.
 -----------------------------HELPER FUNCTIONS--------------------------------------
@@ -48,12 +66,13 @@ local function getListCrew(crewmem)
             return listCrew
         end
     end
+    return nil
 end
 
 local function tickEffectStandard(effect_crew, effect)
     if (effect.value <= 0) then
-        effect.onEnd(effect_crew)
         if effect.icon then
+            effect.onEnd(effect_crew)
             Brightness.destroy_particle(effect.icon)
             effect.icon = nil
         end
@@ -119,8 +138,9 @@ local function applyEffect(crewmem, amount, effectName)
     end
     --print("applying effect ", effectName, "is ", crewEffect)
     if crewEffect then
-        crewEffect.value = crewEffect.value + (amount * (1 - crewEffect.resist))
+        crewEffect.value = math.max(0, crewEffect.value + (amount * (1 - crewEffect.resist)))
     else
+        --Init new effect
         crewEffect = lwl.deepCopyTable(mEffectDefinitions[effectName])
         crewEffect.name = effectName
         createIcon(crewmem, crewEffect)
@@ -150,16 +170,63 @@ function mods.lightweight_crew_effects.applyCorruption(crewmem, amount)
 end
 
 -----------------------------EFFECT LIST CREATION--------------------------------------
-function lwce.createCrewEffectDefinition(name, onTick, onEnd, onRender, iconImage)
-    mEffectDefinitions[name] = {name=name, onTick=onTick, onRender=onRender, onEnd=onEnd}
+function lwce.createCrewEffectDefinition(name, onTick, onEnd, onRender, flagValue)
+    mEffectDefinitions[name] = {name=name, onTick=onTick, onRender=onRender, onEnd=onEnd, flagValue=flagValue}
 end
 
-lwce.createCrewEffectDefinition(lwce.KEY_BLEED, tickBleed, NOOP, NOOP)
-lwce.createCrewEffectDefinition(lwce.KEY_CONFUSION, tickConfusion, endConfusion, NOOP)
-lwce.createCrewEffectDefinition(lwce.KEY_CORRUPTION, tickCorruption, NOOP, NOOP)
---idk if effects would get too cluttery, but I want to let things add them.  Maybe I can make them work like buffer icons.
+lwce.createCrewEffectDefinition(lwce.KEY_BLEED, tickBleed, NOOP, NOOP, 1)
+lwce.createCrewEffectDefinition(lwce.KEY_CONFUSION, tickConfusion, endConfusion, NOOP, 2)
+lwce.createCrewEffectDefinition(lwce.KEY_CORRUPTION, tickCorruption, NOOP, NOOP, 3)
 --And when you hover the icons it prints a little popup with effect description and remaining duration
---This would be seperate from the normal render logic, I would add an effectIcon param. Hard cause you get like 11x11 to work with
+
+
+
+--[[
+We persist all effects for all crew, and all listCrew have all effects
+numCrew
+--crewId
+----Value
+----Resist
+--]]
+-----------------------------PERSISTANCE--------------------------------------
+local function persistEffects()
+    local factoryCrew = mCrewFactory.crewMembers --statuses should define which kinds of crew they can apply to.
+    for crewmem in vter(factoryCrew) do
+        if crewmem then
+            local listCrew = getListCrew(crewmem)
+            if listCrew then --If you can't, don't worry about it
+                for key,effect in pairs(listCrew) do
+                    if not (key == "id") then
+                        --print("Saving", crewmem:GetName(), " effect ", effect.name, effect.value, effect.resist, effect.flagValue)
+                        Hyperspace.metaVariables[PERSIST_KEY_EFFECT_VALUE..listCrew.id.."-"..effect.flagValue] = effect.value * DECIMAL_STORAGE_PERCISION_FACTOR
+                        Hyperspace.metaVariables[PERSIST_KEY_EFFECT_RESIST..listCrew.id.."-"..effect.flagValue] = effect.resist * DECIMAL_STORAGE_PERCISION_FACTOR
+                    end
+                end
+            end
+        end
+    end
+    --print("persisted ", successes , " out of ", numEquipment)
+end
+
+--must load all crewmembers first.
+local function loadEffects()
+    local factoryCrew = mCrewFactory.crewMembers
+    for crewmem in vter(factoryCrew) do
+        --print("loading", crewmem)
+        if crewmem then
+        local listCrew = getListCrew(crewmem)
+            if listCrew then --If you can't, don't worry about it
+                for key,effect in pairs(listCrew) do
+                    if not (key == "id") then
+                        --print(crewmem:GetName(), " effect ", effect.name, effect.value, effect.resist, effect.flagValue)
+                        effect.value = Hyperspace.metaVariables[PERSIST_KEY_EFFECT_VALUE..listCrew.id.."-"..effect.flagValue] / DECIMAL_STORAGE_PERCISION_FACTOR
+                        effect.resist = Hyperspace.metaVariables[PERSIST_KEY_EFFECT_RESIST..listCrew.id.."-"..effect.flagValue] / DECIMAL_STORAGE_PERCISION_FACTOR
+                    end
+                end
+            end
+        end
+    end
+end
 
 -----------------------------ICON RENDERING LOGIC--------------------------------------
 --features required to make lwui support this: removing objects from containers, vertical containers that extend upwards.
@@ -230,7 +297,7 @@ local function generatCrewMatchFilter(crewId)
     end
 end
 
-local knownCrew = 0
+
 --todo scale to real time, ie convert to 30ticks/second rather than frames.
 
 
@@ -242,20 +309,25 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
         tickEffects()
         --print("Effects ticked!")
         mScaledLocalTime = 0
-        
-        for _,crewId in ipairs(mCrewChangeObserver.getAddedCrew()) do
-            print("EFFECT Added crew: ", lwl.getCrewById(crewId):GetName())
+        local addedCrew = mCrewChangeObserver.getAddedCrew()
+        for _,crewId in ipairs(addedCrew) do
+            --print("EFFECT Added crew: ", lwl.getCrewById(crewId):GetName())
             table.insert(mCrewList, {id=crewId}) --probably never added any crew 
-            --Set values
+            --Set values.  ALL VALUES MUST BE SET HERE.
             lwce.applyBleed(lwl.getCrewById(crewId), 0)
             lwce.applyConfusion(lwl.getCrewById(crewId), 0)
             lwce.applyCorruption(lwl.getCrewById(crewId), 0)
         end
         for _,crewId in ipairs(mCrewChangeObserver.getRemovedCrew()) do
-            print("EFFECT Removed crew: ", crewId)
+            --print("EFFECT Removed crew: ", crewId)
             lwl.arrayRemove(mCrewList, generatCrewMatchFilter(crewId))
-            print("EFFECT after removing ", crewId, " there are now ", #mCrewList, " crew left")
+            --print("EFFECT after removing ", crewId, " there are now ", #mCrewList, " crew left")
         end
+        if not mInitialized and #addedCrew > 0 then --The first load will load all saved crew.
+            loadEffects()
+            mInitialized = true
+        end
+        persistEffects() --todo try to call this less.
         mCrewChangeObserver.saveLastSeenState()
         local crewString = ""
         --print("EFFECTS: Compare ", #mCrewList, knownCrew, knownCrew == #mCrewList)
@@ -263,7 +335,7 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
             for i=1,#mCrewList do
                 crewString = crewString..lwl.getCrewById(mCrewList[i].id):GetName()
             end
-            print("EFFECTS: There are now this many crew known about: ", #mCrewList, crewString)
+            --print("EFFECTS: There are now this many crew known about: ", #mCrewList, crewString)
             knownCrew = #mCrewList
         end
     end

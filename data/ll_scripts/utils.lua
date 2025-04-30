@@ -73,12 +73,16 @@ function mods.lightweight_lua.isPaused()
     return commandGui.bPaused or commandGui.bAutoPaused or commandGui.event_pause or commandGui.menu_pause
 end
 
---usage: object = nilSet(object, value) TODO rename setIfNil
+--usage: object = nilSet(object, value) TODO rename setIfNil  --actually I can't rename I have to duplicate
 function mods.lightweight_lua.nilSet(object, value)
     if (object == nil) then
         object = value
     end
     return object
+end
+
+function mods.lightweight_lua.setIfNil(object, value)
+    return lwl.nilSet(object, value)
 end
 
 --[[  TABLE UTILS  ]]--
@@ -383,7 +387,7 @@ end
 --Searches all crew, both ships.  This is unique, so it can just return whatever it finds.
 function mods.lightweight_lua.getCrewById(selfId)
     for i=0,1 do
-        local shipManager = global:GetShipManager(i)
+        local shipManager = Hyperspace.ships(i)
         for crewmem in vter(shipManager.vCrewList) do
             if (crewmem.extend.selfId == selfId) then
                 return crewmem
@@ -443,8 +447,8 @@ end
 --Relative to the ship crewmem is on
 function mods.lightweight_lua.getFoesAtSpace(crewmem, location)
     local enemyList = {}
-    local currentShipManager = global:GetShipManager(crewmem.currentShipId)
-    local foeShipManager = global:GetShipManager(1 - crewmem.iShipId)
+    local currentShipManager = Hyperspace.ships(crewmem.currentShipId)
+    local foeShipManager = Hyperspace.ships(1 - crewmem.iShipId)
     if (currentShipManager and foeShipManager) then
         enemyList = mods.lightweight_lua.get_ship_crew_point(currentShipManager, foeShipManager, location.x, location.y)
     end
@@ -457,7 +461,7 @@ end
 
 -- -1 in the unlikely event no room is found
 function mods.lightweight_lua.getRoomAtCrewmember(crewmem)
-    local shipManager = global:GetShipManager(crewmem.currentShipId)
+    local shipManager = Hyperspace.ships(crewmem.currentShipId)
     --need to call this with the shipManager of the ship you want to look at.
     room = get_room_at_location(shipManager, crewmem:GetPosition(), true)
     --print(crewmem:GetLongName(), ", Room: ", room, " at ", crewmem:GetPosition().x, crewmem:GetPosition().y)
@@ -667,8 +671,8 @@ local mTeleportConditions = {}
 
 --nil if none exists.
 function getRoomAtLocation(position)
-    playerShipManager = global:GetShipManager(OWNSHIP)
-    enemyShipManager = global:GetShipManager(ENEMY_SHIP)
+    playerShipManager = Hyperspace.ships(OWNSHIP)
+    enemyShipManager = Hyperspace.ships(ENEMY_SHIP)
     --Ships in mv don't overlap, so check both ships --poinf?
     local retRoom = get_room_at_location(playerShipManager, convertMousePositionToPlayerShipPosition(mousePos), true)
     if retRoom then return retRoom end
@@ -750,7 +754,7 @@ local ownshipManager
 script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
         --Get all crew on your ship
         if ownshipManager == nil then
-            ownshipManager = global:GetShipManager(OWNSHIP)
+            ownshipManager = Hyperspace.ships(OWNSHIP)
         else
             crewList = lwl.getAllMemberCrew(ownshipManager)
             Hyperspace.metaVariables[lwl.METAVAR_NUM_CREW_PLAYER] = #crewList

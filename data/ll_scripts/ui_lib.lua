@@ -1,3 +1,22 @@
+--[[
+Usage:
+
+local lwui = mods.lightweight_user_interface
+myTextBox = lwui.buildFixedTextBox(660, 348, 220, 35, , 18)
+lwui.addTopLevelObject(mDescriptionHeader, "SHIP_SPARKS")
+
+Objects just render
+Buttons can be hovered and clicked
+    Inventory buttons are made to hold Items
+Text boxes render text
+    Dynamic ones expand and use the font size specified
+    Fixed size ones try to render text at the specified size, but will shrink it to fit the box.
+Items have various methods you can use to give them properties.
+Containers can hold other objects
+    Scroll bars are containers that can deal with things larger than themselves
+    Directional containers are useful for building evenly spaced layouts and dynamically adding and removing items for use with Scroll Bars.
+--]]
+
 if (not mods) then mods = {} end
 mods.lightweight_user_interface = {}
 local lwui = mods.lightweight_user_interface
@@ -796,7 +815,7 @@ function renderObjects(layerName)
         mLayersWithoutHover = 0
     end
     if (lwui.mHoveredButton ~= nil and mLayersWithoutHover > 2 * lwl.countKeys(mTopLevelRenderLists)) then
-        print("Went ", mLayersWithoutHover, "layers without hovering, setting hover to nil.")
+        --print("Went ", mLayersWithoutHover, "layers without hovering, setting hover to nil.")
         lwui.mHoveredButton = nil
     end
     Graphics.CSurface.GL_PopMatrix()
