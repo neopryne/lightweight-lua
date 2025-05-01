@@ -47,7 +47,8 @@ lwce.KEY_CORRUPTION = "corruption"
 --A crew object will look something like this effect_crew = {id=, bleed={}, effect2={}}
 local mCrewList = {} --all the crew, both sides. it's just an ID list
 local mScaledLocalTime = 0
-local mCrewChangeObserver = lwcco.createCrewChangeObserver("crew", -2)  --This is probably caused by some BS involving crew objects.  Consider using selfId and lwl.getCrewById instead.
+local function noFilter() return true end
+local mCrewChangeObserver = lwcco.createCrewChangeObserver(noFilter)
 local mEffectDefinitions = {}
 local mGlobal = Hyperspace.Global.GetInstance()
 local mCrewFactory = mGlobal:GetCrewFactory()
@@ -98,6 +99,7 @@ local function tickBleed(effect_crew)
     if bleed.value > 0 then
         local crewmem = lwl.getCrewById(effect_crew.id)
         crewmem:DirectModifyHealth(-.03 * (1 - bleed.resist))
+        print(crewmem:GetName(), "has bleed", bleed.value)
     end
     tickDownEffectStandard(effect_crew, bleed)
 end
@@ -107,6 +109,7 @@ local function tickConfusion(effect_crew)
     local confusion = effect_crew.confusion
     if confusion.value > 0 then
         local crewmem = lwl.getCrewById(effect_crew.id)
+        print(crewmem:GetName(), "has confusion", confusion.value)
     end
     --todo this needs to use the HS statboost logic.
     tickDownEffectStandard(effect_crew, confusion)
@@ -121,6 +124,7 @@ local function tickCorruption(effect_crew)
     local corruption = effect_crew.corruption
     if corruption.value > 0 then
         local crewmem = lwl.getCrewById(effect_crew.id)
+        print(crewmem:GetName(), "has corruption", corruption.value)
         crewmem:DirectModifyHealth(-.004 * corruption.value)
     end
     tickEffectStandard(effect_crew, corruption)
@@ -130,7 +134,8 @@ end
 local function applyEffect(crewmem, amount, effectName)
     local listCrew = getListCrew(crewmem)
     if not listCrew then
-        print("Failed to apply ", effectName, ": No such known crewmember ", crewmem:GetName())
+        print("Failed to apply ", effectName, ": No such known crewmember ", crewmem:GetName(), crewmem.extend.selfId)
+        print("List crew is", lwl.dumpObject(mCrewList))
         return
     end
     local crewEffect = listCrew[effectName]
@@ -154,7 +159,7 @@ end
 
 function mods.lightweight_crew_effects.addResist(crewmem, effectName, amount)
     local listCrew = getListCrew(crewmem)
-    local crewEffect = listCrew[effect]
+    local crewEffect = listCrew[effectName]
     crewEffect.resist = crewEffect.resist + amount
 end
 
@@ -301,44 +306,38 @@ end
 
 --todo scale to real time, ie convert to 30ticks/second rather than frames.
 script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
-    if lwl.isPaused() or not mCrewChangeObserver.isInitialized() then return end
-    mScaledLocalTime = mScaledLocalTime + (Hyperspace.FPS.SpeedFactor * 16)
-    if (mScaledLocalTime > 1) then
-        tickEffects()
-        --print("Effects ticked!")
-        mScaledLocalTime = 0
-        local addedCrew = mCrewChangeObserver.getAddedCrew()
-        for _,crewId in ipairs(addedCrew) do
-            --print("EFFECT Added crew: ", lwl.getCrewById(crewId):GetName())
-            table.insert(mCrewList, {id=crewId}) --probably never added any crew 
-            --Set values.  ALL VALUES MUST BE SET HERE.
-            lwce.applyBleed(lwl.getCrewById(crewId), 0)
-            lwce.applyConfusion(lwl.getCrewById(crewId), 0)
-            lwce.applyCorruption(lwl.getCrewById(crewId), 0)
-        end
-        for _,crewId in ipairs(mCrewChangeObserver.getRemovedCrew()) do
-            --print("EFFECT Removed crew: ", crewId)
-            lwl.arrayRemove(mCrewList, generatCrewMatchFilter(crewId))
-            --print("EFFECT after removing ", crewId, " there are now ", #mCrewList, " crew left")
-        end
-        if not mInitialized and #addedCrew > 0 then --The first load will load all saved crew.
-            loadEffects()
-            mInitialized = true
-        end
-        persistEffects() --todo try to call this less.
-        mCrewChangeObserver.saveLastSeenState()
-        local crewString = ""
-        --print("EFFECTS: Compare ", #mCrewList, knownCrew, knownCrew == #mCrewList)
-        if not (knownCrew == #mCrewList) then
-            for i=1,#mCrewList do
-                crewString = crewString..lwl.getCrewById(mCrewList[i].id):GetName()
-            end
-            --print("EFFECTS: There are now this many crew known about: ", #mCrewList, crewString)
-            knownCrew = #mCrewList
-        end
-    end
+    if not mCrewChangeObserver.isInitialized() then return end
     for _,listCrew in ipairs(mCrewList) do
         repositionEffectStack(listCrew)
+    end
+    
+    if not lwl.isPaused() then
+        mScaledLocalTime = mScaledLocalTime + (Hyperspace.FPS.SpeedFactor * 16)
+        if (mScaledLocalTime > 1) then
+            tickEffects()   
+            mScaledLocalTime = 0
+            local addedCrew = mCrewChangeObserver.getAddedCrew()
+            for _,crewId in ipairs(addedCrew) do
+                --print("EFFECT Added crew: ", lwl.getCrewById(crewId):GetName())
+                table.insert(mCrewList, {id=crewId}) --probably never added any crew 
+                --Set values.  ALL VALUES MUST BE SET HERE.
+                lwce.applyBleed(lwl.getCrewById(crewId), 0)
+                lwce.applyConfusion(lwl.getCrewById(crewId), 0)
+                lwce.applyCorruption(lwl.getCrewById(crewId), 0)
+            end
+            for _,crewId in ipairs(mCrewChangeObserver.getRemovedCrew()) do
+                --print("EFFECT Removed crew: ", crewId)
+                lwl.arrayRemove(mCrewList, generatCrewMatchFilter(crewId))
+                --print("EFFECT after removing ", crewId, " there are now ", #mCrewList, " crew left")
+            end
+            if not mInitialized and #addedCrew > 0 then --The first load will load all saved crew.
+                loadEffects()
+                mInitialized = true
+            end
+            persistEffects() --todo try to call this less.
+            mCrewChangeObserver.saveLastSeenState()
+            --print("EFFECTS: Compare ", #mCrewList, knownCrew, knownCrew == #mCrewList)
+        end
     end
     --print("Icons repositioned!")
 end)

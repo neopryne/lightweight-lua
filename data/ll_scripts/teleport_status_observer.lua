@@ -36,12 +36,9 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
         for _, teleportStatusObserver in ipairs(mTeleportStatusObservers) do
             local enemyCrew = {}
             local localCrewBuffer = {}
-            if enemyManager then
-                enemyCrew = lwl.getAllMemberCrew(enemyManager, teleportStatusObserver.tracking)
-            end
-            local playerCrew = lwl.getAllMemberCrew(ownshipManager, teleportStatusObserver.tracking)
+            local allCrew = lwl.getAllMemberCrewFromFactory(lwl.noFilter)
             teleportStatusObserver.crew = {}
-            for _,crewmem in ipairs(playerCrew) do
+            for _,crewmem in ipairs(allCrew) do
                 if crewmem.extend.customTele.teleporting then
                     --print(crewmem:GetName(), " is teleporting!")
                     teleportStatusObserver.teleportingCrew = lwl.setMerge(teleportStatusObserver.teleportingCrew, {crewmem.extend.selfId})
@@ -49,14 +46,6 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
                     teleportStatusObserver.teleportingCrew = lwl.setRemove(teleportStatusObserver.teleportingCrew, {crewmem.extend.selfId})
                 end
                 --print("player crew ", crewmem:GetName())  This is properly updating.
-            end
-            for _,crewmem in ipairs(enemyCrew) do
-                if crewmem.extend.customTele.teleporting then
-                    --print(crewmem:GetName(), " is teleporting!")
-                    teleportStatusObserver.teleportingCrew = lwl.setMerge(teleportStatusObserver.teleportingCrew, {crewmem.extend.selfId})
-                else
-                    teleportStatusObserver.teleportingCrew = lwl.setRemove(teleportStatusObserver.teleportingCrew, {crewmem.extend.selfId})
-                end
             end
             teleportStatusObserver.selfIsInitialized = true
         end

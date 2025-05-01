@@ -347,30 +347,38 @@ returns all crew belonging to the given ship on all ships
 tracking={"crew", "drones", or "all"}  If no value is passed, defaults to all.
 --todo idk about this.
 --]]
-function mods.lightweight_lua.getAllMemberCrewFromFactory(shipManager, tracking, includeNoWarn)
-    tracking = lwl.setIfNil(tracking, "all")
-    includeNoWarn = lwl.setIfNil(includeNoWarn, true)
+
+--Then we give some filter functions that might be broadly useful, and serve 
+function mods.lightweight_lua.noFilter(crewmem)
+    return true --Crew is not a drone AND (Crew is not dead or dying) OR crew is preparing to clone --sillysandvich
+end
+
+function mods.lightweight_lua.filterTrueCrew(crewmem)
+    return crewmem:CountForVictory() --Crew is not a drone AND (Crew is not dead or dying) OR crew is preparing to clone --sillysandvich
+end
+
+function mods.lightweight_lua.filterOwnshipTrueCrew(crewmem)
+    return crewmem:CountForVictory() and crewmem.iShipId == 0
+end
+
+function mods.lightweight_lua.getAllMemberCrewFromFactory(filterFunction)
     local memberCrew = {}
-    for _,crewmem in mCrewMemberFactory.crewMembers do
-        if (crewmem.iShipId == shipManager.iShipId) and
-            (((crewmem:IsDrone() and (tracking == "all" or tracking == "drones")) or
-                (((not crewmem:IsDrone()) and (tracking == "all" or tracking == "crew"))))
-            and (not ((not includeNoWarn) and crewmem.extend:GetDefinition().noWarning))
-            and not crewmem:OutOfGame()) then
+    for crewmem in vter(mCrewMemberFactory.crewMembers) do
+        if filterFunction(crewmem) then
             table.insert(memberCrew, crewmem)
         end
     end
-    
     return memberCrew
 end
 
-
+--[[
 function mods.lightweight_lua.getAllMemberCrew(shipManager, tracking, includeNoWarn)
     tracking = lwl.setIfNil(tracking, "all")
     includeNoWarn = lwl.setIfNil(includeNoWarn, true)
     local printString = ""
     local memberCrew = {}
     printString = printString.." Own Crew "
+    print(1 - shipManager.iShipId)
     local otherShipManager = Hyperspace.ships(1 - shipManager.iShipId)
     local sameShipCrew = getAllShipCrew(shipManager, shipManager, tracking)
     for _,crewmem in ipairs(sameShipCrew) do
@@ -387,7 +395,7 @@ function mods.lightweight_lua.getAllMemberCrew(shipManager, tracking, includeNoW
     --print("getAllMemberCrew "..printString)
     --end
     return memberCrew
-end
+end--]]
 
 --Searches all crew, both ships.  This is unique, so it can just return whatever it finds.
 function mods.lightweight_lua.getCrewById(selfId)
@@ -414,6 +422,8 @@ function mods.lightweight_lua.getCrewOnSameShip(shipManager, crewShipManager)
     return crewList
 end
 
+--todo call into factory filter
+--[[
 function mods.lightweight_lua.getSelectedCrew(shipId, selectionState)
     local selectedCrew = {}
     local shipManager = Hyperspace.ships(shipId)
@@ -425,9 +435,8 @@ function mods.lightweight_lua.getSelectedCrew(shipId, selectionState)
             end
         end
     end
-
     return selectedCrew
-end
+end--]]
 
 -- Returns a table of all crew on shipManager ship's belonging to crewShipManager's crew on the room tile at the given point
 --booleans getDrones and getNonDrones are optional, but you have to include both if you include one or it calls wrong
@@ -730,19 +739,6 @@ script.on_internal_event(Defines.InternalEvents.CALCULATE_STAT_PRE,
                         end)
                         --]]
 
-mods.lightweight_lua.METAVAR_NUM_CREW_PLAYER = "lightweightlua_NUM_CREW_PLAYER"
-mods.lightweight_lua.METAVAR_CREW_ID_PLAYER = "lightweightlua_CREW_ID_PLAYER"
-
-
-function mods.lightweight_lua.getPersistedCrewIds()
-    crewIds = {}
-    numCrew = Hyperspace.metaVariables[lwl.METAVAR_NUM_CREW_PLAYER]
-    for i=1,#numCrew do
-        table.insert(crewIds, Hyperspace.metaVariables[lwl.METAVAR_CREW_ID_PLAYER..i])
-    end
-    return crewIds
-end
-
 
 --[[ Neat idea, but it needs to many layers of encapsulation to be a good idiom.
 local function waitForInitialization(blockedFunction, localVar, varGetter)
@@ -753,19 +749,3 @@ local function waitForInitialization(blockedFunction, localVar, varGetter)
     end
 end
 --]]
-
---Here lives the crew metavars.  Use these to find the list of crewmembers persisted over saves.
---todo do I need to do this every step?  Also does this actually work how I'm trying to use it?  I need it for GEx, so I'll find out soon.
-local ownshipManager
-script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
-        --Get all crew on your ship
-        if ownshipManager == nil then
-            ownshipManager = Hyperspace.ships(OWNSHIP)
-        else
-            crewList = lwl.getAllMemberCrew(ownshipManager)
-            Hyperspace.metaVariables[lwl.METAVAR_NUM_CREW_PLAYER] = #crewList
-            for i=1,#crewList do
-                Hyperspace.metaVariables[lwl.METAVAR_CREW_ID_PLAYER..i] = crewList[i].extend.selfId
-            end
-        end
-        end)

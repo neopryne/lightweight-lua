@@ -5,6 +5,7 @@ local crewChangeObserver = lwcco.createCrewChangeObserver()
 Wait for crewChangeObserver.isInitialized() to become true.
 Then call crewChangeObserver.getAddedCrew() and getRemovedCrew() when you want to know what changed since you last saved,
     and saveLastSeenState() when you want to let the observer know you're up to date.
+CCO is an alternative to saving crew.  If you're using CCO, don't persist your crew; rely on CCO to tell you who's around.
 --]]
 
 if (not mods) then mods = {} end
@@ -16,7 +17,6 @@ local lwl = mods.lightweight_lua
 local TAG = "LW Crew Change Observer"
 
 local mCrewChangeObservers = {}
-local mGlobal
 local mCrewMemberFactory
 local mTeleportStatusObserver = lwtso.createTeleportStatusObserver()
 
@@ -25,83 +25,36 @@ local mTeleportStatusObserver = lwtso.createTeleportStatusObserver()
 
 script.on_internal_event(Defines.InternalEvents.ON_TICK, function()--todo use crew factory in some smart way, maybe let the user pass in a filter function that takes this object (and other things)
     --Initialization code
-    if not mGlobal then
-        mGlobal = Hyperspace.Global.GetInstance()
+    if not Hyperspace.ships(0) or Hyperspace.ships(0).iCustomizeMode == 2 or lwl.isPaused() then return end
+    if not mTeleportStatusObserver.isInitialized() then
+        print("lightweight_crew_change_observer: mTeleportStatusObserver is not set up yet, waiting till it is.")
+        return 
     end
-    local ownshipManager = mGlobal:GetShipManager(0)
-    local enemyManager = mGlobal:GetShipManager(1)
-    if (ownshipManager) then
-        
-        if not mTeleportStatusObserver.isInitialized() then
-            print("lightweight_crew_change_observer: mTeleportStatusObserver is not set up yet, waiting till it is.")
-            return 
+    
+    for _,crewId in ipairs(mTeleportStatusObserver.getAddedCrew()) do--todo this might not be needed anymore.
+        --print(lwl.getCrewById(crewId):GetName(), " is teleporting! lwcco") --lol the error actually works as a log here.
+        --We have to wait till this list is empty, so we never save this value.
+        return
+    end
+    
+    --update mCrewIds
+    for _,crewChangeObserver in ipairs(mCrewChangeObservers) do
+        crewChangeObserver.selfIsInitialized = true
+        local currentCrew = lwl.getAllMemberCrewFromFactory(crewChangeObserver.filterFunction)
+        for _,crewmem in ipairs(currentCrew) do
+            crewChangeObserver.crew = lwl.setMerge({crewmem.extend.selfId}, crewChangeObserver.crew)
         end
-        for _,crewId in ipairs(mTeleportStatusObserver.getAddedCrew()) do
-            --print(lwl.getCrewById(crewId):GetName(), " is teleporting! lwcco") --lol the error actually works as a log here.
-            --We have to wait till this list is empty, so we never save this value.
-            return
-        end
-        
-        --update mCrewIds
-        for _, crewChangeObserver in ipairs(mCrewChangeObservers) do
-            local enemyCrew = {}
-            if enemyManager then
-                enemyCrew = lwl.getAllMemberCrew(enemyManager, crewChangeObserver.tracking, crewChangeObserver.includeNoWarn)
-            end
-            local playerCrew = lwl.getAllMemberCrew(ownshipManager, crewChangeObserver.tracking, crewChangeObserver.includeNoWarn)
-            crewChangeObserver.crew = {}
-            if crewChangeObserver.shipId == 0 or crewChangeObserver.shipId == -2 then
-                for _,crewmem in ipairs(playerCrew) do
-                    --print("player crew ", crewmem:GetName())  This is properly updating.
-                    table.insert(crewChangeObserver.crew, crewmem.extend.selfId)
-                end
-            end
-            if crewChangeObserver.shipId == 1 or crewChangeObserver.shipId == -2 then
-                for _,crewmem in ipairs(enemyCrew) do
-                    table.insert(crewChangeObserver.crew, crewmem.extend.selfId)
-                end
-            end
-            crewChangeObserver.selfIsInitialized = true
-        end
+        crewChangeObserver.selfIsInitialized = true
     end
 end)
 
-
---[[
---Version using CrewFactory
-script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
-    --Initialization code
-    if not mGlobal then
-        mGlobal = Hyperspace.Global.GetInstance()
-    end
-    local ownshipManager = mGlobal:GetShipManager(0)
-    local enemyManager = mGlobal:GetShipManager(1)
-    if (ownshipManager) then
-        
-        --update mCrewIds
-        for _, crewChangeObserver in ipairs(mCrewChangeObservers) do
-            local enemyCrew = {}
-            if enemyManager then
-                enemyCrew = lwl.getAllMemberCrewFromFactory(enemyManager, crewChangeObserver.tracking)
+script.on_game_event("START_BEACON_REAL", false, function() --reset observers on restart.  --todo also for tele if I still need it.  I do, but the way I use CCO means I personally don't.
+        for _,crewChangeObserver in ipairs(mCrewChangeObservers) do
+            if crewChangeObserver.selfIsInitialized then
+                crewChangeObserver.crew = {}
             end
-            local playerCrew = lwl.getAllMemberCrewFromFactory(ownshipManager, crewChangeObserver.tracking)
-            crewChangeObserver.crew = {}
-            if crewChangeObserver.shipId == 0 or crewChangeObserver.shipId == -2 then
-                for _,crewmem in ipairs(playerCrew) do
-                    --print("player crew ", crewmem:GetName())  This is properly updating.
-                    table.insert(crewChangeObserver.crew, crewmem.extend.selfId)
-                end
-            end
-            if crewChangeObserver.shipId == 1 or crewChangeObserver.shipId == -2 then
-                for _,crewmem in ipairs(enemyCrew) do
-                    table.insert(crewChangeObserver.crew, crewmem.extend.selfId)
-                end
-            end
-            crewChangeObserver.selfIsInitialized = true
         end
-    end
-end)
---]]
+        end)
 
 --[[todo remove dead crew  :OutOfGame()?:IsDead()
     bool :PermanentDeath()
@@ -109,13 +62,9 @@ tracking={"crew", "drones", or "all"}  If no value is passed, defaults to all.
 shipId = {0,1} If not set, defaults to ownship.
 extend:GetDefinition().noWarning
 --]]
-function lwcco.createCrewChangeObserver(tracking, shipId, includeNoWarn)
-    if not tracking then tracking = "all" end
-    if not shipId then shipId = 0 end
+function lwcco.createCrewChangeObserver(filterFunction)
     local crewChangeObserver = {}
-    crewChangeObserver.tracking = tracking
-    crewChangeObserver.shipId = shipId
-    crewChangeObserver.includeNoWarn = includeNoWarn
+    crewChangeObserver.filterFunction = filterFunction
     crewChangeObserver.crew = {}
     crewChangeObserver.lastSeenCrew = {}
     crewChangeObserver.selfIsInitialized = false
@@ -125,6 +74,8 @@ function lwcco.createCrewChangeObserver(tracking, shipId, includeNoWarn)
         crewChangeObserver.lastSeenCrew = lwl.deepCopyTable(crewChangeObserver.crew)
     end
     local function getAddedCrew()
+        --print("currentCrew", lwl.dumpObject(crewChangeObserver.crew))
+        --print("what the observer knows about", lwl.dumpObject(crewChangeObserver.lastSeenCrew))
         return lwl.getNewElements(crewChangeObserver.crew, crewChangeObserver.lastSeenCrew)
     end
     local function getRemovedCrew()
