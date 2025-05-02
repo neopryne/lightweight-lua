@@ -99,7 +99,7 @@ local function tickBleed(effect_crew)
     if bleed.value > 0 then
         local crewmem = lwl.getCrewById(effect_crew.id)
         crewmem:DirectModifyHealth(-.03 * (1 - bleed.resist))
-        print(crewmem:GetName(), "has bleed", bleed.value)
+        --print(crewmem:GetName(), "has bleed", bleed.value)
     end
     tickDownEffectStandard(effect_crew, bleed)
 end
@@ -109,7 +109,7 @@ local function tickConfusion(effect_crew)
     local confusion = effect_crew.confusion
     if confusion.value > 0 then
         local crewmem = lwl.getCrewById(effect_crew.id)
-        print(crewmem:GetName(), "has confusion", confusion.value)
+        --print(crewmem:GetName(), "has confusion", confusion.value)
     end
     --todo this needs to use the HS statboost logic.
     tickDownEffectStandard(effect_crew, confusion)
@@ -124,7 +124,7 @@ local function tickCorruption(effect_crew)
     local corruption = effect_crew.corruption
     if corruption.value > 0 then
         local crewmem = lwl.getCrewById(effect_crew.id)
-        print(crewmem:GetName(), "has corruption", corruption.value)
+        --print(crewmem:GetName(), "has corruption", corruption.value)
         crewmem:DirectModifyHealth(-.004 * corruption.value)
     end
     tickEffectStandard(effect_crew, corruption)
@@ -132,10 +132,13 @@ end
 
 -----------------------------EXTERNAL API--------------------------------------
 local function applyEffect(crewmem, amount, effectName)
+    if not crewmem then
+        --print("Failed to apply ", effectName, ": No such crewmember")
+        return
+    end
     local listCrew = getListCrew(crewmem)
     if not listCrew then
-        print("Failed to apply ", effectName, ": No such known crewmember ", crewmem:GetName(), crewmem.extend.selfId)
-        print("List crew is", lwl.dumpObject(mCrewList))
+        --print("Failed to apply ", effectName, ": No such known crewmember ", crewmem:GetName(), crewmem.extend.selfId)
         return
     end
     local crewEffect = listCrew[effectName]
@@ -158,6 +161,10 @@ local function applyEffect(crewmem, amount, effectName)
 end
 
 function mods.lightweight_crew_effects.addResist(crewmem, effectName, amount)
+    if not crewmem then
+        --print("Failed to apply resist ", effectName, ": No such crewmember")
+        return
+    end
     local listCrew = getListCrew(crewmem)
     local crewEffect = listCrew[effectName]
     crewEffect.resist = crewEffect.resist + amount
@@ -198,6 +205,7 @@ numCrew
 local function persistEffects()
     local factoryCrew = mCrewFactory.crewMembers --statuses should define which kinds of crew they can apply to.
     for crewmem in vter(factoryCrew) do
+        --print("persistEffects crewmem", crewmem)
         if crewmem then
             local listCrew = getListCrew(crewmem)
             if listCrew then --If you can't, don't worry about it
@@ -218,9 +226,9 @@ end
 local function loadEffects()
     local factoryCrew = mCrewFactory.crewMembers
     for crewmem in vter(factoryCrew) do
-        --print("loading", crewmem)
+        --print("loadEffects crewmem", crewmem)
         if crewmem then
-        local listCrew = getListCrew(crewmem)
+            local listCrew = getListCrew(crewmem)
             if listCrew then --If you can't, don't worry about it
                 for key,effect in pairs(listCrew) do
                     if not (key == "id") then
@@ -312,6 +320,11 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     end
     
     if not lwl.isPaused() then
+        local crewids = ""
+        for _,crew in ipairs(mCrewList) do
+            crewids = crewids..crew.id..", "
+        end
+        --print("List crew is ", crewids)
         mScaledLocalTime = mScaledLocalTime + (Hyperspace.FPS.SpeedFactor * 16)
         if (mScaledLocalTime > 1) then
             tickEffects()   
@@ -341,6 +354,19 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     end
     --print("Icons repositioned!")
 end)
+
+script.on_game_event("START_BEACON_REAL", false, function()
+        mCrewList = {}
+        --Reset all persisted status values
+        for i = 1,1500 do --idk how high the crew values go
+            for j = 1,#mEffectDefinitions do
+                Hyperspace.metaVariables[PERSIST_KEY_EFFECT_VALUE..i.."-"..j] = nil
+                Hyperspace.metaVariables[PERSIST_KEY_EFFECT_RESIST..i.."-"..j] = nil
+            end
+        end
+        end)
+
+--todo When you hit the start beacon, zero out effects for all crew.
 -----------------------------LEGEND BUTTON--------------------------------------
 local mHelpButton = lwui.buildButton(1, 0, 11, 11, lwui.alwaysOnVisibilityFunction, lwui.spriteRenderFunction("icons/help/effects_help.png"), NOOP, NOOP)
 mHelpButton.lwuiHelpText = "LWCE Statuses\nBleed:\n    Temporary duration damage over time\n    Resist reduces stacks gained and damage taken\nConfusion:\n    Not implemented yet\nCorruption:\n    Permanent damage over time\n    Resist reduces stacks gained"

@@ -350,11 +350,11 @@ tracking={"crew", "drones", or "all"}  If no value is passed, defaults to all.
 
 --Then we give some filter functions that might be broadly useful, and serve 
 function mods.lightweight_lua.noFilter(crewmem)
-    return true --Crew is not a drone AND (Crew is not dead or dying) OR crew is preparing to clone --sillysandvich
+    return true
 end
 
 function mods.lightweight_lua.filterTrueCrew(crewmem)
-    return crewmem:CountForVictory() --Crew is not a drone AND (Crew is not dead or dying) OR crew is preparing to clone --sillysandvich
+    return crewmem:CountForVictory()  --Crew is not a drone AND (Crew is not dead or dying) OR crew is preparing to clone --sillysandvich
 end
 
 function mods.lightweight_lua.filterOwnshipTrueCrew(crewmem)
@@ -371,14 +371,13 @@ function mods.lightweight_lua.getAllMemberCrewFromFactory(filterFunction)
     return memberCrew
 end
 
---[[
+
 function mods.lightweight_lua.getAllMemberCrew(shipManager, tracking, includeNoWarn)
     tracking = lwl.setIfNil(tracking, "all")
     includeNoWarn = lwl.setIfNil(includeNoWarn, true)
     local printString = ""
     local memberCrew = {}
     printString = printString.." Own Crew "
-    print(1 - shipManager.iShipId)
     local otherShipManager = Hyperspace.ships(1 - shipManager.iShipId)
     local sameShipCrew = getAllShipCrew(shipManager, shipManager, tracking)
     for _,crewmem in ipairs(sameShipCrew) do
@@ -395,7 +394,7 @@ function mods.lightweight_lua.getAllMemberCrew(shipManager, tracking, includeNoW
     --print("getAllMemberCrew "..printString)
     --end
     return memberCrew
-end--]]
+end
 
 --Searches all crew, both ships.  This is unique, so it can just return whatever it finds.
 function mods.lightweight_lua.getCrewById(selfId)

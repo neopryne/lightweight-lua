@@ -41,8 +41,9 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()--todo use cr
     for _,crewChangeObserver in ipairs(mCrewChangeObservers) do
         crewChangeObserver.selfIsInitialized = true
         local currentCrew = lwl.getAllMemberCrewFromFactory(crewChangeObserver.filterFunction)
+        crewChangeObserver.crew = {}
         for _,crewmem in ipairs(currentCrew) do
-            crewChangeObserver.crew = lwl.setMerge({crewmem.extend.selfId}, crewChangeObserver.crew)
+            table.insert(crewChangeObserver.crew, crewmem.extend.selfId)
         end
         crewChangeObserver.selfIsInitialized = true
     end
@@ -81,7 +82,7 @@ function lwcco.createCrewChangeObserver(filterFunction)
     local function getRemovedCrew()
         local removedCrew = lwl.getNewElements(crewChangeObserver.lastSeenCrew, crewChangeObserver.crew)
         if #removedCrew > 0 then
-            --print("Removing crew ", #removedCrew)
+            --print("Removed crew ", #removedCrew)
         end
         return removedCrew
     end
