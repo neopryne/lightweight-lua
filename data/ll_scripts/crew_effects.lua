@@ -180,12 +180,20 @@ function mods.lightweight_crew_effects.RequestInitialization()
     mSetupRequested = true
 end
 
+function mods.lightweight_crew_effects.isInitialized()
+    return mInitialized
+end
+
 function mods.lightweight_crew_effects.addResist(crewmem, effectName, amount)
     if not crewmem then
-        --print("Failed to apply resist ", effectName, ": No such crewmember")
+        print("Failed to apply resist ", effectName, ": No such crewmember")
         return
     end
     local listCrew = getListCrew(crewmem)
+    if not listCrew then
+        print("Failed to apply resist ", effectName, ": No such listCrew")
+        return
+    end
     local crewEffect = listCrew[effectName]
     crewEffect.resist = crewEffect.resist + amount
 end
