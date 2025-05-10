@@ -108,11 +108,6 @@ function lwui.isWithinMask(mousePos, mask)
            mousePos.y >= mask.getPos().y and mousePos.y <= mask.getPos().y + mask.height
 end
 
---for testing, mostly don't use this and define your own.
-function lwui.alwaysOnVisibilityFunction()
-    return true
-end
-
 --Used to register your top level objects so they render themselves / their contents.
 function lwui.addTopLevelObject(object, renderLayer)
     for name,_ in pairs(mTopLevelRenderLists) do
@@ -184,7 +179,7 @@ function lwui.buildButton(x, y, width, height, visibilityFunction, renderFunctio
     local button
     local function buttonClick(x1, y1)
         if button.visibilityFunction then
-            onClick(x1, y1)
+            onClick(x1, y1) --can't be button b/c that stack overflows.
         end
     end
     
@@ -506,8 +501,8 @@ function lwui.buildItem(name, itemType, width, height, visibilityFunction, rende
     local function itemRender()
         if (item.trackMouse) then
             local mousePos = Hyperspace.Mouse.position
-            item.x = mousePos.x
-            item.y = mousePos.y
+            item.x = mousePos.x - item.mouseOffsetX
+            item.y = mousePos.y - item.mouseOffsetY
         else
             item.x = item.containingButton.getPos().x
             item.y = item.containingButton.getPos().y
@@ -550,7 +545,11 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
     
     local function onClick()
         if (button.item) then
-            button.item.trackMouse = true
+            local buttonItem = button.item
+            local mousePos = Hyperspace.Mouse.position
+            buttonItem.mouseOffsetY = mousePos.y - buttonItem.getPos().y
+            buttonItem.mouseOffsetX = mousePos.x - buttonItem.getPos().x
+            buttonItem.trackMouse = true
         end
     end
     
@@ -883,6 +882,7 @@ registerRenderEvents(RENDER_LAYERS)
 
 
 ------------------------------------HELP BAR CONTAINER----------------------------------------------------------
+--todo this will be in MV 5.5, remove after that.  It's also already in fusion.
 local mRenderHelp = false
 local function helpTextVisibilityFunction()
     return mRenderHelp

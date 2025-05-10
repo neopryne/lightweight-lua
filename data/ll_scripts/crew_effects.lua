@@ -3,7 +3,11 @@ This is the file that is a library of effects that can go on crew, and also trac
 todo add toggle to let effects be affected by time dilation
 
 Usage:
+(In your top level)
 local lwce = mods.lightweight_crew_effects
+lwce.RequestInitialization()
+
+(In script blocks, or functions called by script blocks)
 lwce.applyBleed(crewmem, amount)
 lwce.addResist(crewmem, lwce.KEY_BLEED, 1)
 This applies bleed to a crew and then makes them immune to it.  Note that not all resistances work the same.
@@ -31,12 +35,11 @@ local vter = mods.multiverse.vter
 --Not impelmenting persistance as a core feature.  You feel like reloading to clear statuses, go for it.
 local TAG = "LW Crew Effects"
 local function NOOP() end
-local FIRST_SYMBOL_RELATIVE_X = -9 
+local FIRST_SYMBOL_RELATIVE_X = -9
 local FIRST_SYMBOL_RELATIVE_Y = -5
 local SYMBOL_OFFSET_X = 14
 local SYMBOL_OFFSET_Y = 14
 local DECIMAL_STORAGE_PERCISION_FACTOR = 100000
-local PERSIST_KEY_NUM_CREW = "lwce_num_crew"
 local PERSIST_KEY_EFFECT_VALUE = "lwce_effect_value"
 local PERSIST_KEY_EFFECT_RESIST = "lwce_effect_resist"
 lwce.KEY_BLEED = "bleed"
@@ -48,12 +51,12 @@ lwce.KEY_CORRUPTION = "corruption"
 local mCrewList = {} --all the crew, both sides. it's just an ID list
 local mScaledLocalTime = 0
 local function noFilter() return true end
-local mCrewChangeObserver = lwcco.createCrewChangeObserver(noFilter)
+local mCrewChangeObserver
 local mEffectDefinitions = {}
 local mGlobal = Hyperspace.Global.GetInstance()
 local mCrewFactory = mGlobal:GetCrewFactory()
-local knownCrew = 0
 local mInitialized = false
+local mSetupRequested = false
 
 --Strongly recommend that if you're creating effects with this, add them to this library instead of your mod if they don't have too many dependencies.
 -----------------------------HELPER FUNCTIONS--------------------------------------
@@ -71,7 +74,8 @@ local function getListCrew(crewmem)
     return nil
 end
 
-local function tickEffectStandard(effect_crew, effect)
+--Returns the icon if it's rendering, and nil otherwise
+local function renderEffectStandard(effect_crew, effect)
     if (effect.value <= 0) then
         if effect.icon then
             effect.onEnd(effect_crew)
@@ -84,12 +88,12 @@ local function tickEffectStandard(effect_crew, effect)
             createIcon(crewmem, effect)
         end
     end
+    return effect.icon
 end
 
 --Some effects have a timer.  This is for those effects.  Other effects build up, or have other ways to remove them.
-local function tickDownEffectStandard(effect_crew, effect)
+local function tickDownEffect(effect_crew, effect)
     effect.value = math.max(0, effect.value - 1)
-    tickEffectStandard(effect_crew, effect)
 end
 
 -----------------------------EFFECT DEFINITIONS--------------------------------------
@@ -99,9 +103,9 @@ local function tickBleed(effect_crew)
     if bleed.value > 0 then
         local crewmem = lwl.getCrewById(effect_crew.id)
         crewmem:DirectModifyHealth(-.03 * (1 - bleed.resist))
-        --print(crewmem:GetName(), "has bleed", bleed.value)
+        print(crewmem:GetName(), "has bleed", bleed.value)
+        tickDownEffect(effect_crew, bleed)
     end
-    tickDownEffectStandard(effect_crew, bleed)
 end
 
 ------------------CONFUSION------------------
@@ -109,10 +113,10 @@ local function tickConfusion(effect_crew)
     local confusion = effect_crew.confusion
     if confusion.value > 0 then
         local crewmem = lwl.getCrewById(effect_crew.id)
-        --print(crewmem:GetName(), "has confusion", confusion.value)
+        print(crewmem:GetName(), "has confusion", confusion.value)
+        tickDownEffect(effect_crew, confusion)
     end
     --todo this needs to use the HS statboost logic.
-    tickDownEffectStandard(effect_crew, confusion)
 end
 local function endConfusion(effect_crew)
     --todo this needs to use the HS statboost logic.
@@ -124,10 +128,22 @@ local function tickCorruption(effect_crew)
     local corruption = effect_crew.corruption
     if corruption.value > 0 then
         local crewmem = lwl.getCrewById(effect_crew.id)
+        
+        if crewmem.bDead then
+            if not corruption.didDeathSave then
+                corruption.didDeathSave = true
+                if (corruption.value > (math.random() * 100)) then
+                    --u dead
+                    --crewmem. todo need stat boosts for this to work
+                    --play some kind of noise, schlooping wworks i think
+                end
+            end
+        else
+            corruption.didDeathSave = false
+            crewmem:DirectModifyHealth(-.004 * corruption.value)
+        end
         --print(crewmem:GetName(), "has corruption", corruption.value)
-        crewmem:DirectModifyHealth(-.004 * corruption.value)
     end
-    tickEffectStandard(effect_crew, corruption)
 end
 
 -----------------------------EXTERNAL API--------------------------------------
@@ -157,7 +173,11 @@ local function applyEffect(crewmem, amount, effectName)
         crewEffect.resist = 0
         listCrew[effectName] = crewEffect
     end
-    --print("applied effect ", effectName, "is ", crewEffect)
+    return crewEffect
+end
+
+function mods.lightweight_crew_effects.RequestInitialization()
+    mSetupRequested = true
 end
 
 function mods.lightweight_crew_effects.addResist(crewmem, effectName, amount)
@@ -171,15 +191,15 @@ function mods.lightweight_crew_effects.addResist(crewmem, effectName, amount)
 end
 
 function mods.lightweight_crew_effects.applyBleed(crewmem, amount)
-    applyEffect(crewmem, amount, lwce.KEY_BLEED)
+    return applyEffect(crewmem, amount, lwce.KEY_BLEED)
 end
 
 function mods.lightweight_crew_effects.applyConfusion(crewmem, amount)
-    applyEffect(crewmem, amount, lwce.KEY_CONFUSION)
+    return applyEffect(crewmem, amount, lwce.KEY_CONFUSION)
 end
 
 function mods.lightweight_crew_effects.applyCorruption(crewmem, amount)
-    applyEffect(crewmem, amount, lwce.KEY_CORRUPTION)
+    return applyEffect(crewmem, amount, lwce.KEY_CORRUPTION)
 end
 
 -----------------------------EFFECT LIST CREATION--------------------------------------
@@ -187,9 +207,9 @@ function lwce.createCrewEffectDefinition(name, onTick, onEnd, onRender, flagValu
     mEffectDefinitions[name] = {name=name, onTick=onTick, onRender=onRender, onEnd=onEnd, flagValue=flagValue}
 end
 
-lwce.createCrewEffectDefinition(lwce.KEY_BLEED, tickBleed, NOOP, NOOP, 1)
-lwce.createCrewEffectDefinition(lwce.KEY_CONFUSION, tickConfusion, endConfusion, NOOP, 2)
-lwce.createCrewEffectDefinition(lwce.KEY_CORRUPTION, tickCorruption, NOOP, NOOP, 3)
+lwce.createCrewEffectDefinition(lwce.KEY_BLEED, tickBleed, NOOP, renderEffectStandard, 1)
+lwce.createCrewEffectDefinition(lwce.KEY_CONFUSION, tickConfusion, endConfusion, renderEffectStandard, 2)
+lwce.createCrewEffectDefinition(lwce.KEY_CORRUPTION, tickCorruption, NOOP, renderEffectStandard, 3)
 --And when you hover the icons it prints a little popup with effect description and remaining duration
 
 
@@ -242,17 +262,37 @@ local function loadEffects()
     end
 end
 
+local function resetEffects()
+    local factoryCrew = mCrewFactory.crewMembers
+    for crewmem in vter(factoryCrew) do
+        --print("loadEffects crewmem", crewmem)
+        if crewmem then
+            local listCrew = getListCrew(crewmem)
+            if listCrew then --If you can't, don't worry about it
+                for key,effect in pairs(listCrew) do
+                    if not (key == "id") then
+                        --print(crewmem:GetName(), " effect ", effect.name, effect.value, effect.resist, effect.flagValue)
+                        effect.value = 0
+                        effect.resist = 0
+                    end
+                end
+            end
+        end
+    end
+end
+
 -----------------------------ICON RENDERING LOGIC--------------------------------------
 --features required to make lwui support this: removing objects from containers, vertical containers that extend upwards.
 --vs I know exactly how to do this in brightness.
 --Ok let's brightness, and maybe I'll find a good way to combine these.
 local function repositionEffectStack(listCrew)
     local crewmem = lwl.getCrewById(listCrew.id)
+    if not crewmem then return end --todo print this, it's never supposed to happen.
     local i = 1
     for key,effect in pairs(listCrew) do
         --print("loop ", i, key)
         if not (key == "id") then
-            local particle = effect.icon
+            local particle = renderEffectStandard(listCrew, effect)
             if particle then
                 --Only show icons for hovered or selected crew (or ones you can't control|select)
                 if crewmem.selectionState == lwl.UNSELECTED() then
@@ -314,20 +354,24 @@ end
 
 --todo scale to real time, ie convert to 30ticks/second rather than frames.
 script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+    if not mSetupRequested then return end
+    if not mCrewChangeObserver then
+        mCrewChangeObserver = lwcco.createCrewChangeObserver(noFilter)
+    end
     if not mCrewChangeObserver.isInitialized() then return end
     for _,listCrew in ipairs(mCrewList) do
         repositionEffectStack(listCrew)
     end
-    
+
     if not lwl.isPaused() then
-        local crewids = ""
+        --[[local crewids = ""
         for _,crew in ipairs(mCrewList) do
             crewids = crewids..crew.id..", "
         end
-        --print("List crew is ", crewids)
-        mScaledLocalTime = mScaledLocalTime + (Hyperspace.FPS.SpeedFactor * 16)
+        print("List crew is ", crewids)--]]
+        mScaledLocalTime = mScaledLocalTime + (Hyperspace.FPS.SpeedFactor * 16 / 10) --this runs slightly slower than equipment and it's not clear why.
         if (mScaledLocalTime > 1) then
-            tickEffects()   
+            tickEffects()
             mScaledLocalTime = 0
             local addedCrew = mCrewChangeObserver.getAddedCrew()
             for _,crewId in ipairs(addedCrew) do
@@ -336,7 +380,8 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
                 --Set values.  ALL VALUES MUST BE SET HERE.
                 lwce.applyBleed(lwl.getCrewById(crewId), 0)
                 lwce.applyConfusion(lwl.getCrewById(crewId), 0)
-                lwce.applyCorruption(lwl.getCrewById(crewId), 0)
+                local corruptionEffect = lwce.applyCorruption(lwl.getCrewById(crewId), 0)
+                corruptionEffect.didDeathSave = false
             end
             for _,crewId in ipairs(mCrewChangeObserver.getRemovedCrew()) do
                 --print("EFFECT Removed crew: ", crewId)
@@ -364,6 +409,8 @@ script.on_game_event("START_BEACON_REAL", false, function()
                 Hyperspace.metaVariables[PERSIST_KEY_EFFECT_RESIST..i.."-"..j] = nil
             end
         end
+        --reset all loaded effects
+        resetEffects()
         end)
 
 --todo When you hit the start beacon, zero out effects for all crew.

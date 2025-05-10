@@ -18,12 +18,14 @@ local TAG = "LW Crew Change Observer"
 
 local mCrewChangeObservers = {}
 local mCrewMemberFactory
-local mTeleportStatusObserver = lwtso.createTeleportStatusObserver()
+local mSetupRequested = false
+local mTeleportStatusObserver
 
 --todo make it ignore crew you don't have.
 --Fixed it already, but one correct solution to this is not to allow effects/equipment to add duplicate crewIds.  I think I may need to do that also.
 
-script.on_internal_event(Defines.InternalEvents.ON_TICK, function()--todo use crew factory in some smart way, maybe let the user pass in a filter function that takes this object (and other things)
+script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+    if not mSetupRequested then return end--todo use crew factory in some smart way, maybe let the user pass in a filter function that takes this object (and other things)
     --Initialization code
     if not Hyperspace.ships(0) or Hyperspace.ships(0).iCustomizeMode == 2 or lwl.isPaused() then return end
     if not mTeleportStatusObserver.isInitialized() then
@@ -64,6 +66,8 @@ shipId = {0,1} If not set, defaults to ownship.
 extend:GetDefinition().noWarning
 --]]
 function lwcco.createCrewChangeObserver(filterFunction)
+    mSetupRequested = true
+    mTeleportStatusObserver = lwtso.createTeleportStatusObserver()
     local crewChangeObserver = {}
     crewChangeObserver.filterFunction = filterFunction
     crewChangeObserver.crew = {}

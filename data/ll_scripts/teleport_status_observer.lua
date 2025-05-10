@@ -20,10 +20,12 @@ local lwl = mods.lightweight_lua
 local TAG = "LW Tele Status Observer"
 
 local mTeleportStatusObservers = {}
+local mSetupRequested = false
 
 --Crew blink out of existance for one frame when teleporting (only on the way back???)
 --todo optimize maybe.  Ok actually not maybe, and instead of optimal we want clean because this stuff is MESSY and lots of important things depend on it.
 script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+    if not mSetupRequested then return end
     --Initialization code
     if not mGlobal then
         mGlobal = Hyperspace.Global.GetInstance()
@@ -58,6 +60,7 @@ tracking={"crew", "drones", or "all"}  If no value is passed, defaults to all.
 shipId = {-2, 0, 1} If not set, defaults to ownship. -2 is both ships.
 --]]
 function lwtso.createTeleportStatusObserver()
+    mSetupRequested = true
     local teleportStatusObserver = {}
     teleportStatusObserver.lastSeenTeleporters = {}
     teleportStatusObserver.teleportingCrew = {}

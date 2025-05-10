@@ -1,5 +1,11 @@
 mods.lightweight_lua = {}
 local lwl = mods.lightweight_lua
+if not mods.brightness then
+    error("Brightness Particles was not patched, or was patched after Lightweight Lua.  Install it properly or face undefined behavior.")
+end
+if not mods.vertexutil then
+    error("Vertex Utils was not patched, or was patched after Lightweight Lua.  Install it properly or face undefined behavior.")
+end
 
 --[[Usage:
     local lwl = mods.lightweight_lua
@@ -320,6 +326,12 @@ function mods.lightweight_lua.logVerbose(tag, text, optionalLogLevel)
 end
 
 --[[  CREW UTILS  ]]--
+function mods.lightweight_lua.setCrewName(crewmem, name)
+    local nameTextString = Hyperspace.TextString()
+    nameTextString.data = name
+    crewmem:SetName(nameTextString, true)
+end
+
 local function getAllShipCrew(crewShipManager, targetShipManager, tracking, includeNoWarn)
     tracking = lwl.setIfNil(tracking, "all")
     includeNoWarn = lwl.setIfNil(includeNoWarn, true)
@@ -572,7 +584,7 @@ end
 --isIntruder seems to be iff you want to check slots ignoring ones invading crew occupy, else ignoring ones defending crew occupy.
 function mods.lightweight_lua.closestOpenSlot(point, shipId, isIntruder)
     local shipGraph = Hyperspace.ShipGraph.GetShipInfo(shipId)
-    return shipGraph:GetClosestSlot(point, shipId. isIntruder)
+    return shipGraph:GetClosestSlot(point, shipId, isIntruder)
 end
 
 --Doesn't matter who's in it, returns -1 if no room is found. For use with things like MoveToRoom
@@ -684,7 +696,7 @@ end
 local mTeleportConditions = {}
 
 --nil if none exists.
-function getRoomAtLocation(position)
+function mods.lightweight_lua.getRoomAtLocation(position)
     playerShipManager = Hyperspace.ships(OWNSHIP)
     enemyShipManager = Hyperspace.ships(ENEMY_SHIP)
     --Ships in mv don't overlap, so check both ships --poinf?
@@ -694,6 +706,24 @@ function getRoomAtLocation(position)
     return retRoom
 end
 
+
+-----------------------------CONTROL FLOW------------------------------
+---Returns a Function that returns true once every trueEvery calls.
+function createIncrementalConditonal(trueEvery)
+    local counter = 1
+    local maxValue = trueEvery
+    return function()
+        if counter < maxValue then
+            counter = counter + 1
+        else
+            counter = 1
+        end
+        return counter == 1
+    end
+end
+
+
+-------------------------------Stuff for Nauter----------------------------------
 --crewFilterFunction(crewmember): which crew this should apply to, conditionFunction(crewmember): when it should apply to them
 function mods.lightweight_lua.registerConditionalTeleport(conditionFunction, crewFilterFunction)
     table.insert(mTeleportConditions, {conditionFunction, crewFilterFunction})
@@ -701,11 +731,11 @@ end
 
 --Rooms on both ends must contain fire
 --Current ship is the one the crew is on, target ship is the one that has been clicked.
-local function fireTeleportCondition(crewmem)
+local function fireTeleportCondition(crewmem) --needs work
     local mousePos = Hyperspace.Mouse.position
-    local targetRoom = getRoomAtLocation(mousePos)
+    local targetRoom = lwl.getRoomAtLocation(mousePos)
     if not targetRoom then return false end
-    local sourceRoom = getRoomAtCrewmember(crewmem)
+    local sourceRoom = lwl.getRoomAtCrewmember(crewmem)
     
     return shipManager:GetFireCount(targetRoom) > 0 and shipManager:GetFireCount(sourceRoom) > 0 
 end
