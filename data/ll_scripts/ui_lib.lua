@@ -718,7 +718,7 @@ function lwui.solidRectRenderFunction(glColor)
     end
 end
 
-function lwui.inventoryButtonDefault(object)
+function lwui.inventoryButtonCustomColors(object, mainColor, frameColor)
     if object == nil then
         lwl.logError(TAG, "in inventoryButtonDefault: Object was nil!")
         return
@@ -726,9 +726,44 @@ function lwui.inventoryButtonDefault(object)
     local mask = object.maskFunction()
     local xScaling = math.floor(.08 * mask.width)
     local yScaling = math.floor(.08 * mask.height)
-    Graphics.CSurface.GL_DrawRect(mask.getPos().x, mask.getPos().y, mask.width, mask.height, Graphics.GL_Color(63/255, 63/255, 67/255, 1))
+    Graphics.CSurface.GL_DrawRect(mask.getPos().x, mask.getPos().y, mask.width, mask.height, frameColor)
     Graphics.CSurface.GL_DrawRect(mask.getPos().x + xScaling, mask.getPos().y + yScaling,
-        mask.width - xScaling, mask.height - yScaling, Graphics.GL_Color(4/255, 8/255, 13/255, 1))
+        mask.width - xScaling, mask.height - yScaling, mainColor)
+end
+
+function lwui.inventoryButtonDefault(object)
+    lwui.inventoryButtonCustomColors(object, Graphics.GL_Color(4/255, 8/255, 13/255, 1), Graphics.GL_Color(63/255, 63/255, 67/255, 1))
+end
+
+--Listed backwards to lock eyes with god and walk backwards into hell
+local gayTransColors = {Graphics.GL_Color(83/100, 0/255, 255/255, .3), Graphics.GL_Color(0/255, 18/100, 255/255, .3),
+    Graphics.GL_Color(0/255, 255/255, 89.2/100, .3), Graphics.GL_Color(0/100, 255/255, 2/255, .3), 
+    Graphics.GL_Color(255/255, 250/255, 13/255, .3), Graphics.GL_Color(255/255, 140/255, 0/255, .3),
+    Graphics.GL_Color(255/255, 13/255, 0/255, .3)}
+
+function lwui.inventoryButtonFadedGayDefault(object)
+    local mask = object.maskFunction()
+    lwui.inventoryButtonCustomColors(object, Graphics.GL_Color(4/255, 8/255, 13/255, 1), Graphics.GL_Color(63/255, 63/255, 67/255, 1))
+    
+    --todo Be gay about it
+    for i = 1,#gayTransColors do
+        local scaleFactor = (#gayTransColors - i + 1) / #gayTransColors --ok the scaling version only works if its not trans. Means this is harder.  Eh, do it anyway, see how it looks
+        Graphics.CSurface.GL_DrawRect(mask.getPos().x, mask.getPos().y, mask.width, mask.height * scaleFactor, gayTransColors[i])
+    end
+end
+
+function lwui.inventoryButtonGayDefault(object)
+    local mask = object.maskFunction()
+    lwui.inventoryButtonCustomColors(object, Graphics.GL_Color(4/255, 8/255, 13/255, 1), Graphics.GL_Color(63/255, 63/255, 67/255, 1))
+    --todo Be gay about it
+    for i = 1,#gayTransColors do
+        local scaleFactor = ((#gayTransColors - i) / #gayTransColors) --ok the scaling version only works if its not trans. Means this is harder.  Eh, do it anyway, see how it looks
+        Graphics.CSurface.GL_DrawRect(mask.getPos().x, mask.getPos().y + (mask.height * scaleFactor), mask.width, mask.height / #gayTransColors, gayTransColors[i])
+    end
+end
+
+function lwui.inventoryButtonDefaultDisabled(object)
+    lwui.inventoryButtonCustomColors(object, Graphics.GL_Color(63/255, 63/255, 67/255, 1), Graphics.GL_Color(93/255, 93/255, 97/255, 1))
 end
 
 --spritePath is the path under your /img/ folder.  If the sprite is larger than the mask rendering it, it will be cut off, so create objects with the same size of the sprites you want them to use.

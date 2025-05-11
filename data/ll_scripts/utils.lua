@@ -3,9 +3,6 @@ local lwl = mods.lightweight_lua
 if not mods.brightness then
     error("Brightness Particles was not patched, or was patched after Lightweight Lua.  Install it properly or face undefined behavior.")
 end
-if not mods.vertexutil then
-    error("Vertex Utils was not patched, or was patched after Lightweight Lua.  Install it properly or face undefined behavior.")
-end
 
 --[[Usage:
     local lwl = mods.lightweight_lua
@@ -20,7 +17,7 @@ Table of Contents (Search for these strings to go to category header)
 ]]--
 
 local vter = mods.multiverse.vter
-local get_room_at_location = mods.vertexutil.get_room_at_location
+local get_room_at_location = mods.multiverse.get_room_at_location
 
 local global = Hyperspace.Global.GetInstance()
 local mCrewMemberFactory = global:GetCrewFactory()
