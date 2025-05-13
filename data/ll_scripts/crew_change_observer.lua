@@ -17,7 +17,6 @@ local lwl = mods.lightweight_lua
 local TAG = "LW Crew Change Observer"
 
 local mCrewChangeObservers = {}
-local mCrewMemberFactory
 local mSetupRequested = false
 local mTeleportStatusObserver
 
@@ -28,16 +27,21 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if not mSetupRequested then return end--todo use crew factory in some smart way, maybe let the user pass in a filter function that takes this object (and other things)
     --Initialization code
     if not Hyperspace.ships(0) or Hyperspace.ships(0).iCustomizeMode == 2 or lwl.isPaused() then return end
-    if not mTeleportStatusObserver.isInitialized() then
+--[[     if not mTeleportStatusObserver.isInitialized() then
         print("lightweight_crew_change_observer: mTeleportStatusObserver is not set up yet, waiting till it is.")
-        return 
+        return
     end
     
     for _,crewId in ipairs(mTeleportStatusObserver.getAddedCrew()) do--todo this might not be needed anymore.
-        --print(lwl.getCrewById(crewId):GetName(), " is teleporting! lwcco") --lol the error actually works as a log here.
+        local crewmem = lwl.getCrewById(crewId)
+        if crewmem then
+            print(lwl.getCrewById(crewId):GetName(), " is teleporting! lwcco") --lol the error actually works as a log here.
+        else
+            print(crewId, " has no matching crewmember, teleport observer may be broken if you see this a lot.")
+        end
         --We have to wait till this list is empty, so we never save this value.
         return
-    end
+    end ]]
     
     --update mCrewIds
     for _,crewChangeObserver in ipairs(mCrewChangeObservers) do
@@ -67,7 +71,7 @@ extend:GetDefinition().noWarning
 --]]
 function lwcco.createCrewChangeObserver(filterFunction)
     mSetupRequested = true
-    mTeleportStatusObserver = lwtso.createTeleportStatusObserver()
+    --mTeleportStatusObserver = lwtso.createTeleportStatusObserver()
     local crewChangeObserver = {}
     crewChangeObserver.filterFunction = filterFunction
     crewChangeObserver.crew = {}

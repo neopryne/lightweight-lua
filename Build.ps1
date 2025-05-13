@@ -45,6 +45,7 @@ if (Test-Path $relativeFile) {
 # Run patching command
 $ftlmanDir = "C:\Users\GunBuild-1\Documents\Workspace\ftlman-x86_64-pc-windows-gnu\ftlman"
 Push-Location $ftlmanDir
+.\ftlman.exe hyperspace-install latest
 .\ftlman.exe patch `
     "Multiverse 5.4.5 - Assets (Patch above Data).zip" `
     "Multiverse 5.4.6 - Data.zip" `

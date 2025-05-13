@@ -135,7 +135,7 @@ end
 
 --https://stackoverflow.com/questions/12394841/safely-remove-items-from-an-array-table-while-iterating
 --The filter function is which ones to keep
-function mods.lightweight_lua.arrayRemove(table, filterFunction)
+function mods.lightweight_lua.arrayRemove(table, filterFunction, onRemove)
     local j, n = 1, #table;
     for i=1,n do
         if (filterFunction(table, i)) then
@@ -147,6 +147,7 @@ function mods.lightweight_lua.arrayRemove(table, filterFunction)
             end
             j = j + 1; -- Increment position of where we'll place the next kept value.
         else
+            onRemove(table[i])
             table[i] = nil;
         end
     end

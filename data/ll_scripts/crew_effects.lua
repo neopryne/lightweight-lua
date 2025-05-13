@@ -50,7 +50,6 @@ lwce.KEY_CORRUPTION = "corruption"
 --A crew object will look something like this effect_crew = {id=, bleed={}, effect2={}}
 local mCrewList = {} --all the crew, both sides. it's just an ID list
 local mScaledLocalTime = 0
-local function noFilter() return true end
 local mCrewChangeObserver
 local mEffectDefinitions = {}
 local mGlobal = Hyperspace.Global.GetInstance()
@@ -147,24 +146,23 @@ local function tickCorruption(effect_crew)
 end
 
 -----------------------------EXTERNAL API--------------------------------------
+---todo This should take a crew ID instead Once I figure out why crewmem is null
 local function applyEffect(crewmem, amount, effectName)
     if not crewmem then
-        --print("Failed to apply ", effectName, ": No such crewmember")
+        print("Failed to apply ", effectName, ": No such crewmember")
         return
     end
     local listCrew = getListCrew(crewmem)
     if not listCrew then
-        --print("Failed to apply ", effectName, ": No such known crewmember ", crewmem:GetName(), crewmem.extend.selfId)
+        print("Failed to apply ", effectName, ": No such known crewmember ", crewmem:GetName(), crewmem.extend.selfId)
         return
     end
     local crewEffect = listCrew[effectName]
-    if not crewEffect then
-        --print("Error: could not find effect in ", lwl.dumpObject(listCrew))
-    end
     --print("applying effect ", effectName, "is ", crewEffect)
     if crewEffect then
         crewEffect.value = math.max(0, crewEffect.value + (amount * (1 - crewEffect.resist)))
     else
+        print("Did not find", effectName, "for crew", crewmem:GetName(), ", creating it with", amount)
         --Init new effect
         crewEffect = lwl.deepCopyTable(mEffectDefinitions[effectName])
         crewEffect.name = effectName
@@ -215,9 +213,9 @@ function lwce.createCrewEffectDefinition(name, onTick, onEnd, onRender, flagValu
     mEffectDefinitions[name] = {name=name, onTick=onTick, onRender=onRender, onEnd=onEnd, flagValue=flagValue}
 end
 
-lwce.createCrewEffectDefinition(lwce.KEY_BLEED, tickBleed, NOOP, renderEffectStandard, 1)
-lwce.createCrewEffectDefinition(lwce.KEY_CONFUSION, tickConfusion, endConfusion, renderEffectStandard, 2)
-lwce.createCrewEffectDefinition(lwce.KEY_CORRUPTION, tickCorruption, NOOP, renderEffectStandard, 3)
+lwce.createCrewEffectDefinition(lwce.KEY_BLEED, tickBleed, NOOP, NOOP, 1)
+lwce.createCrewEffectDefinition(lwce.KEY_CONFUSION, tickConfusion, endConfusion, NOOP, 2)
+lwce.createCrewEffectDefinition(lwce.KEY_CORRUPTION, tickCorruption, NOOP, NOOP, 3)
 --And when you hover the icons it prints a little popup with effect description and remaining duration
 
 
@@ -300,21 +298,19 @@ local function repositionEffectStack(listCrew)
     for key,effect in pairs(listCrew) do
         --print("loop ", i, key)
         if not (key == "id") then
+            effect.onRender(listCrew, effect)
             local particle = renderEffectStandard(listCrew, effect)
             if particle then
                 --Only show icons for hovered or selected crew (or ones you can't control|select)
-                if crewmem.selectionState == lwl.UNSELECTED() then
+                if (crewmem.selectionState == lwl.UNSELECTED() and (crewmem:GetControllable()) and crewmem.iShipId == 0) then --
                     particle.visible = false
                 else
                     particle.visible = true
                 end
-                particle.space = crewmem.currentShipId            
+                particle.space = crewmem.currentShipId
                 position_x = crewmem:GetPosition().x + FIRST_SYMBOL_RELATIVE_X + (((i + 1) % 2) * SYMBOL_OFFSET_X)
                 position_y = crewmem:GetPosition().y + FIRST_SYMBOL_RELATIVE_Y - (math.ceil(i / 2) * SYMBOL_OFFSET_Y)
-                
-                if (particle.position ~= nil) then
-                    particle.position = crewmem:GetPosition()
-                end
+                --print("Rendering particle in space", particle.space, "at position", position_x, position_y, effect.name)
                 particle.position.x = position_x
                 particle.position.y = position_y
                 i = i + 1
@@ -359,12 +355,20 @@ local function generatCrewMatchFilter(crewId)
     end
 end
 
+local function onRemoveCrew(listCrew)
+    for key,effect in pairs(listCrew) do
+        --print("loop ", i, key)
+        if ((not (key == "id")) and (effect.icon)) then
+            Brightness.destroy_particle(effect.icon)
+        end
+    end
+end
 
 --todo scale to real time, ie convert to 30ticks/second rather than frames.
 script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if not mSetupRequested then return end
     if not mCrewChangeObserver then
-        mCrewChangeObserver = lwcco.createCrewChangeObserver(noFilter)
+        mCrewChangeObserver = lwcco.createCrewChangeObserver(lwl.filterTrueCrew)
     end
     if not mCrewChangeObserver.isInitialized() then return end
     for _,listCrew in ipairs(mCrewList) do
@@ -383,18 +387,19 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
             mScaledLocalTime = 0
             local addedCrew = mCrewChangeObserver.getAddedCrew()
             for _,crewId in ipairs(addedCrew) do
-                --print("EFFECT Added crew: ", lwl.getCrewById(crewId):GetName())
+                print("EFFECT Added crew: ", lwl.getCrewById(crewId):GetName())
                 table.insert(mCrewList, {id=crewId}) --probably never added any crew 
                 --Set values.  ALL VALUES MUST BE SET HERE.
                 lwce.applyBleed(lwl.getCrewById(crewId), 0)
                 lwce.applyConfusion(lwl.getCrewById(crewId), 0)
                 local corruptionEffect = lwce.applyCorruption(lwl.getCrewById(crewId), 0)
                 corruptionEffect.didDeathSave = false
+                print("EFFECT after adding ", crewId, " there are now ", #mCrewList, " crew")
             end
             for _,crewId in ipairs(mCrewChangeObserver.getRemovedCrew()) do
-                --print("EFFECT Removed crew: ", crewId)
-                lwl.arrayRemove(mCrewList, generatCrewMatchFilter(crewId))
-                --print("EFFECT after removing ", crewId, " there are now ", #mCrewList, " crew left")
+                print("EFFECT Removed crew: ", crewId)
+                lwl.arrayRemove(mCrewList, generatCrewMatchFilter(crewId), onRemoveCrew)
+                print("EFFECT after removing ", crewId, " there are now ", #mCrewList, " crew left")
             end
             if not mInitialized and #addedCrew > 0 then --The first load will load all saved crew.
                 loadEffects()
