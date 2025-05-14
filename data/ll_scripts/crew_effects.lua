@@ -31,6 +31,23 @@ local lwcco = mods.lightweight_crew_change_observer
 local Brightness = mods.brightness
 local vter = mods.multiverse.vter
 
+---@alias EffectType
+---| '"bleed"'
+---| '"corruption"'
+---| '"confusion"'
+
+---@class (Exact) StatusEffect
+---@field name EffectType
+---@field value number
+---@field resist number
+---@field icon table|nil
+
+---@class (Exact) ListCrew
+---@field id number
+---@field bleed StatusEffect
+---@field corrpution StatusEffect
+---@field confusion StatusEffect
+
 --Tracks an internal list of all crew, updates it when crew are lost or gained.
 --Not impelmenting persistance as a core feature.  You feel like reloading to clear statuses, go for it.
 local TAG = "LW Crew Effects"
@@ -59,11 +76,15 @@ local mSetupRequested = false
 
 --Strongly recommend that if you're creating effects with this, add them to this library instead of your mod if they don't have too many dependencies.
 -----------------------------HELPER FUNCTIONS--------------------------------------
+
+---@param crewmem Hyperspace.CrewMember
+---@param effect StatusEffect
 local function createIcon(crewmem, effect)
     effect.icon = Brightness.create_particle("particles/effects/"..effect.name, 1, 60, crewmem:GetPosition(), 0, crewmem.currentShipId, "SHIP_MANAGER")
     effect.icon.persists = true
 end
 
+---@param crewmem Hyperspace.CrewMember
 local function getListCrew(crewmem)
     for _,listCrew in ipairs(mCrewList) do
         if listCrew.id == crewmem.extend.selfId then
@@ -73,7 +94,9 @@ local function getListCrew(crewmem)
     return nil
 end
 
---Returns the icon if it's rendering, and nil otherwise
+---Returns the icon if it's rendering, and nil otherwise
+---@param effect_crew ListCrew
+---@param effect StatusEffect
 local function renderEffectStandard(effect_crew, effect)
     if (effect.value <= 0) then
         if effect.icon then
@@ -90,7 +113,9 @@ local function renderEffectStandard(effect_crew, effect)
     return effect.icon
 end
 
---Some effects have a timer.  This is for those effects.  Other effects build up, or have other ways to remove them.
+---Some effects have a timer.  This is for those effects.  Other effects build up, or have other ways to remove them.
+---@param effect_crew ListCrew
+---@param effect StatusEffect
 local function tickDownEffect(effect_crew, effect)
     effect.value = math.max(0, effect.value - 1)
 end
@@ -101,7 +126,7 @@ local function tickBleed(effect_crew)
     local bleed = effect_crew.bleed
     if bleed.value > 0 then
         local crewmem = lwl.getCrewById(effect_crew.id)
-        crewmem:DirectModifyHealth(-.03 * (1 - bleed.resist))
+        crewmem:DirectModifyHealth(-.035 * (1 - bleed.resist))
         print(crewmem:GetName(), "has bleed", bleed.value)
         tickDownEffect(effect_crew, bleed)
     end
@@ -146,7 +171,12 @@ local function tickCorruption(effect_crew)
 end
 
 -----------------------------EXTERNAL API--------------------------------------
----todo This should take a crew ID instead Once I figure out why crewmem is null
+--todo This should take a crew ID instead Once I figure out why crewmem is null
+
+---@param crewmem Hyperspace.CrewMember
+---@param amount number
+---@param effectName EffectType
+---@return table|nil
 local function applyEffect(crewmem, amount, effectName)
     if not crewmem then
         print("Failed to apply ", effectName, ": No such crewmember")
@@ -174,14 +204,21 @@ local function applyEffect(crewmem, amount, effectName)
     return crewEffect
 end
 
+---The first thing you call.  Tells this to create itself if it hasn't already.
 function mods.lightweight_crew_effects.RequestInitialization()
     mSetupRequested = true
 end
 
+---Use after RequestInitialization to check if the library is ready.  The second thing you call.
+---@return boolean
 function mods.lightweight_crew_effects.isInitialized()
     return mInitialized
 end
 
+---Add resistance to the given effect to this crew. One means total immunity.
+---@param crewmem Hyperspace.CrewMember
+---@param effectName EffectType
+---@param amount number
 function mods.lightweight_crew_effects.addResist(crewmem, effectName, amount)
     if not crewmem then
         print("Failed to apply resist ", effectName, ": No such crewmember")
@@ -196,16 +233,41 @@ function mods.lightweight_crew_effects.addResist(crewmem, effectName, amount)
     crewEffect.resist = crewEffect.resist + amount
 end
 
+---Apply amount of bleed to crew Returns a table continaing all the statuses on this crew.
+---@param crewmem Hyperspace.CrewMember
+---@param amount number
+---@return table|nil
 function mods.lightweight_crew_effects.applyBleed(crewmem, amount)
     return applyEffect(crewmem, amount, lwce.KEY_BLEED)
 end
 
+---Apply amount of confusion to crew Returns a table continaing all the statuses on this crew.
+---@param crewmem Hyperspace.CrewMember
+---@param amount number
+---@return table|nil
 function mods.lightweight_crew_effects.applyConfusion(crewmem, amount)
     return applyEffect(crewmem, amount, lwce.KEY_CONFUSION)
 end
 
+---Apply amount of corruption to crew. Returns a table continaing all the statuses on this crew.
+---@param crewmem Hyperspace.CrewMember
+---@param amount number
+---@return table|nil 
 function mods.lightweight_crew_effects.applyCorruption(crewmem, amount)
     return applyEffect(crewmem, amount, lwce.KEY_CORRUPTION)
+end
+
+---Returns a status object for the given effect.
+---@param crewmem Hyperspace.CrewMember
+---@param effectName EffectType
+---@return table|nil
+function mods.lightweight_crew_effects.getEffect(crewmem, effectName)
+    local listCrew = getListCrew(crewmem)
+    if not listCrew then
+        print("LWCE INTERNAL ERROR: Failed to get ", effectName, ": No such known crewmember ", crewmem:GetName(), crewmem.extend.selfId)
+        return
+    end
+    return listCrew[effectName]
 end
 
 -----------------------------EFFECT LIST CREATION--------------------------------------
@@ -222,7 +284,6 @@ lwce.createCrewEffectDefinition(lwce.KEY_CORRUPTION, tickCorruption, NOOP, NOOP,
 
 --[[
 We persist all effects for all crew, and all listCrew have all effects
-numCrew
 --crewId
 ----Value
 ----Resist
@@ -328,25 +389,16 @@ local function tickEffects()
         for key,effect in pairs(effect_crew) do
             if not (key == "id") then
                 --print("ticking ", effect.name)
-                effect.onTick(effect_crew)
+                local realCrew = lwl.getCrewById(effect_crew.id)
+                if not realCrew then
+                    print("Warning!  Crew no longer exists with id", effect_crew.id)
+                else
+                    effect.onTick(effect_crew)
+                end
             end
         end
     end
 end
-
---[[
-local function renderEffectIcons() --buffer layer todo I did this elsewhere with Brightness
-    for _,effect_crew in ipairs(mCrewList) do
-        for key,effect in pairs(effect_crew) do
-            if not (key == "id") then
-                --render the effect icon
-                --except instead of brightness this time we're using lwui for the object hover functionality.
-                --actually... This functionality doesn't exist in either library, so why should I just not use the brightness code
-                --Because this would create a text box at a dynamic location and luwi is great at that.
-            end
-        end
-    end
-end--]]
 
 local function generatCrewMatchFilter(crewId)
     return function(table, i)

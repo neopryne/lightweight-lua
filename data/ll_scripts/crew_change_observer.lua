@@ -11,14 +11,12 @@ CCO is an alternative to saving crew.  If you're using CCO, don't persist your c
 if (not mods) then mods = {} end
 mods.lightweight_crew_change_observer = {}
 local lwcco = mods.lightweight_crew_change_observer
-local lwtso = mods.lightweight_teleport_status_observer
 local lwl = mods.lightweight_lua
 
 local TAG = "LW Crew Change Observer"
 
 local mCrewChangeObservers = {}
 local mSetupRequested = false
-local mTeleportStatusObserver
 
 --todo make it ignore crew you don't have.
 --Fixed it already, but one correct solution to this is not to allow effects/equipment to add duplicate crewIds.  I think I may need to do that also.
@@ -27,22 +25,6 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if not mSetupRequested then return end--todo use crew factory in some smart way, maybe let the user pass in a filter function that takes this object (and other things)
     --Initialization code
     if not Hyperspace.ships(0) or Hyperspace.ships(0).iCustomizeMode == 2 or lwl.isPaused() then return end
---[[     if not mTeleportStatusObserver.isInitialized() then
-        print("lightweight_crew_change_observer: mTeleportStatusObserver is not set up yet, waiting till it is.")
-        return
-    end
-    
-    for _,crewId in ipairs(mTeleportStatusObserver.getAddedCrew()) do--todo this might not be needed anymore.
-        local crewmem = lwl.getCrewById(crewId)
-        if crewmem then
-            print(lwl.getCrewById(crewId):GetName(), " is teleporting! lwcco") --lol the error actually works as a log here.
-        else
-            print(crewId, " has no matching crewmember, teleport observer may be broken if you see this a lot.")
-        end
-        --We have to wait till this list is empty, so we never save this value.
-        return
-    end ]]
-    
     --update mCrewIds
     for _,crewChangeObserver in ipairs(mCrewChangeObservers) do
         crewChangeObserver.selfIsInitialized = true

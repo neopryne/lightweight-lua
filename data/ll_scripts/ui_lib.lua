@@ -33,8 +33,7 @@ local lwl = mods.lightweight_lua
 
 --[[
 
-TODO: Image-based rendering, and scroll bar skin packs.
-Gonna make the one arc uses the default one as it's pretty good.
+TODO:
 Does mean I need a way to stretch an image.  I wonder if GL will just do that for me.
 
 Radio buttons maybe?  You can do this yourself, but I'll see if it seems worth putting here when I build it.
@@ -537,9 +536,10 @@ end
 
 
 --I might actually put this in the UI library, it's pretty useful.
---todo is this also a container for the item?
+--todo is this also a container for the item?  not currently.
+--todo add onRemove?
 --onItemAddedFunction: called with (button, item) when an item is added to this button successfully.
-function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction, renderFunction, allowedItemsFunction, onItemAddedFunction)
+function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction, renderFunction, allowedItemsFunction, onItemAddedFunction, onItemRemovedFunction)
     --todo custom logic has to go somewhere else, as these need to work even when the button isn't rendered.
     local button
     
@@ -558,8 +558,27 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
         if (button.item) then
             button.item.trackMouse = false
             if (lwui.mHoveredButton and lwui.mHoveredButton.addItem) then
-                if (lwui.mHoveredButton.addItem(button.item)) then
+                
+                --try swapping them
+                local heldItem = button.item
+                local hoveredItem = lwui.mHoveredButton.item
+                if (hoveredItem) then --todo I can probably write the swap code better than this.
                     button.item = nil
+                    lwui.mHoveredButton.item = nil
+                    if (button.allowedItemsFunction(hoveredItem) and lwui.mHoveredButton.allowedItemsFunction(heldItem)) then
+                        button.onItemRemovedFunction(button, heldItem)--todo improve this code.
+                        lwui.mHoveredButton.onItemRemovedFunction(lwui.mHoveredButton, hoveredItem)
+                        button.addItem(hoveredItem)
+                        lwui.mHoveredButton.addItem(heldItem)
+                    else
+                        button.item = heldItem
+                        lwui.mHoveredButton.item = hoveredItem
+                    end
+                else
+                    if (lwui.mHoveredButton.addItem(button.item)) then
+                        button.onItemRemovedFunction(button, button.item)
+                        button.item = nil
+                    end
                 end
             end
         end
@@ -570,7 +589,7 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
             --print("iButton already contains ", button.item.name)
             return false
         end
-        if allowedItemsFunction(item) then
+        if button.allowedItemsFunction(item) then
             button.item = item
             item.containingButton = button
             --print("added item ",  button.item.name)
@@ -581,7 +600,7 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
         return false
     end
     
-    local function buttonRender()
+    local function buttonRender() --todo make render args consistent cross all these.
         renderFunction(button)
         if (button.item) then
             --print("rendering item ", button.item.name)
@@ -593,6 +612,7 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
     button.addItem = addItem
     button.allowedItemsFunction = allowedItemsFunction
     button.onItemAddedFunction = onItemAddedFunction
+    button.onItemRemovedFunction = onItemRemovedFunction
     button.className = "inventoryButton"
     button.name = name --todo move or remove
     return button
