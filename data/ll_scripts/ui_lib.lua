@@ -38,10 +38,7 @@ Does mean I need a way to stretch an image.  I wonder if GL will just do that fo
 
 Radio buttons maybe?  You can do this yourself, but I'll see if it seems worth putting here when I build it.
 
-todo if holding an item and hovering a full button that can hold it, switch them
-
 For usage examples, please refer to Grimdark Expy.
-
 
 Functions are built to deal with objects (renderable).
 Objects are tables, so you can add fields to them as you see fit.

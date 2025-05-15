@@ -127,7 +127,7 @@ local function tickBleed(effect_crew)
     if bleed.value > 0 then
         local crewmem = lwl.getCrewById(effect_crew.id)
         crewmem:DirectModifyHealth(-.035 * (1 - bleed.resist))
-        print(crewmem:GetName(), "has bleed", bleed.value)
+        --print(crewmem:GetName(), "has bleed", bleed.value)
         tickDownEffect(effect_crew, bleed)
     end
 end
@@ -137,7 +137,7 @@ local function tickConfusion(effect_crew)
     local confusion = effect_crew.confusion
     if confusion.value > 0 then
         local crewmem = lwl.getCrewById(effect_crew.id)
-        print(crewmem:GetName(), "has confusion", confusion.value)
+        --print(crewmem:GetName(), "has confusion", confusion.value)
         tickDownEffect(effect_crew, confusion)
     end
     --todo this needs to use the HS statboost logic.
@@ -192,7 +192,7 @@ local function applyEffect(crewmem, amount, effectName)
     if crewEffect then
         crewEffect.value = math.max(0, crewEffect.value + (amount * (1 - crewEffect.resist)))
     else
-        print("Did not find", effectName, "for crew", crewmem:GetName(), ", creating it with", amount)
+        --print("Did not find", effectName, "for crew", crewmem:GetName(), ", creating it with", amount)
         --Init new effect
         crewEffect = lwl.deepCopyTable(mEffectDefinitions[effectName])
         crewEffect.name = effectName
@@ -439,19 +439,19 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
             mScaledLocalTime = 0
             local addedCrew = mCrewChangeObserver.getAddedCrew()
             for _,crewId in ipairs(addedCrew) do
-                print("EFFECT Added crew: ", lwl.getCrewById(crewId):GetName())
+                --print("EFFECT Added crew: ", lwl.getCrewById(crewId):GetName())
                 table.insert(mCrewList, {id=crewId}) --probably never added any crew 
                 --Set values.  ALL VALUES MUST BE SET HERE.
                 lwce.applyBleed(lwl.getCrewById(crewId), 0)
                 lwce.applyConfusion(lwl.getCrewById(crewId), 0)
                 local corruptionEffect = lwce.applyCorruption(lwl.getCrewById(crewId), 0)
                 corruptionEffect.didDeathSave = false
-                print("EFFECT after adding ", crewId, " there are now ", #mCrewList, " crew")
+                --print("EFFECT after adding ", crewId, " there are now ", #mCrewList, " crew")
             end
             for _,crewId in ipairs(mCrewChangeObserver.getRemovedCrew()) do
-                print("EFFECT Removed crew: ", crewId)
+                --print("EFFECT Removed crew: ", crewId)
                 lwl.arrayRemove(mCrewList, generatCrewMatchFilter(crewId), onRemoveCrew)
-                print("EFFECT after removing ", crewId, " there are now ", #mCrewList, " crew left")
+                --print("EFFECT after removing ", crewId, " there are now ", #mCrewList, " crew left")
             end
             if not mInitialized and #addedCrew > 0 then --The first load will load all saved crew.
                 loadEffects()
