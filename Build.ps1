@@ -52,6 +52,7 @@ Push-Location $ftlmanDir
     "Vertex-Util.ftl" `
 	"Brightness Particles 1.4.1.zip" `
     $relativeFile `
+    "Crew_Equipment_Library.zip" `
 	"Grimdark_Expy.zip"
 Pop-Location
 
