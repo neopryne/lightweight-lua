@@ -113,7 +113,7 @@ function lwui.addTopLevelObject(object, renderLayer)
             return
         end
     end
-    lwl.logError(TAG, "Invalid layer name "..renderLayer)
+    error("Invalid layer name ", renderLayer)
 end
 
 
@@ -640,7 +640,10 @@ local function buildTextBox(x, y, width, height, visibilityFunction, renderFunct
         Graphics.CSurface.GL_PopMatrix()
         Graphics.CSurface.GL_SetStencilMode(2,1,1)
         --Actually print the text
+        local oldColor = Graphics.CSurface.GL_GetColor()
+        Graphics.CSurface.GL_SetColor(textBox.textColor)
         Graphics.freetype.easy_printAutoNewlines(textBox.fontSize, textBox.getPos().x, textBox.getPos().y, textBox.width, textBox.text)
+        Graphics.CSurface.GL_SetColor(oldColor)
         Graphics.CSurface.GL_SetStencilMode(0,1,1)
         Graphics.CSurface.GL_PopStencilMode()
     end
@@ -672,7 +675,7 @@ end
 function lwui.buildFixedTextBox(x, y, width, height, visibilityFunction, renderFunction, maxFontSize)
     local textBox
     local function scalingFontRenderFunction()
-        renderFunction()
+        renderFunction(textBox)
         --textBox.text = textBox.text.."f"
         if (#textBox.text > textBox.lastLength) then
             textBox.lastLength = #textBox.text
@@ -702,6 +705,8 @@ function lwui.buildFixedTextBox(x, y, width, height, visibilityFunction, renderF
 end
 
 ------------------------------------RENDER FUNCTIONS----------------------------------------------------------
+
+---@return true
 function lwui.alwaysOnVisibilityFunction()
     return true
 end
@@ -785,9 +790,8 @@ end
 
 --spritePath is the path under your /img/ folder.  If the sprite is larger than the mask rendering it, it will be cut off, so create objects with the same size of the sprites you want them to use.
 --This one isn't done yet, don't use it.
-function lwui.spriteRenderFunction(spritePath)
-    --this needs to use the stencil mode.  I could use it for both, but it seems more efficient not to.  I could be wrong.
-    return function(object)
+function lwui.dynamicSpriteRenderFunction(spritePaths, indexSelectFunction)
+    return function (object)
         local mask = object.maskFunction()
         Graphics.CSurface.GL_PushStencilMode()
         Graphics.CSurface.GL_SetStencilMode(1,1,1)
@@ -801,13 +805,17 @@ function lwui.spriteRenderFunction(spritePath)
         --Render sprite image, might be larger than the stencil
         Graphics.CSurface.GL_PushMatrix()
         --TODO scale primative to the size of the object, but for now just get it working rendering images for things.
-        local primitive = primitiveListManager(spritePath)
+        local primitive = primitiveListManager(spritePaths[indexSelectFunction()])
         Graphics.CSurface.GL_Translate(object.getPos().x, object.getPos().y, 0)
         Graphics.CSurface.GL_RenderPrimitive(primitive)
         Graphics.CSurface.GL_PopMatrix()
         Graphics.CSurface.GL_SetStencilMode(0,1,1)
         Graphics.CSurface.GL_PopStencilMode()
     end
+end
+
+function lwui.spriteRenderFunction(spritePath)
+    return lwui.dynamicSpriteRenderFunction({spritePath}, function () return 1 end)
 end
 
 local function animRenderFunction(animation)

@@ -30,6 +30,7 @@ local lwui = mods.lightweight_user_interface
 local lwcco = mods.lightweight_crew_change_observer
 local Brightness = mods.brightness
 local vter = mods.multiverse.vter
+local userdata_table = mods.multiverse.userdata_table --todo use this maybe, have crewList only hold ids.
 
 ---@alias EffectType
 ---| '"bleed"'
@@ -107,7 +108,9 @@ local function renderEffectStandard(effect_crew, effect)
     else
         if not effect.icon then
             local crewmem = lwl.getCrewById(effect_crew.id)
-            createIcon(crewmem, effect)
+            if crewmem then
+                createIcon(crewmem, effect)
+            end
         end
     end
     return effect.icon
@@ -369,8 +372,8 @@ local function repositionEffectStack(listCrew)
                     particle.visible = true
                 end
                 particle.space = crewmem.currentShipId
-                position_x = crewmem:GetPosition().x + FIRST_SYMBOL_RELATIVE_X + (((i + 1) % 2) * SYMBOL_OFFSET_X)
-                position_y = crewmem:GetPosition().y + FIRST_SYMBOL_RELATIVE_Y - (math.ceil(i / 2) * SYMBOL_OFFSET_Y)
+                local position_x = crewmem:GetPosition().x + FIRST_SYMBOL_RELATIVE_X + (((i + 1) % 2) * SYMBOL_OFFSET_X)
+                local position_y = crewmem:GetPosition().y + FIRST_SYMBOL_RELATIVE_Y - (math.ceil(i / 2) * SYMBOL_OFFSET_Y)
                 --print("Rendering particle in space", particle.space, "at position", position_x, position_y, effect.name)
                 particle.position.x = position_x
                 particle.position.y = position_y
@@ -391,7 +394,7 @@ local function tickEffects()
                 --print("ticking ", effect.name)
                 local realCrew = lwl.getCrewById(effect_crew.id)
                 if not realCrew then
-                    print("Warning!  Crew no longer exists with id", effect_crew.id)
+                    --print("Warning!  Crew no longer exists with id", effect_crew.id) --todo fix this so it's better.
                 else
                     effect.onTick(effect_crew)
                 end
@@ -419,7 +422,7 @@ end
 --todo scale to real time, ie convert to 30ticks/second rather than frames.
 script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if not mSetupRequested then return end
-    if not mCrewChangeObserver then
+    if not mCrewChangeObserver then --for now, include drones in valid targets.  FTL crew is weird enough drones probably count as people.
         mCrewChangeObserver = lwcco.createCrewChangeObserver(lwl.filterTrueCrew)
     end
     if not mCrewChangeObserver.isInitialized() then return end

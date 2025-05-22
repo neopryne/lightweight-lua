@@ -35,6 +35,8 @@ local TAU = math.pi * 2
 local OWNSHIP = 0
 local ENEMY_SHIP = 1
 local TILE_SIZE = 35
+lwl.SCREEN_WIDTH = 1280
+lwl.SCREEN_HEIGHT = 720
 --Breaking change, this is now a function.
 --mods.lightweight_lua.TILE_SIZE = TILE_SIZE --Deprecated, use mods.lightweight_lua.sTILE_SIZE() instead.
 function mods.lightweight_lua.TILE_SIZE() return TILE_SIZE end --getter to preserve immutible value.
@@ -62,6 +64,25 @@ local SYS_MIND = 14
 local SYS_HACKING = 15
 local SYS_TEMPORAL = 20
 
+local SKILL_PILOT = 0
+local SKILL_ENGINES = 1
+local SKILL_SHIELDS = 2
+local SKILL_WEAPONS = 3
+local SKILL_REPAIR = 4
+local SKILL_COMBAT = 5
+
+---@return integer
+function mods.lightweight_lua.SKILL_PILOT() return SKILL_PILOT end
+---@return integer
+function mods.lightweight_lua.SKILL_ENGINES() return SKILL_ENGINES end
+---@return integer
+function mods.lightweight_lua.SKILL_SHIELDS() return SKILL_SHIELDS end
+---@return integer
+function mods.lightweight_lua.SKILL_WEAPONS() return SKILL_WEAPONS end
+---@return integer
+function mods.lightweight_lua.SKILL_REPAIR() return SKILL_REPAIR end
+---@return integer
+function mods.lightweight_lua.SKILL_COMBAT() return SKILL_COMBAT end
 
 ---@return integer
 function mods.lightweight_lua.SYS_SHIELDS() return SYS_SHIELDS end
@@ -104,7 +125,7 @@ function mods.lightweight_lua.isPaused()
     return commandGui.bPaused or commandGui.bAutoPaused or commandGui.event_pause or commandGui.menu_pause
 end
 
----usage: object = nilSet(object, value) TODO rename setIfNil
+---usage: object = nilSet(object, value)
 ---@param object any
 ---@param value any
 ---@return any
@@ -115,7 +136,7 @@ function mods.lightweight_lua.nilSet(object, value)
     return object
 end
 
----usage: object = nilSet(object, value) TODO rename setIfNil
+---usage: object = nilSet(object, value)
 ---@param object any
 ---@param value any
 ---@return any
@@ -425,34 +446,7 @@ function mods.lightweight_lua.setCrewName(crewmem, name)
     crewmem:SetName(nameTextString, true)
 end
 
----@param crewShipManager Hyperspace.ShipManager
----@param targetShipManager Hyperspace.ShipManager
----@param tracking TrackingType
----@param includeNoWarn boolean
----@return table
-local function getAllShipCrew(crewShipManager, targetShipManager, tracking, includeNoWarn)
-    tracking = lwl.setIfNil(tracking, "all")
-    includeNoWarn = lwl.setIfNil(includeNoWarn, true)
-    local memberCrew = {}
-    if not targetShipManager then return memberCrew end
-    local i = 0
-    local j = 0
-    for crewmem in vter(targetShipManager.vCrewList) do
-        i=i+1
-        if (crewmem.iShipId == crewShipManager.iShipId) then
-            j=j+1
-            if ((tracking == "all") or (tracking == "crew" and not crewmem:IsDrone()) or (tracking == "drones" and crewmem:IsDrone()))
-                    and (not ((not includeNoWarn) and crewmem.extend:GetDefinition().noWarning))
-                    and not crewmem:OutOfGame() then
-                table.insert(memberCrew, crewmem)
-            end
-        end
-    end
-    --print(targetShipManager.iShipId, " Target ship has ", i, " total crew, ", j, " of which belong to ", crewShipManager.iShipId)
-    return memberCrew
-end
-
---Then we give some filter functions that might be broadly useful, and serve 
+--Then we give some filter functions that might be broadly useful
 function mods.lightweight_lua.noFilter(crewmem)
     return true
 end
@@ -460,6 +454,12 @@ end
 ---@param crewmem Hyperspace.CrewMember
 ---@return boolean
 function mods.lightweight_lua.filterTrueCrew(crewmem)
+    return lwl.filterTrueCrewNoDrones(crewmem)--((not (crewmem:OutOfGame() or crewmem.extend.bDead or crewmem.)) or false)--todo ask sillysandvich
+end
+
+---@param crewmem Hyperspace.CrewMember
+---@return boolean
+function mods.lightweight_lua.filterTrueCrewNoDrones(crewmem)
     return crewmem:CountForVictory()  --Crew is not a drone AND (Crew is not dead or dying) OR crew is preparing to clone --sillysandvich
 end
 
@@ -482,78 +482,51 @@ function mods.lightweight_lua.getAllMemberCrewFromFactory(filterFunction)
 end
 
 ---@param shipManager Hyperspace.ShipManager
----@param tracking TrackingType
----@param includeNoWarn boolean
+---@param tracking TrackingType|nil
+---@param includeNoWarn boolean|nil
 ---@return table
 function mods.lightweight_lua.getAllMemberCrew(shipManager, tracking, includeNoWarn)
     tracking = lwl.setIfNil(tracking, "all")
     includeNoWarn = lwl.setIfNil(includeNoWarn, true)
-    local printString = ""
-    local memberCrew = {}
-    printString = printString.." Own Crew "
-    local otherShipManager = Hyperspace.ships(1 - shipManager.iShipId)
-    local sameShipCrew = getAllShipCrew(shipManager, shipManager, tracking)
-    for _,crewmem in ipairs(sameShipCrew) do
-        table.insert(memberCrew, crewmem)
-        printString = printString..crewmem:GetName()
+    local function selectionFilter(crewmem)
+        local shouldTrack = ((tracking == "all") or (tracking == "crew" and not crewmem:IsDrone()) or (tracking == "drones" and crewmem:IsDrone()))
+        local warningless = (not ((not includeNoWarn) and crewmem.extend:GetDefinition().noWarning))
+        return shouldTrack and warningless and lwl.filterTrueCrew(crewmem) and crewmem.iShipId == shipManager.iShipId
     end
-    printString = printString.." Enemy Crew "
-    local otherShipCrew = getAllShipCrew(shipManager, otherShipManager, tracking)
-    for _,crewmem in ipairs(otherShipCrew) do
-        table.insert(memberCrew, crewmem)
-        printString = printString..crewmem:GetName()
-    end
-    --if #memberCrew < 3 then
-    --print("getAllMemberCrew "..printString)
-    --end
-    return memberCrew
+    return lwl.getAllMemberCrewFromFactory(selectionFilter)
 end
 
 ---Searches all crew, both ships.  This is unique, so it can just return whatever it finds.
 ---@param selfId number
 ---@return nil|Hyperspace.CrewMember
 function mods.lightweight_lua.getCrewById(selfId)
-    for i=0,1 do
-        local shipManager = Hyperspace.ships(i)
-        if not shipManager then return nil end
-        for crewmem in vter(shipManager.vCrewList) do
-            if (crewmem.extend.selfId == selfId) then
-                return crewmem
-            end
-        end
+    local function selectionFilter(crewmem)
+        return crewmem.extend.selfId == selfId
     end
+    local crewArray = lwl.getAllMemberCrewFromFactory(selectionFilter)
+    if #crewArray == 0 then return nil end
+    return crewArray[1]
     --print("ERROR: lwl could not get crew ", selfId) --This is actually kind of normal
 end
 
 ---returns all crew on ship that belong to crewShip.
----@param shipManager Hyperspace.ShipManager
+---@param targetShipManager Hyperspace.ShipManager
 ---@param crewShipManager Hyperspace.ShipManager
 ---@return table
-function mods.lightweight_lua.getCrewOnSameShip(shipManager, crewShipManager)
-    local crewList = {}
-    for crewmem in vter(shipManager.vCrewList) do
-        if (crewmem.iShipId == crewShipManager.iShipId) then
-            table.insert(crewList, crewmem)
-        end
+function mods.lightweight_lua.getCrewOnSameShip(targetShipManager, crewShipManager)
+    local function selectionFilter(crewmem)
+        return crewmem.iShipId == crewShipManager.iShipId and crewmem.currentShipId == targetShipManager.iShipId
     end
-    return crewList
+    return lwl.getAllMemberCrewFromFactory(selectionFilter)
 end
 
---todo call into factory filter
---[[
-function mods.lightweight_lua.getSelectedCrew(shipId, selectionState)
-    local selectedCrew = {}
-    local shipManager = Hyperspace.ships(shipId)
-    local i = 0
-    if (shipManager ~= nil) then
-        for k, crewmem in ipairs(lwl.getAllMemberCrew(shipManager)) do
-            if (crewmem.selectionState == selectionState) then --fully selected
-                table.insert(selectedCrew, crewmem)
-            end
-        end
+--todo call into factory with filter function.
+function mods.lightweight_lua.getSelectedCrew(selectionState)
+    local function selectionFilter(crewmem)
+        return crewmem.selectionState == selectionState
     end
-    return selectedCrew
-end--]]
+    return lwl.getAllMemberCrewFromFactory(selectionFilter)
+end
 
 ---Returns a table of all crew on shipManager ship's belonging to crewShipManager's crew on the room tile at the given point.
 ---booleans getDrones and getNonDrones are optional, but you have to include both if you include one or it calls wrong.
@@ -563,9 +536,9 @@ end--]]
 ---@param crewShipManager Hyperspace.ShipManager
 ---@param x number
 ---@param y number
----@param getDrones boolean
----@param getNonDrones boolean
----@param maxCount integer
+---@param getDrones boolean|nil
+---@param getNonDrones boolean|nil
+---@param maxCount integer|nil
 ---@return table
 function mods.lightweight_lua.get_ship_crew_point(shipManager, crewShipManager, x, y, getDrones, getNonDrones, maxCount)
     local res = {}
@@ -782,7 +755,6 @@ function mods.lightweight_lua.randomSlotRoom(roomNumber, shipId)
 end
 
 
-
 --[[  EVENT INTERACTION UTILS  ]]--
 --toggle with INSert key, because this can be quite verbose
 --storage checks, sylvan, and the starting beacon are all very long.
@@ -818,6 +790,14 @@ function mods.lightweight_lua.printChoice(choice)
     end
 end
 
+function lwl.prependEventText(event, text)
+    event.text.data = text.."\n"..event.text.data
+end
+
+function lwl.appendEventText(event, text)
+    event.text.data = event.text.data.."\n"..text
+end
+
 --somehow this doesn't cause issues with recursive checks.
 mods.lightweight_lua.printChoiceInternal = function(choice, level)
     indentPrint("Choice Text: "..choice.text.data.." Requirement: "..choice.requirement.object.." min "..choice.requirement.min_level.." max "..choice.requirement.max_level.." max choice num "..choice.requirement.max_group, level)
@@ -836,8 +816,6 @@ mods.lightweight_lua.printEventInternal = function(locationEvent, level)
         mods.lightweight_lua.printChoiceInternal(choice, level + 1)
     end
 end
-
---need unique way of defining rooms.  Systems are on fire, rooms uh check CME.
 
 -- written by arc
 function mods.lightweight_lua.convertMousePositionToPlayerShipPosition(mousePosition)
