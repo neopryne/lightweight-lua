@@ -240,7 +240,7 @@ end
 ---@param initialSet table
 ---@return table
 function mods.lightweight_lua.getNewElements(newSet, initialSet)
-    elements = {}
+    local elements = {}
     for _, newElement in ipairs(newSet) do
         local wasPresent = false
         for _, oldElement in ipairs(initialSet) do
