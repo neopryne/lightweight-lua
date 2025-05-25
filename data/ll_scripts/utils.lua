@@ -408,31 +408,31 @@ end
 
 ---@param tag string Denote the source of the log
 ---@param text string
----@param optionalLogLevel integer
+---@param optionalLogLevel integer|nil
 function mods.lightweight_lua.logError(tag, text, optionalLogLevel)
     logInternal(tag, text, 1, optionalLogLevel)
 end
 ---@param tag string Denote the source of the log
 ---@param text string
----@param optionalLogLevel integer
+---@param optionalLogLevel integer|nil
 function mods.lightweight_lua.logWarn(tag, text, optionalLogLevel)
     logInternal(tag, text, 2, optionalLogLevel)
 end
 ---@param tag string Denote the source of the log
 ---@param text string
----@param optionalLogLevel integer
+---@param optionalLogLevel integer|nil
 function mods.lightweight_lua.logDebug(tag, text, optionalLogLevel)
     logInternal(tag, text, 3, optionalLogLevel)
 end
 ---@param tag string Denote the source of the log
 ---@param text string
----@param optionalLogLevel integer
+---@param optionalLogLevel integer|nil
 function mods.lightweight_lua.logInfo(tag, text, optionalLogLevel)
     logInternal(tag, text, 4, optionalLogLevel)
 end
 ---@param tag string Denote the source of the log
 ---@param text string
----@param optionalLogLevel integer
+---@param optionalLogLevel integer|nil
 function mods.lightweight_lua.logVerbose(tag, text, optionalLogLevel)
     logInternal(tag, text, 5, optionalLogLevel)
 end
