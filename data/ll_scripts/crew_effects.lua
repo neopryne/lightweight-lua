@@ -66,7 +66,10 @@ lwce.KEY_CORRUPTION = "corruption"
 
 --Adding a button which describes all the effects when hovered.
 --A crew object will look something like this effect_crew = {id=, bleed={}, effect2={}}
-local mCrewList = {} --all the crew, both sides. it's just an ID list
+---
+---I need to be able to make surethat the particles for a crew get cleaned upand that is why I have a crew list.
+---
+local mCrewList = {} --all the crew, both sides. it's just an ID list.  --todo change this to a crewmem list?
 local mScaledLocalTime = 0
 local mCrewChangeObserver
 local mEffectDefinitions = {}
@@ -423,7 +426,7 @@ end
 script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if not mSetupRequested then return end
     if not mCrewChangeObserver then --for now, include drones in valid targets.  FTL crew is weird enough drones probably count as people.
-        mCrewChangeObserver = lwcco.createCrewChangeObserver(lwl.filterTrueCrew)
+        mCrewChangeObserver = lwcco.createCrewChangeObserver(lwl.filterLivingCrew)
     end
     if not mCrewChangeObserver.isInitialized() then return end
     for _,listCrew in ipairs(mCrewList) do
@@ -468,10 +471,25 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     --print("Icons repositioned!")
 end)
 
+------------------------------------ATTEMPTS TO RESET EFFECT VALUES--------------------------------------------
+local clearedShipCrew = false
+script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+    if not clearedShipCrew and Hyperspace.ships(0) and Hyperspace.ships(0).iCustomizeMode == 2 then
+        for crewmem in vter(Hyperspace.ships(0).vCrewList) do
+            for j = 1,#mEffectDefinitions do
+                Hyperspace.metaVariables[PERSIST_KEY_EFFECT_VALUE..crewmem.extend.iShipId.."-"..j] = nil
+                Hyperspace.metaVariables[PERSIST_KEY_EFFECT_RESIST..crewmem.extend.iShipId.."-"..j] = nil
+            end
+        end
+        clearedShipCrew = true
+    end
+end)
+
+--todo When you hit the start beacon, zero out effects for all crew.
 script.on_game_event("START_BEACON_REAL", false, function()
         mCrewList = {}
-        --Reset all persisted status values
-        for i = 1,1500 do --idk how high the crew values go
+        --Reset all persisted status values  --this is too much, I need another way.  In hangar?  Clear effects from all that ship's crew.
+        for i = 0,2000 do --idk how high the crew values go
             for j = 1,#mEffectDefinitions do
                 Hyperspace.metaVariables[PERSIST_KEY_EFFECT_VALUE..i.."-"..j] = nil
                 Hyperspace.metaVariables[PERSIST_KEY_EFFECT_RESIST..i.."-"..j] = nil
@@ -480,8 +498,7 @@ script.on_game_event("START_BEACON_REAL", false, function()
         --reset all loaded effects
         resetEffects()
         end)
-
---todo When you hit the start beacon, zero out effects for all crew.
+------------------------------------END ATTEMPTS TO RESET EFFECT VALUES--------------------------------------------
 -----------------------------LEGEND BUTTON--------------------------------------
 local mHelpButton = lwui.buildButton(1, 0, 11, 11, lwui.alwaysOnVisibilityFunction, lwui.spriteRenderFunction("icons/help/effects_help.png"), NOOP, NOOP)
 mHelpButton.lwuiHelpText = "LWCE Statuses\nBleed:\n    Temporary duration damage over time\n    Resist reduces stacks gained and damage taken\nConfusion:\n    Not implemented yet\nCorruption:\n    Permanent damage over time\n    Resist reduces stacks gained"

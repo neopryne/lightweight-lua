@@ -8,6 +8,11 @@ Table of Contents (Search for these strings to go to category header)
     CREW UTILS
     GEOMETRY UTILS
     EVENT INTERACTION UTILS
+
+PS: I Vim Pulchritude Imagination u
+
+
+
 ]]
 mods.lightweight_lua = {}
 local lwl = mods.lightweight_lua
@@ -453,8 +458,8 @@ end
 
 ---@param crewmem Hyperspace.CrewMember
 ---@return boolean
-function mods.lightweight_lua.filterTrueCrew(crewmem)
-    return lwl.filterTrueCrewNoDrones(crewmem)--((not (crewmem:OutOfGame() or crewmem.extend.bDead or crewmem.)) or false)--todo ask sillysandvich
+function mods.lightweight_lua.filterLivingCrew(crewmem)
+    return (not (crewmem:OutOfGame() or (crewmem.bDead and not (crewmem.clone_ready or crewmem.bCloned))))
 end
 
 ---@param crewmem Hyperspace.CrewMember
@@ -491,7 +496,7 @@ function mods.lightweight_lua.getAllMemberCrew(shipManager, tracking, includeNoW
     local function selectionFilter(crewmem)
         local shouldTrack = ((tracking == "all") or (tracking == "crew" and not crewmem:IsDrone()) or (tracking == "drones" and crewmem:IsDrone()))
         local warningless = (not ((not includeNoWarn) and crewmem.extend:GetDefinition().noWarning))
-        return shouldTrack and warningless and lwl.filterTrueCrew(crewmem) and crewmem.iShipId == shipManager.iShipId
+        return shouldTrack and warningless and lwl.filterLivingCrew(crewmem) and crewmem.iShipId == shipManager.iShipId
     end
     return lwl.getAllMemberCrewFromFactory(selectionFilter)
 end
@@ -677,6 +682,17 @@ end
 ---@return Hyperspace.Pointf
 function mods.lightweight_lua.random_point_circle(origin, radius)
     local r = radius
+    local theta = TAU*(math.random())
+    return Hyperspace.Pointf(origin.x + r*math.cos(theta), origin.y + r*math.sin(theta))
+end
+
+--- Generate a random point radius away from a point
+---copied from vertexUtils random_point_radius
+---@param origin Hyperspace.Point
+---@param radius number
+---@return Hyperspace.Pointf
+function mods.lightweight_lua.random_point_radius(origin, radius)
+    local r = radius*(math.random())
     local theta = TAU*(math.random())
     return Hyperspace.Pointf(origin.x + r*math.cos(theta), origin.y + r*math.sin(theta))
 end
