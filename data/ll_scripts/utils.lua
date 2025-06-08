@@ -807,11 +807,17 @@ function mods.lightweight_lua.printChoice(choice)
 end
 
 function lwl.prependEventText(event, text)
-    event.text.data = text.."\n"..event.text.data
+    local eventText = event.text:GetText()
+    eventText = text..eventText
+    event.text.data = eventText
+    event.text.isLiteral = true
 end
 
-function lwl.appendEventText(event, text)
-    event.text.data = event.text.data.."\n"..text
+local function appendEventText(event, text)
+    local eventText = event.text:GetText()
+    eventText = eventText..text
+    event.text.data = eventText
+    event.text.isLiteral = true
 end
 
 --somehow this doesn't cause issues with recursive checks.
