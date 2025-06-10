@@ -675,6 +675,14 @@ end
 
 
 --[[  GEOMETRY UTILS  ]]--
+function mods.lightweight_lua.pointfToPoint(pointf)
+    return Hyperspace.Point(math.floor(pointf.x), math.floor(pointf.y))
+end
+
+function mods.lightweight_lua.pointToPointf(point)
+    return Hyperspace.Pointf(point.x, point.y)
+end
+
 --- Generate a random point radius away from a point
 ---modified from vertexUtils random_point_radius
 ---@param origin Hyperspace.Point
@@ -733,6 +741,12 @@ end
 function mods.lightweight_lua.closestOpenSlot(point, shipId, isIntruder)
     local shipGraph = Hyperspace.ShipGraph.GetShipInfo(shipId)
     return shipGraph:GetClosestSlot(point, shipId, isIntruder)
+end
+
+---@param crewmem Hyperspace.CrewMember
+---@return Hyperspace.Slot
+function mods.lightweight_lua.closestOpenSlotToCrew(crewmem)
+    return lwl.closestOpenSlot(crewmem:GetPosition(), crewmem.currentShipId, crewmem.currentShipId ~= crewmem.iShipId)
 end
 
 ---Doesn't matter who's in it, returns -1 if no room is found. For use with things like MoveToRoom

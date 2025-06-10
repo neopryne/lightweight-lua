@@ -31,11 +31,13 @@ local lwcco = mods.lightweight_crew_change_observer
 local Brightness = mods.brightness
 local vter = mods.multiverse.vter
 local userdata_table = mods.multiverse.userdata_table --todo use this maybe, have crewList only hold ids.
+local get_room_at_location = mods.multiverse.get_room_at_location
 
 ---@alias EffectType
 ---| '"bleed"'
 ---| '"corruption"'
 ---| '"confusion"'
+---| '"teleportitis"'
 
 ---@class (Exact) StatusEffect
 ---@field name EffectType
@@ -63,6 +65,7 @@ local PERSIST_KEY_EFFECT_RESIST = "lwce_effect_resist"
 lwce.KEY_BLEED = "bleed"
 lwce.KEY_CONFUSION = "confusion"
 lwce.KEY_CORRUPTION = "corruption"
+lwce.KEY_TELEPORTITIS = "teleportitis"
 
 --Adding a button which describes all the effects when hovered.
 --A crew object will look something like this effect_crew = {id=, bleed={}, effect2={}}
@@ -176,6 +179,39 @@ local function tickCorruption(effect_crew)
     end
 end
 
+
+
+------------------TELEPORTITIS------------------
+local function ticktTeleportitis(effect_crew)
+    local teleportitis = effect_crew.teleportitis
+    if teleportitis.value > 0 then
+        local teleportitisStability = (100 + Hyperspace.playerVariables.stability) / 17
+        tickDownEffect(effect_crew, teleportitis)
+        if math.random() > .82 then
+            teleportitis.instability = teleportitis.instability + 1
+            --print("Teleportitis", teleportitis.instability, "out of", teleportitisStability)
+        end
+        if teleportitis.instability > teleportitisStability then
+            local shipManager = Hyperspace.ships.player
+            if Hyperspace.ships.enemy then
+                if math.random(1,2) == 1 then
+                    shipManager = Hyperspace.ships.enemy
+                end
+            end
+            local realCrew = lwl.getCrewById(effect_crew.id)
+            if not realCrew then return end --todo print error or zero values?
+
+            local newPoint = lwl.pointfToPoint(shipManager:GetRandomRoomCenter())
+            local newRoom = get_room_at_location(shipManager, newPoint, false)
+            local newSlot = lwl.randomSlotRoom(newRoom, shipManager.iShipId)
+            realCrew.extend:InitiateTeleport(shipManager.iShipId, newRoom, newSlot)
+            Hyperspace.Sounds:PlaySoundMix("teleport", 9, false)
+            teleportitis.instability = 0
+            --print("Teleporting", shipManager.iShipId)
+        end
+    end
+end
+
 -----------------------------EXTERNAL API--------------------------------------
 --todo This should take a crew ID instead Once I figure out why crewmem is null
 
@@ -239,7 +275,7 @@ function mods.lightweight_crew_effects.addResist(crewmem, effectName, amount)
     crewEffect.resist = crewEffect.resist + amount
 end
 
----Apply amount of bleed to crew Returns a table continaing all the statuses on this crew.
+---Apply amount of bleed to crew. Returns a the new status.
 ---@param crewmem Hyperspace.CrewMember
 ---@param amount number
 ---@return table|nil
@@ -247,7 +283,7 @@ function mods.lightweight_crew_effects.applyBleed(crewmem, amount)
     return applyEffect(crewmem, amount, lwce.KEY_BLEED)
 end
 
----Apply amount of confusion to crew Returns a table continaing all the statuses on this crew.
+---Apply amount of confusion to crew. Returns a the new status.
 ---@param crewmem Hyperspace.CrewMember
 ---@param amount number
 ---@return table|nil
@@ -255,12 +291,20 @@ function mods.lightweight_crew_effects.applyConfusion(crewmem, amount)
     return applyEffect(crewmem, amount, lwce.KEY_CONFUSION)
 end
 
----Apply amount of corruption to crew. Returns a table continaing all the statuses on this crew.
+---Apply amount of corruption to crew. Returns a the new status.
 ---@param crewmem Hyperspace.CrewMember
 ---@param amount number
 ---@return table|nil 
 function mods.lightweight_crew_effects.applyCorruption(crewmem, amount)
     return applyEffect(crewmem, amount, lwce.KEY_CORRUPTION)
+end
+
+---Apply amount of teleportitis to crew. Returns a the new status.
+---@param crewmem Hyperspace.CrewMember
+---@param amount number
+---@return table|nil 
+function mods.lightweight_crew_effects.applyTeleportitis(crewmem, amount)
+    return applyEffect(crewmem, amount, lwce.KEY_TELEPORTITIS)
 end
 
 ---Returns a status object for the given effect.
@@ -284,6 +328,7 @@ end
 lwce.createCrewEffectDefinition(lwce.KEY_BLEED, tickBleed, NOOP, NOOP, 1)
 lwce.createCrewEffectDefinition(lwce.KEY_CONFUSION, tickConfusion, endConfusion, NOOP, 2)
 lwce.createCrewEffectDefinition(lwce.KEY_CORRUPTION, tickCorruption, NOOP, NOOP, 3)
+lwce.createCrewEffectDefinition(lwce.KEY_TELEPORTITIS, ticktTeleportitis, NOOP, NOOP, 4)
 --And when you hover the icons it prints a little popup with effect description and remaining duration
 
 
@@ -399,7 +444,9 @@ local function tickEffects()
                 if not realCrew then
                     --print("Warning!  Crew no longer exists with id", effect_crew.id) --todo fix this so it's better.
                 else
-                    effect.onTick(effect_crew)
+                    if (not realCrew.bDead and realCrew.health.first > 0) then
+                        effect.onTick(effect_crew)
+                    end
                 end
             end
         end
@@ -448,10 +495,15 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
                 --print("EFFECT Added crew: ", lwl.getCrewById(crewId):GetName())
                 table.insert(mCrewList, {id=crewId}) --probably never added any crew 
                 --Set values.  ALL VALUES MUST BE SET HERE.
-                lwce.applyBleed(lwl.getCrewById(crewId), 0)
-                lwce.applyConfusion(lwl.getCrewById(crewId), 0)
-                local corruptionEffect = lwce.applyCorruption(lwl.getCrewById(crewId), 0)
-                corruptionEffect.didDeathSave = false
+                local realCrew = lwl.getCrewById(crewId)
+                if realCrew then
+                    lwce.applyBleed(realCrew, 0)
+                    lwce.applyConfusion(realCrew, 0)
+                    local corruptionEffect = lwce.applyCorruption(realCrew, 0)
+                    corruptionEffect.didDeathSave = false
+                    local teleEffect = lwce.applyTeleportitis(realCrew, 0)
+                    teleEffect.instability = 0
+                end
                 --print("EFFECT after adding ", crewId, " there are now ", #mCrewList, " crew")
             end
             for _,crewId in ipairs(mCrewChangeObserver.getRemovedCrew()) do
@@ -501,5 +553,5 @@ script.on_game_event("START_BEACON_REAL", false, function()
 ------------------------------------END ATTEMPTS TO RESET EFFECT VALUES--------------------------------------------
 -----------------------------LEGEND BUTTON--------------------------------------
 local mHelpButton = lwui.buildButton(1, 0, 11, 11, lwui.alwaysOnVisibilityFunction, lwui.spriteRenderFunction("icons/help/effects_help.png"), NOOP, NOOP)
-mHelpButton.lwuiHelpText = "LWCE Statuses\nBleed:\n    Temporary duration damage over time\n    Resist reduces stacks gained and damage taken\nConfusion:\n    Not implemented yet\nCorruption:\n    Permanent damage over time\n    Resist reduces stacks gained"
+mHelpButton.lwuiHelpText = "LWCE Statuses\nBleed:\n    Temporary duration damage over time\n    Resist reduces stacks gained and damage taken\nConfusion:\n    Not implemented yet\nCorruption:\n    Permanent damage over time\n    Resist reduces stacks gained\nTeleportitis:\n    Crew occasionally randomly teleports to another location."
 lwui.addHelpButton(mHelpButton)
