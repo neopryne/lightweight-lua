@@ -11,5 +11,6 @@
 		<mod-append:script>data/ll_scripts/crew_change_observer.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/self_indexing_list.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/crew_effects.lua</mod-append:script>
+		<mod-append:script>data/ll_scripts/stat_boosts.lua</mod-append:script>
 	</mod:findLike>
 </FTL>

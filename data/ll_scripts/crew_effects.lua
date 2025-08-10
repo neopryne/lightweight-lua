@@ -162,7 +162,7 @@ local function tickCorruption(effect_crew)
     if corruption.value > 0 then
         local crewmem = lwl.getCrewById(effect_crew.id)
         
-        if crewmem.bDead then
+        if crewmem.bDead then --todo effects don't tick when dead, so what this will actually do is set the cloneable value to true or false randomly every tick.
             if not corruption.didDeathSave then
                 corruption.didDeathSave = true
                 if (corruption.value > (math.random() * 100)) then
@@ -453,7 +453,7 @@ local function tickEffects()
     end
 end
 
-local function generatCrewMatchFilter(crewId)
+local function generateCrewMatchFilter(crewId)
     return function(table, i)
         --print("filter comparing ", crewId, table[i].id)
         return table[i].id ~= crewId
@@ -508,7 +508,7 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
             end
             for _,crewId in ipairs(mCrewChangeObserver.getRemovedCrew()) do
                 --print("EFFECT Removed crew: ", crewId)
-                lwl.arrayRemove(mCrewList, generatCrewMatchFilter(crewId), onRemoveCrew)
+                lwl.arrayRemove(mCrewList, generateCrewMatchFilter(crewId), onRemoveCrew)
                 --print("EFFECT after removing ", crewId, " there are now ", #mCrewList, " crew left")
             end
             if not mInitialized and #addedCrew > 0 then --The first load will load all saved crew.

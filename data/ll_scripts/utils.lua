@@ -456,6 +456,13 @@ function mods.lightweight_lua.noFilter(crewmem)
     return true
 end
 
+--Generates a filter, not one itself.
+function mods.lightweight_lua.generateOpposingCrewFilter(crewmem)
+    return function (crew)
+        return crew.iShipId ~= crewmem.iShipId
+    end
+end
+
 ---@param crewmem Hyperspace.CrewMember
 ---@return boolean
 function mods.lightweight_lua.filterLivingCrew(crewmem)
@@ -652,6 +659,35 @@ function mods.lightweight_lua.damageEnemyHelper(activeCrew, amount, stunTime, cu
         bystander:DirectModifyHealth(-amount)
     end
 end
+
+
+---comment
+---@param roomId integer
+---@param shipId integer 0 or 1
+---@param filterFunction function (Hyperspace.CrewMember) optional additional conditions for which crew to get.
+---@return table
+function mods.lightweight_lua.getRoomCrew(roomId, shipId, filterFunction)
+    filterFunction = lwl.setIfNil(filterFunction, function (_)
+        return true
+    end)
+    local function roomFilter(crewmem)
+        print("Checking", crewmem:GetName(), "at", crewmem.currentShipId, crewmem.iRoomId, "against", shipId, roomId)
+        return crewmem.currentShipId == shipId and crewmem.iRoomId == roomId and filterFunction(crewmem)
+    end
+    return lwl.getAllMemberCrewFromFactory(roomFilter)
+end
+
+---comment
+---@param crewmem Hyperspace.CrewMember crew to get crew in the room of.
+---@param filterFunction function (Hyperspace.CrewMember) optional additional conditions for which crew to get.
+---@return table
+function mods.lightweight_lua.getSameRoomCrew(crewmem, filterFunction)
+    filterFunction = lwl.setIfNil(filterFunction, function (_)
+        return true
+    end)
+    return lwl.getRoomCrew(crewmem.iRoomId, crewmem.currentShipId, filterFunction)
+end
+
 
 --Does direct damage to all foes in the room. optional stun time
 ---comment
