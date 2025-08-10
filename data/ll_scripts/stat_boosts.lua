@@ -117,10 +117,10 @@ function(crew, stat, def, amount, value)
                                 error("Attempted to do math on non-numeric boost value!")
                             end
                             if statBoost.action == lwsb.ACTION_NUMERIC_ADD then
-                                print(_, "Add was is now", boostValues[lwsb.ACTION_NUMERIC_ADD], boostValues[lwsb.ACTION_NUMERIC_ADD] + statBoost.valueAmount)
+                                --print(_, "Add was is now", boostValues[lwsb.ACTION_NUMERIC_ADD], boostValues[lwsb.ACTION_NUMERIC_ADD] + statBoost.valueAmount)
                                 boostValues[lwsb.ACTION_NUMERIC_ADD] = boostValues[lwsb.ACTION_NUMERIC_ADD] + statBoost.valueAmount
                             elseif statBoost.action == lwsb.ACTION_NUMERIC_MULTIPLY then
-                                print(_, "Mult was is now", boostValues[lwsb.ACTION_NUMERIC_MULTIPLY], boostValues[lwsb.ACTION_NUMERIC_MULTIPLY] * statBoost.valueAmount)
+                                --print(_, "Mult was is now", boostValues[lwsb.ACTION_NUMERIC_MULTIPLY], boostValues[lwsb.ACTION_NUMERIC_MULTIPLY] * statBoost.valueAmount)
                                 boostValues[lwsb.ACTION_NUMERIC_MULTIPLY] = boostValues[lwsb.ACTION_NUMERIC_MULTIPLY] * statBoost.valueAmount
                             end
                         end

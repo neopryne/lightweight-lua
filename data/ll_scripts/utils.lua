@@ -376,6 +376,18 @@ function mods.lightweight_lua.deepTableMerge(t1, t2)
     return mods.lightweight_lua.tableMerge(t1Copy, t2Copy)
 end
 
+
+--[[
+How about a function that takes a argument and tries to make it into a thing?
+Like, assume it's the type you want, and if it's not but can be eval'd, eval it, and if it still has the same value as before, you can't use it.
+Otherwise, keep calling this recusively.
+Hmm, actually this is annoying, because the thing that you're really looking for is loops, but a loop of size 1 is the easiest to find.
+Loop patterns larger than that quickly get much rarer and harder to check for/find.
+But the longer you've been evaling for, the more [power|resources] you should spend checking for loops.
+]]
+
+
+
 --[[  LOGGING UTILS  ]]--
 mods.lightweight_lua.LOG_LEVEL = 1 --Higher is more verbose, feel free to modify this.
 --[[
@@ -449,18 +461,6 @@ function mods.lightweight_lua.setCrewName(crewmem, name)
     local nameTextString = Hyperspace.TextString()
     nameTextString.data = name
     crewmem:SetName(nameTextString, true)
-end
-
---Then we give some filter functions that might be broadly useful
-function mods.lightweight_lua.noFilter(crewmem)
-    return true
-end
-
---Generates a filter, not one itself.
-function mods.lightweight_lua.generateOpposingCrewFilter(crewmem)
-    return function (crew)
-        return crew.iShipId ~= crewmem.iShipId
-    end
 end
 
 ---@param crewmem Hyperspace.CrewMember
@@ -671,7 +671,7 @@ function mods.lightweight_lua.getRoomCrew(roomId, shipId, filterFunction)
         return true
     end)
     local function roomFilter(crewmem)
-        print("Checking", crewmem:GetName(), "at", crewmem.currentShipId, crewmem.iRoomId, "against", shipId, roomId)
+        --print("Checking", crewmem:GetName(), "at", crewmem.currentShipId, crewmem.iRoomId, "against", shipId, roomId)
         return crewmem.currentShipId == shipId and crewmem.iRoomId == roomId and filterFunction(crewmem)
     end
     return lwl.getAllMemberCrewFromFactory(roomFilter)
@@ -818,6 +818,47 @@ function mods.lightweight_lua.randomSlotRoom(roomNumber, shipId)
     local height = shape.h / TILE_SIZE
     local count_of_tiles_in_room = width * height
     return math.floor(math.random() * count_of_tiles_in_room) --zero indexed
+end
+
+
+--Then we give some filter functions that might be broadly useful
+function mods.lightweight_lua.noFilter(crewmem)
+    return true
+end
+
+---@param crewmem Hyperspace.CrewMember
+---@return function Returns true if this crewmember is an exact match.
+function mods.lightweight_lua.generateCrewFilterFunction(crewmem)
+    return function (crew)
+        return crew.extend.selfId == crewmem.extend.selfId
+    end
+end
+
+---@param crewmem Hyperspace.CrewMember
+---@return function Returns true if this crewmember is an exact match.
+function mods.lightweight_lua.generateSameRoomAlliesFilterFunction(crewmem)
+    return function ()
+        return lwl.getSameRoomCrew(crewmem, function (crew)
+            return crew.iShipId == crewmem.iShipId
+        end)
+    end
+end
+
+---@param crewmem Hyperspace.CrewMember
+---@return function Returns true if this crewmember is an exact match.
+function mods.lightweight_lua.generateSameRoomFoesFilterFunction(crewmem)
+    return function ()
+        return lwl.getSameRoomCrew(crewmem, function (crew)
+            return crew.iShipId ~= crewmem.iShipId
+        end)
+    end
+end
+
+--Generates a filter, not one itself.
+function mods.lightweight_lua.generateOpposingCrewFilter(crewmem)
+    return function (crew)
+        return crew.iShipId ~= crewmem.iShipId
+    end
 end
 
 

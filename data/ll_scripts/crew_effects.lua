@@ -28,6 +28,7 @@ local lwce = mods.lightweight_crew_effects
 local lwl = mods.lightweight_lua
 local lwui = mods.lightweight_user_interface
 local lwcco = mods.lightweight_crew_change_observer
+local lwsb = mods.lightweight_statboosts
 local Brightness = mods.brightness
 local vter = mods.multiverse.vter
 local userdata_table = mods.multiverse.userdata_table --todo use this maybe, have crewList only hold ids.
@@ -83,6 +84,14 @@ local mSetupRequested = false
 
 --Strongly recommend that if you're creating effects with this, add them to this library instead of your mod if they don't have too many dependencies.
 -----------------------------HELPER FUNCTIONS--------------------------------------
+
+---@param crewmem Hyperspace.CrewMember
+---@return function Returns true if this crewmember is an exact match.
+local function generateCrewFilterFunction(crewmem)
+    return function (crew)
+        return crew.extend.selfId == crewmem.extend.selfId
+    end
+end
 
 ---@param crewmem Hyperspace.CrewMember
 ---@param effect StatusEffect
@@ -152,7 +161,7 @@ local function tickConfusion(effect_crew)
     --todo this needs to use the HS statboost logic.
 end
 local function endConfusion(effect_crew)
-    --todo this needs to use the HS statboost logic.
+    lwsb.removeStatBoost(effect_crew.confusion.statBoostId)
 end
 
 ------------------CORRUPTION------------------
@@ -288,7 +297,11 @@ end
 ---@param amount number
 ---@return table|nil
 function mods.lightweight_crew_effects.applyConfusion(crewmem, amount)
-    return applyEffect(crewmem, amount, lwce.KEY_CONFUSION)
+    local effect = applyEffect(crewmem, amount, lwce.KEY_CONFUSION)
+    if effect.value == amount then --If this is a new effect for this crew
+        effect.statBoostId = lwsb.addStatBoost(Hyperspace.CrewStat.CONTROLLABLE, lwsb.TYPE_BOOLEAN, lwsb.ACTION_SET, false, generateCrewFilterFunction(crewmem))
+    end
+    return effect
 end
 
 ---Apply amount of corruption to crew. Returns a the new status.
