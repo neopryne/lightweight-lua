@@ -108,20 +108,28 @@ function(crew, stat, def, amount, value)
             for _,statBoostId in pairs(mStatBoostTable[stat]) do
                 local statBoost = mStatBoostsUnsorted[statBoostId]
                 if statBoost ~= nil then
+                    local valueAmount = nil
+                    if statBoost.type == lwsb.TYPE_NUMERIC then
+                        valueAmount = lwl.resolveToNumber(statBoost.valueAmount)
+                    elseif statBoost.type == lwsb.TYPE_BOOLEAN then
+                        valueAmount = lwl.resolveToBoolean(statBoost.valueAmount)
+                    elseif statBoost.type == lwsb.TYPE_STRING then
+                        valueAmount = lwl.resolveToString(statBoost.valueAmount)
+                    end
                     if statBoost.filterFunction(crew) then
                         appliedBoost = true
                         if statBoost.action == lwsb.ACTION_SET then
-                            boostValues[statBoost.type] = statBoost.valueAmount
+                            boostValues[statBoost.type] = valueAmount
                         else --Math
                             if not statBoost.type == lwsb.TYPE_NUMERIC then
                                 error("Attempted to do math on non-numeric boost value!")
                             end
                             if statBoost.action == lwsb.ACTION_NUMERIC_ADD then
                                 --print(_, "Add was is now", boostValues[lwsb.ACTION_NUMERIC_ADD], boostValues[lwsb.ACTION_NUMERIC_ADD] + statBoost.valueAmount)
-                                boostValues[lwsb.ACTION_NUMERIC_ADD] = boostValues[lwsb.ACTION_NUMERIC_ADD] + statBoost.valueAmount
+                                boostValues[lwsb.ACTION_NUMERIC_ADD] = boostValues[lwsb.ACTION_NUMERIC_ADD] + valueAmount
                             elseif statBoost.action == lwsb.ACTION_NUMERIC_MULTIPLY then
                                 --print(_, "Mult was is now", boostValues[lwsb.ACTION_NUMERIC_MULTIPLY], boostValues[lwsb.ACTION_NUMERIC_MULTIPLY] * statBoost.valueAmount)
-                                boostValues[lwsb.ACTION_NUMERIC_MULTIPLY] = boostValues[lwsb.ACTION_NUMERIC_MULTIPLY] * statBoost.valueAmount
+                                boostValues[lwsb.ACTION_NUMERIC_MULTIPLY] = boostValues[lwsb.ACTION_NUMERIC_MULTIPLY] * valueAmount
                             end
                         end
                     end

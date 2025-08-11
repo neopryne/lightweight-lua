@@ -1033,3 +1033,63 @@ local function waitForInitialization(blockedFunction, localVar, varGetter)
     end
 end
 --]]
+
+
+
+
+
+
+----Black Magic
+--[[
+When a thing fails, it should say how it failed, and then inform its calling process that it failed.
+Usually with how things are written these days, this bubbles all the way up to the main runtime.
+]]
+
+local function resolveToTypeInternal(value, desiredType, previousValue, depth)
+    depth = depth or 0
+    if depth > 100 then
+        error("Exceeded maximum resolution depth")
+        return nil
+    end
+    if value == previousValue then
+        error("Value has not changed after evaluation")
+        return nil
+    end
+
+    if type(value) == desiredType then
+        return value
+    elseif type(value) == "function" then
+        return resolveToTypeInternal(value(), desiredType, value, depth + 1)
+    elseif type(value) == "string" then
+        local chunk, err = load("return " .. value)
+        if chunk then
+            return resolveToTypeInternal(chunk(), desiredType, value, depth + 1)
+        else
+            error("String could not be evaluated to a number: " .. err)
+        end
+    else
+        error("Unsupported type: " .. type(value))
+        return nil
+    end
+end
+
+function mods.lightweight_lua.resolveToNumber(value)
+    return resolveToTypeInternal(value, "number", nil, 0)
+end
+
+function mods.lightweight_lua.resolveToBoolean(value)
+    return resolveToTypeInternal(value, "boolean", nil, 0)
+end
+
+function mods.lightweight_lua.resolveToString(value)
+    return resolveToTypeInternal(value, "string", nil, 0)
+end
+
+
+
+
+
+
+
+
+
