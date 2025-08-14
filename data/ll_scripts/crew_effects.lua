@@ -17,10 +17,15 @@ Bleed:
     Temporary duration damage over time
     Resist reduces stacks gained and damage taken
 Confusion:
-    Not implemented yet
+    Crew becomes uncontrollable.
 Corruption:
     Permanent damage over time
     Resist reduces stacks gained
+Teleportitis:
+    Crew randomly teleports periodically.
+
+Right now I don't have a ton to do with confusion, as it only affects player crew, and equipment
+are also only for player crew.
 --]]
 if (not mods) then mods = {} end
 mods.lightweight_crew_effects = {}
@@ -84,14 +89,6 @@ local mSetupRequested = false
 
 --Strongly recommend that if you're creating effects with this, add them to this library instead of your mod if they don't have too many dependencies.
 -----------------------------HELPER FUNCTIONS--------------------------------------
-
----@param crewmem Hyperspace.CrewMember
----@return function Returns true if this crewmember is an exact match.
-local function generateCrewFilterFunction(crewmem)
-    return function (crew)
-        return crew.extend.selfId == crewmem.extend.selfId
-    end
-end
 
 ---@param crewmem Hyperspace.CrewMember
 ---@param effect StatusEffect
@@ -299,7 +296,7 @@ end
 function mods.lightweight_crew_effects.applyConfusion(crewmem, amount)
     local effect = applyEffect(crewmem, amount, lwce.KEY_CONFUSION)
     if effect.value == amount then --If this is a new effect for this crew
-        effect.statBoostId = lwsb.addStatBoost(Hyperspace.CrewStat.CONTROLLABLE, lwsb.TYPE_BOOLEAN, lwsb.ACTION_SET, false, generateCrewFilterFunction(crewmem))
+        effect.statBoostId = lwsb.addStatBoost(Hyperspace.CrewStat.CONTROLLABLE, lwsb.TYPE_BOOLEAN, lwsb.ACTION_SET, false, lwl.generateCrewFilterFunction(crewmem))
     end
     return effect
 end
@@ -566,5 +563,5 @@ script.on_game_event("START_BEACON_REAL", false, function()
 ------------------------------------END ATTEMPTS TO RESET EFFECT VALUES--------------------------------------------
 -----------------------------LEGEND BUTTON--------------------------------------
 local mHelpButton = lwui.buildButton(1, 0, 11, 11, lwui.alwaysOnVisibilityFunction, lwui.spriteRenderFunction("icons/help/effects_help.png"), NOOP, NOOP)
-mHelpButton.lwuiHelpText = "LWCE Statuses\nBleed:\n    Temporary duration damage over time\n    Resist reduces stacks gained and damage taken\nConfusion:\n    Not implemented yet\nCorruption:\n    Permanent damage over time\n    Resist reduces stacks gained\nTeleportitis:\n    Crew occasionally randomly teleports to another location."
+mHelpButton.lwuiHelpText = "LWCE Statuses\nBleed:\n    Temporary flat damage over time\n    Resist reduces stacks gained and damage taken\nConfusion:\n    Crew becomes uncontrollable.\n    Resist reduces stacks gained.\nCorruption:\n    Permanent stacking damage over time\n    Resist reduces stacks gained\nTeleportitis:\n    Crew occasionally randomly teleports to another location."
 lwui.addHelpButton(mHelpButton)

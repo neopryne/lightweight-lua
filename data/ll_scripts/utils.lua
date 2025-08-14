@@ -376,6 +376,14 @@ function mods.lightweight_lua.deepTableMerge(t1, t2)
     return mods.lightweight_lua.tableMerge(t1Copy, t2Copy)
 end
 
+---logical xor.
+---@param a boolean
+---@param b boolean
+---@return boolean
+function mods.lightweight_lua.xor(a,b)
+    return (a or b) and (not(a and b))
+end
+
 
 --[[
 How about a function that takes a argument and tries to make it into a thing?

@@ -472,6 +472,7 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
     scrollContainer.contentContainer = contentContainer
     scrollNub.scrollContainer = scrollContainer
     scrollContainer.className = "scrollContainer"
+    scrollContainer.invertScroll = false
     return scrollContainer
 end
 
@@ -917,16 +918,18 @@ script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x
     return Defines.Chain.CONTINUE
 end)
 
---[[
-TODO add this when hyperspace adds the event for scrolling
-    script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x,y)
-        if (mHoveredScrollContainer) then
-            mHoveredScrollContainer.scrollDown()
-        end
-        return Defines.Chain.CONTINUE
-    end)
+
+script.on_internal_event(Defines.InternalEvents.ON_MOUSE_SCROLL, function(direction)
+    if not mHoveredScrollContainer then return end
+    if lwl.xor(direction > 0, mHoveredScrollContainer.invertScroll) then
+        mHoveredScrollContainer.scrollDown()
+    else
+        mHoveredScrollContainer.scrollUp()
+    end
+    return Defines.Chain.CONTINUE
+end)
 --todo add scroll wheel scrolling to scroll bars, prioritizing the lowest level one.
---]]
+
 local function registerRenderEvents(eventList)
     for name, _ in pairs(eventList) do
         mTopLevelRenderLists[name] = {}
