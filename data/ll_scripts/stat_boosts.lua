@@ -37,7 +37,7 @@ lwsb.ACTION_NUMERIC_MULTIPLY = "MULT" --Can only be used with numeric types.
 local mStatBoostsUnsorted = {} --table by externalId
 local mStatBoostTable = {}
 for _,crewStat in pairs(Hyperspace.CrewStat) do
-    print(_, crewStat)
+    --print(_, crewStat)
     mStatBoostTable[crewStat] = {}
 end
 

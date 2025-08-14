@@ -918,7 +918,6 @@ script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x
     return Defines.Chain.CONTINUE
 end)
 
-
 script.on_internal_event(Defines.InternalEvents.ON_MOUSE_SCROLL, function(direction)
     if not mHoveredScrollContainer then return end
     if lwl.xor(direction > 0, mHoveredScrollContainer.invertScroll) then
@@ -928,7 +927,6 @@ script.on_internal_event(Defines.InternalEvents.ON_MOUSE_SCROLL, function(direct
     end
     return Defines.Chain.CONTINUE
 end)
---todo add scroll wheel scrolling to scroll bars, prioritizing the lowest level one.
 
 local function registerRenderEvents(eventList)
     for name, _ in pairs(eventList) do

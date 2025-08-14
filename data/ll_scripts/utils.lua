@@ -376,6 +376,16 @@ function mods.lightweight_lua.deepTableMerge(t1, t2)
     return mods.lightweight_lua.tableMerge(t1Copy, t2Copy)
 end
 
+function lwl.tableContains(currentTable, value)
+    for _,val in ipairs(currentTable) do
+        if val == value then
+            return true
+        end
+    end
+    return false
+end
+
+
 ---logical xor.
 ---@param a boolean
 ---@param b boolean

@@ -2,17 +2,7 @@ if (not mods) then mods = {} end
 mods.lightweight_keybinds = {}
 local lwk = mods.lightweight_keybinds
 
---This doesn't disable existing hotkeys, so watch out I guess.
-
-local MODIFIER_KEYS = {
-    -- Modifier and special keys (no printed character)
-    "KEY_LSHIFT",
-    "KEY_RSHIFT",
-    "KEY_LCTRL",
-    "KEY_RCTRL",
-    "KEY_LALT",
-    "KEY_RALT"
-}
+local lwl = mods.lightweight_lua
 
 local keyNameTable = {
     [0] = "KEY_UNKNOWN",
@@ -244,136 +234,170 @@ local KEY_TO_CHARACTER_MAP = {
     -- Special keys (no printed character)
 }
 
-local SHIFT = "SHIFT"
-local CTRL = "CTRL"
-local META = "META"
-local mPressedModifierKeys = {}
+local ON_KEY_DOWN = "ON_KEY_DOWN"
+local ON_KEY_UP = "ON_KEY_UP"
+lwk.SHIFT = "SHIFT"
+lwk.CTRL = "CTRL"
+lwk.META = "META"
 local mKeyBindings = {}
+local mPressedKeys = {}
 
---todo change when integrating with ftl to real values
-local function modifierIsPressed(keyId)
-    --print("checking if is pressed ", keyId)
-    return (mPressedModifierKeys[keyId] ~= nil)
+
+local function isPressed(keyId)
+    return mPressedKeys[keyId]
 end
 
 function lwk.shiftPressed()
-    return modifierIsPressed("KEY_RSHIFT") or modifierIsPressed("KEY_LSHIFT")
+    return isPressed(Defines.SDL_KEY_RSHIFT) or isPressed(Defines.SDL_KEY_LSHIFT)
 end
 
 function lwk.ctrlPressed()
-    return modifierIsPressed("KEY_RCTRL") or modifierIsPressed("KEY_LCTRL")
+    return isPressed(Defines.SDL_KEY_RCTRL) or isPressed(Defines.SDL_KEY_LCTRL)
 end
 
 function lwk.metaPressed()
-    return modifierIsPressed("KEY_RMETA") or modifierIsPressed("KEY_LMETA") or modifierIsPressed("KEY_LALT") or modifierIsPressed("KEY_RALT")
+    return isPressed(Defines.SDL_KEY_RMETA) or isPressed(Defines.SDL_KEY_LMETA) or isPressed(Defines.SDL_KEY_RALT) or isPressed(Defines.SDL_KEY_LALT)
 end
 
---extract and order modifier keys for internal key bindings.
-local function normalizedModifierKeys()
-    local orderedModifiers = {}
-    if lwk.shiftPressed() then table.insert(orderedModifiers, SHIFT) end
-    if lwk.ctrlPressed() then table.insert(orderedModifiers, CTRL) end
-    if lwk.metaPressed() then table.insert(orderedModifiers, META) end
-    return orderedModifiers
+--todo I should really make a syntax for "or" and "and" for modifiers.  Right now it's always "and".
+--This whole business of modifiers is kind of contentious, but if you don't have them you run into issues of unrelated keys counting as modifiers
+-- and preventing you from entering your key combo.  It means that meta x+y doesn't work.  Not that it does anyway in this interface.
+local function getActiveModifiers()
+    local activeModifiers = {}
+    if lwk.shiftPressed() then table.insert(activeModifiers, lwk.SHIFT) end
+    if lwk.ctrlPressed() then table.insert(activeModifiers, lwk.CTRL) end
+    if lwk.metaPressed() then table.insert(activeModifiers, lwk.META) end
+    return activeModifiers
+end
+
+--Sort by value ascending
+local function normalizedModifierKeys(modifierKeys)
+    table.sort(modifierKeys)
+    return modifierKeys
 end
 
 --[[
 I need a better code editor, I need a better thing, I need a better language.  I need to learn lisp like really learn it like write it myself like engrain it into myself or I will die.
 --]]
-
---TODO need a way to ensure modifier key order is always the same, and
--- Function to register a callback for a specific key combination
---Functions must take one argument, operatorKey.  They do not have to use it if they don't want to.
---To get modifier keys, the methods shiftPressed(), ctrlPressed(), and metaPressed() are available.
---modifierKeys is defined as an array with keys SHIFT, CTRL, and META with boolean values.
 local function getModifiersAsString(modifierKeys)
-    return table.concat(modifierKeys, "+")
+    --print("getModifiersAsString", modifierKeys)
+    local normalizedKeys = normalizedModifierKeys(modifierKeys)
+    --print("normalizedKeys", normalizedKeys)
+    if not normalizedKeys then return "" end
+    local string = table.concat(normalizedKeys, "+")
+    --print("modstring", string)
+    return string
 end
 
---multiple functions can be registered for the same key
-function lwk.registerKeyFunctionCombo(operatorKey, modifierKeys, callback)
+
+-----------------------------------API--------------------------------------
+
+---Registers a callback to be executed upon a given key (combination).
+---multiple functions can be registered for the same key
+---Currently, only ctrl, shift, and meta are accepted as modifiers, but I don't see any reason why I couldn't change that in the future. 
+---@param operatorKey number Hyperspace KeyId
+---@param modifierKeys table Valid values: lwk.SHIFT, lwk.CTRL, and lwk.META.
+---@param keyPressCallback function|nil
+---@param keyReleaseCallback function|nil
+function lwk.registerKeyFunctionCombo(operatorKey, modifierKeys, keyPressCallback, keyReleaseCallback)
+    if not modifierKeys then modifierKeys = {} end
     --print("registering ", operatorKey, modKey)
-    if not  mKeyBindings[operatorKey] then
+    if not mKeyBindings[operatorKey] then
          mKeyBindings[operatorKey] = {}
     end
 
-    local modKey = getModifiersAsString(modifierKeys)
+    local modKeys = getModifiersAsString(modifierKeys)
     --print("modkey1 ", modKey)
-    if not mKeyBindings[operatorKey][modKey] then
-         mKeyBindings[operatorKey][modKey] = {}
+    if not mKeyBindings[operatorKey][modKeys] then
+         mKeyBindings[operatorKey][modKeys] = {}
     end
 
-    table.insert(mKeyBindings[operatorKey][modKey], callback)
+    if not mKeyBindings[operatorKey][modKeys][ON_KEY_DOWN] then
+        mKeyBindings[operatorKey][modKeys][ON_KEY_DOWN] = {}
+    end
+    if not mKeyBindings[operatorKey][modKeys][ON_KEY_UP] then
+        mKeyBindings[operatorKey][modKeys][ON_KEY_UP] = {}
+    end
+
+    if keyPressCallback then
+        --print("registered onkeydown")
+        table.insert(mKeyBindings[operatorKey][modKeys][ON_KEY_DOWN], keyPressCallback)
+    end
+    if keyReleaseCallback then
+        --print("registered onkeyup")
+        table.insert(mKeyBindings[operatorKey][modKeys][ON_KEY_UP], keyReleaseCallback)
+    end
     --print("registered ", operatorKey, modKey)
+    --print("Key binds are now\n",lwl.dumpObject(mKeyBindings))
 end
 
+    
+---Takes a Hyperspace KeyId and tells you if it's pressed or not.
+---@param keyId number
+---@return boolean
+function lwk.isKeyPressed(keyId)
+    return isPressed(keyId)
+end
+-----------------------------------END API--------------------------------------
+
 -- Function to execute callbacks for a given key press
-local function executeKeyFunctions(operatorKey)
-    local modKey = getModifiersAsString(normalizedModifierKeys())
+local function executeKeyFunctions(operatorKey, operation)
+    --print("xec", operatorKey, operation)
+    local modKeys = getModifiersAsString(getActiveModifiers())
     --print("modkey ", modKey)
-    local callbacksList = mKeyBindings[operatorKey]
-    if not callbacksList then return end
-    local callbacks = callbacksList[modKey]
+    local keyTable = mKeyBindings[operatorKey]
+    --print("keyTable", keyTable)
+    if not keyTable then return end
+
+    local modifiersTable = keyTable[modKeys]
+    --print("modifiersTable", modifiersTable)
+    if not modifiersTable then return end
+
+    local callbacks
+    if operation == ON_KEY_DOWN then
+        callbacks = modifiersTable[ON_KEY_DOWN]
+    elseif operation == ON_KEY_UP then
+        callbacks = modifiersTable[ON_KEY_UP]
+    else
+        error("Incorrect operation", operation)
+    end
     if callbacks then
         for _, callback in ipairs(callbacks) do
             --print("found callback for ", operatorKey, modKey)
             callback(operatorKey)
         end
         return true
+    else
+        --print("No callbacks found for", operatorKey, modKeys, operation)
     end
     return false
 end
 
 
 --SPECIAL FUNCTIONS
-
---Modifier keys don't do anything on their own, they are checked when other keys are pressed.
-local function modifierKeyDown(keyId)
-    --print("modifier key pressed ", keyId)
-    mPressedModifierKeys[keyId] = keyId
-end
-
-local function modifierKeyUp(keyId)
-    mPressedModifierKeys[keyId] = nil
-end
-
 local function onFtlKeyDown(keyId)
-    --modifier keys
-    for i = 1, #MODIFIER_KEYS do
-        --print("mod key check ", keyId, MODIFIER_KEYS[i])
-        if keyId == MODIFIER_KEYS[i] then
-            modifierKeyDown(keyId)
-        end
+    --print("key down", keyId)
+    if mPressedKeys[keyId] then
+        --error("Key was pressed while already pressed! Key: "..keyNameTable[keyId])
     end
-    
-    --callbacks
-    return executeKeyFunctions(keyId)
+    mPressedKeys[keyId] = true
+    return executeKeyFunctions(keyId, ON_KEY_DOWN)
 end
 
 local function onFtlKeyUp(keyId)
-    for i = 1, #MODIFIER_KEYS do
-        if keyId == MODIFIER_KEYS[i] then
-            modifierKeyUp(keyId)
-        end
+    --print("key up", keyId)
+    if not mPressedKeys[keyId] then
+        --error("Key was released while already released! Key: "..keyNameTable[keyId])
     end
+    mPressedKeys[keyId] = false
+    return executeKeyFunctions(keyId, ON_KEY_UP)
 end
 
---render loop, should render a box with text on top of it when the buffer is running.
-
-
---uh, M-x opens the minibuffer so you can type stuff.
---lwk.registerKeyFunctionCombo()
--- A magic item that works by you referencing the idea of it, by this you can pull out a shining pellet and change.
-
---How to implement the minibuffer?  Basically, every time a character is pressed, we will add it to a buffer.  Enter submits the buffer for evaluation, and c-g aborts the buffer.  The buffer is triggered with meta-x, once that happens we start recording, otherwise keystrokes with no modifiers are ignored.  The default for all combinations is actually nothing.
-
---The behavior for keystroke, and keystroke + only shift, is a function which looks up in a table based on the keyCode what should print.
---[KEY_A, a, A; KEY_AMPERSAND, &, &], and so on.  Caps lock inverts this, I don't care about its initial state or if that's confusing.
-
-
+--If you register a keybind for an existing key, it will overwrite the normal functionality.  This allows you to do keybinds, actually.
+--I should consider letting you decide if things should preempt here.
 script.on_internal_event(Defines.InternalEvents.ON_KEY_DOWN, function(Key)
         --print("onDown ", keyNameTable[Key])
-        local keybindTriggered = onFtlKeyDown(keyNameTable[Key])
+        local keybindTriggered = onFtlKeyDown(Key)
         if keybindTriggered then
             return Defines.Chain.PREEMPT
         else
@@ -382,27 +406,21 @@ script.on_internal_event(Defines.InternalEvents.ON_KEY_DOWN, function(Key)
     end)
 script.on_internal_event(Defines.InternalEvents.ON_KEY_UP, function(Key)
         --print("onUp ", keyNameTable[Key])
-        onFtlKeyUp(keyNameTable[Key])
+        local keybindTriggered = onFtlKeyUp(Key)
+        if keybindTriggered then
+            return Defines.Chain.PREEMPT
+        else
+            return Defines.Chain.CONTINUE
+        end
     end)
---render loop, should render a box with text on top of it when the buffer is running.
 
-
---uh, M-x opens the minibuffer so you can type stuff.
---lwk.registerKeyFunctionCombo()
--- A magic item that works by you referencing the idea of it, by this you can pull out a shining pellet and change.
-
---How to implement the minibuffer?  Basically, every time a character is pressed, we will add it to a buffer.  Enter submits the buffer for evaluation, and c-g aborts the buffer.  The buffer is triggered with meta-x, once that happens we start recording, otherwise keystrokes with no modifiers are ignored.  The default for all combinations is actually nothing.
-
---The behavior for keystroke, and keystroke + only shift, is a function which looks up in a table based on the keyCode what should print.
---[KEY_A, a, A; KEY_AMPERSAND, &, &], and so on.  Caps lock inverts this, I don't care about its initial state or if that's confusing.
-
-
-onFtlKeyDown("KEY_RALT")
+onFtlKeyDown(Defines.SDL_KEY_RALT)
 print("Expect true", lwk.metaPressed())
-onFtlKeyDown("KEY_x")
-print("Should be non-nil", mPressedModifierKeys["KEY_RALT"])
-onFtlKeyUp("KEY_RALT")
-onFtlKeyDown("KEY_x")
-onFtlKeyDown("KEY_x")
-onFtlKeyDown("KEY_s")
-onFtlKeyDown("KEY_RETURN")
+onFtlKeyDown(Defines.SDL_KEY_x)
+print("Expect true", mPressedKeys[Defines.SDL_KEY_RALT])
+onFtlKeyUp(Defines.SDL_KEY_RALT)
+print("Expect false", mPressedKeys[Defines.SDL_KEY_RALT])
+--onFtlKeyDown(Defines.SDL_KEY_x)
+--onFtlKeyDown(Defines.SDL_KEY_x)
+onFtlKeyDown(Defines.SDL_KEY_s)
+onFtlKeyDown(Defines.SDL_KEY_RETURN)
