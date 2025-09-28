@@ -89,12 +89,26 @@ local RENDER_LAYERS = { --todo maybe I should actually have the ship layers be r
     MOUSE_CONTROL = {}
 }
 
+lwui.classNames = {
+    OBJECT = "object",
+    BUTTON = "button",
+    HORIZONTAL_CONTAINER = "horizontalContainer",
+    VERTICAL_CONTAINER = "verticalContainer",
+    SCROLL_CONTAINER = "scrollContainer", --todo can I safely rename this?
+    ITEM = "item",
+    INVENTORY_BUTTON = "inventoryButton",
+    TEXT_BOX = "textBox",
+    FIXED_TEXT_BOX = "fixedTextBox",
+    DYNAMIC_TEXT_BOX = "dynamicTextBox"
+}
+local classNames = lwui.classNames
+
 local mTopLevelRenderLists = {}
 lwui.mHoveredButton = nil
 local mHoveredScrollContainer = nil
 lwui.mClickedButton = nil --mouseUp will be called on this.
 local mItemList = {}
-mLayersWithoutHover = 0
+local mLayersWithoutHover = 0
 
 function lwui.isWithinMask(mousePos, mask)
     --[[print("within mask? ", mousePos.x >= mask.getPos().x and mousePos.x <= mask.getPos().x + mask.width and
@@ -164,7 +178,7 @@ function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunctio
     object.renderFunction = renderObject
     object.setMaskFunction = setMaskFunction
     object.maskFunction = maskFunctionNoOp --call this each frame to get the mask to pass to render func.
-    object.className = "object"
+    object.className = classNames.OBJECT
     return object
 end
 
@@ -198,7 +212,7 @@ function lwui.buildButton(x, y, width, height, visibilityFunction, renderFunctio
     button = lwui.buildObject(x, y, width, height, visibilityFunction, renderButton)
     button.onClick = buttonClick
     button.onRelease = onRelease
-    button.className = "button"
+    button.className = classNames.BUTTON
     return button
 end
 
@@ -276,7 +290,7 @@ function lwui.buildContainer(x, y, width, height, visibilityFunction, renderFunc
         end
         --adjust getPos
         local oldGetPos = object.getPos
-        function containedGetPos()
+        local function containedGetPos()
             local newX = container.getPos().x + oldGetPos().x
             local newY = container.getPos().y + oldGetPos().y
             --print("containedGetPos newX ", newX, "newy ", newY, " getPos function ", object.getPos)
@@ -286,7 +300,7 @@ function lwui.buildContainer(x, y, width, height, visibilityFunction, renderFunc
         --adjust visibilityFunction
         --object is only visible if partially inside container.
         local oldVisibilityFunction = object.visibilityFunction
-        function containedVisibilityFunction()--TODO is this outdated?
+        local function containedVisibilityFunction()--TODO is this outdated?
             local retVal = false
             if container.renderOutsideBounds then return true end
             if ((object.getPos().x > container.getPos().x + container.width) or (object.getPos().x + object.width < container.getPos().x) or
@@ -341,7 +355,7 @@ function lwui.buildVerticalContainer(x, y, width, height, visibilityFunction, re
     end
     container = lwui.buildContainer(x, y, width, height, visibilityFunction, verticalSnapRender, objects, renderOutsideBounds, sizeToContent)
     container.padding = padding
-    container.className = "verticalContainer"
+    container.className = classNames.VERTICAL_CONTAINER
     return container
 end
 
@@ -358,7 +372,7 @@ function lwui.buildHorizontalContainer(x, y, width, height, visibilityFunction, 
     end
     container = lwui.buildContainer(x, y, width, height, visibilityFunction, horizontalSnapRender, objects, renderOutsideBounds, sizeToContent)
     container.padding = padding
-    container.className = "horizontalContainer"
+    container.className = classNames.HORIZONTAL_CONTAINER
     return container
 end
 
@@ -471,7 +485,7 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
     scrollContainer.scrollDown = scrollDown
     scrollContainer.contentContainer = contentContainer
     scrollNub.scrollContainer = scrollContainer
-    scrollContainer.className = "scrollContainer"
+    scrollContainer.className = classNames.SCROLL_CONTAINER
     scrollContainer.invertScroll = false
     return scrollContainer
 end
@@ -528,7 +542,7 @@ function lwui.buildItem(name, itemType, width, height, visibilityFunction, rende
     
     item.onCreate(item)
     table.insert(mItemList, item)
-    item.className = "item"
+    item.className = classNames.ITEM
     return item
 end
 
@@ -611,7 +625,7 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
     button.allowedItemsFunction = allowedItemsFunction
     button.onItemAddedFunction = onItemAddedFunction
     button.onItemRemovedFunction = onItemRemovedFunction
-    button.className = "inventoryButton"
+    button.className = classNames.ITEM
     button.name = name --todo move or remove
     return button
 end
@@ -653,7 +667,7 @@ local function buildTextBox(x, y, width, height, visibilityFunction, renderFunct
     textBox.text = ""
     textBox.fontSize = fontSize
     textBox.textColor = Graphics.GL_Color(1, 1, 1, 1)
-    textBox.className = "textBox"
+    textBox.className = classNames.TEXT_BOX
     return textBox
 end
 
@@ -668,7 +682,7 @@ function lwui.buildDynamicHeightTextBox(x, y, width, height, visibilityFunction,
     end
     
     textBox = buildTextBox(x, y, width, height, visibilityFunction, expandingRenderFunction, fontSize)
-    textBox.className = "dynamicTextBox"
+    textBox.className = classNames.DYNAMIC_TEXT_BOX
     return textBox
 end
 
@@ -701,7 +715,7 @@ function lwui.buildFixedTextBox(x, y, width, height, visibilityFunction, renderF
     textBox = buildTextBox(x, y, width, height, visibilityFunction, scalingFontRenderFunction, maxFontSize)
     textBox.maxFontSize = maxFontSize
     textBox.lastLength = #textBox.text
-    textBox.className = "fixedTextBox"
+    textBox.className = classNames.FIXED_TEXT_BOX
     return textBox
 end
 
@@ -789,8 +803,10 @@ function lwui.inventoryButtonDefaultDisabled(object)
     lwui.inventoryButtonCustomColors(object, Graphics.GL_Color(63/255, 63/255, 67/255, 1), Graphics.GL_Color(93/255, 93/255, 97/255, 1))
 end
 
---spritePath is the path under your /img/ folder.  If the sprite is larger than the mask rendering it, it will be cut off, so create objects with the same size of the sprites you want them to use.
---This one isn't done yet, don't use it.
+---Allows you to change the rendered image at runtime from a specified set of images.
+---@param spritePaths table the path under your /img/ folder.  If the sprite is larger than the mask rendering it, it will be cut off, so create objects with the same size of the sprites you want them to use.
+---@param indexSelectFunction function must return a valid index for the table of paths you have provided.
+---@return function A render function that can be used with all lwui objects.
 function lwui.dynamicSpriteRenderFunction(spritePaths, indexSelectFunction)
     return function (object)
         local mask = object.maskFunction()

@@ -1,0 +1,8 @@
+
+
+"attempt to call a table value" in your iterator: Did you forget your ipairs?
+
+
+
+
+
