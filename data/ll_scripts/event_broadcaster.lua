@@ -24,7 +24,6 @@ local KEY_LWEB_CREWTABLE = "mods.lweb.crewtable"
 local mSetupRequested = false --todo should this be centralized like this?
 local mListenerCategories = {}
 
---This should never error?
 
 local function observerUpdate(condition, key)
     --[[todo genericize this.

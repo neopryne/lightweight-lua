@@ -157,8 +157,12 @@ local function tickConfusion(effect_crew)
     end
     --todo this needs to use the HS statboost logic.
 end
+
+--clear any remaining stat boost
 local function endConfusion(effect_crew)
-    lwsb.removeStatBoost(effect_crew.confusion.statBoostId)
+    if (effect_crew.confusion.statBoostId) then
+        lwsb.removeStatBoost(effect_crew.confusion.statBoostId)
+    end
 end
 
 ------------------CORRUPTION------------------
@@ -295,7 +299,7 @@ end
 ---@return table|nil
 function mods.lightweight_crew_effects.applyConfusion(crewmem, amount)
     local effect = applyEffect(crewmem, amount, lwce.KEY_CONFUSION)
-    if effect.value == amount then --If this is a new effect for this crew
+    if amount > 0 and effect.value == amount then --If this is a new effect for this crew
         effect.statBoostId = lwsb.addStatBoost(Hyperspace.CrewStat.CONTROLLABLE, lwsb.TYPE_BOOLEAN, lwsb.ACTION_SET, false, lwl.generateCrewFilterFunction(crewmem))
     end
     return effect
