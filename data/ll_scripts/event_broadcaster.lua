@@ -1,7 +1,8 @@
 --[[
 usage: 
-
-
+    lweb.registerDeathListener(function(crewmem) print(crewmem:GetName(), "died.") end)
+    lweb.registerDeathAnimationListener(function(crewmem) print(crewmem:GetName(), "death animating.") end)
+    lweb.registerClonedListener(function(crewmem) print(crewmem:GetName(), "was cloned.") end)
 --]]
 
 --[[
@@ -13,13 +14,12 @@ mods.lightweight_event_broadcaster = {}
 local lweb = mods.lightweight_event_broadcaster
 
 local lwl = mods.lightweight_lua
-local userdata_table = mods.multiverse.userdata_table
 
 
 local TAG = "LW Tele Status Observer"
 local KEY_DEATH = "CREW_DEATH_EVENT"
 local KEY_DEATH_ANIMATION = "CREW_DEATH_ANIMATION"
-local KEY_LWEB_CREWTABLE = "mods.lweb.crewtable"
+local KEY_CREW_CLONED = "CREW_CLONED_EVENT"
 
 local mSetupRequested = false --todo should this be centralized like this?
 local mListenerCategories = {}
@@ -35,12 +35,12 @@ end
 
 
 local function crewObserverUpdate(condition, key)
-    if not mListenerCategories[KEY_DEATH] then return end
+    if not mListenerCategories[key] then return end
     local allCrew = lwl.getAllMemberCrewFromFactory(lwl.noFilter)
     for _,crewmem in ipairs(allCrew) do
         local wasMarked = Hyperspace.playerVariables[key..crewmem.extend.selfId]
         if condition(crewmem) then
-            if not wasMarked or wasMarked == 0 then
+            if wasMarked == 0 then
                 Hyperspace.playerVariables[key..crewmem.extend.selfId] = 1
                 for _,listener in ipairs(mListenerCategories[key]) do
                     listener(crewmem)
@@ -50,6 +50,13 @@ local function crewObserverUpdate(condition, key)
             Hyperspace.playerVariables[key..crewmem.extend.selfId] = 0
         end
     end
+end
+
+local function clonedUpdate()
+    local function deathCheck(crewmem)
+        return not crewmem.bDead
+    end
+    crewObserverUpdate(deathCheck, KEY_CREW_CLONED)
 end
 
 local function deathUpdate()
@@ -70,6 +77,7 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if not mSetupRequested then return end
     deathUpdate()
     deathAnimationUpdate()
+    clonedUpdate()
 end)
 
 
@@ -97,7 +105,7 @@ end
 ---More like a callback than a listener.
 ---The function passed should take the following arguments:
 ---     CrewMember the crew that has just died
---- Example: lweb.registerDeathListener(function(crewmem) print(crewmem:GetName(), "died.") end)
+--- Example: lweb.registerDeathAnimationListener(function(crewmem) print(crewmem:GetName(), "died.") end)
 --- When any crew begins their death animation, the listener function will be called. (Including drones)
 ---@param listener function to be called upon crew death animation start
 function lweb.registerDeathAnimationListener(listener)
@@ -105,8 +113,16 @@ function lweb.registerDeathAnimationListener(listener)
     addListener(listener, KEY_DEATH_ANIMATION)
 end
 
-lweb.registerDeathListener(function(crewmem) print(crewmem:GetName(), "died.") end)
-lweb.registerDeathAnimationListener(function(crewmem) print(crewmem:GetName(), "death animating.") end)
+---More like a callback than a listener.
+---The function passed should take the following arguments:
+---     CrewMember the crew that has just died
+--- Example: lweb.registerClonedListener(function(crewmem) print(crewmem:GetName(), "died.") end)
+--- When any crew begins their death animation, the listener function will be called. (Including drones)
+---@param listener function to be called upon crew death animation start
+function lweb.registerClonedListener(listener)
+    mSetupRequested = true
+    addListener(listener, KEY_CREW_CLONED)
+end
 
 -------------------API-----------
 ---

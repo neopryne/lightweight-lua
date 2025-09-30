@@ -481,10 +481,20 @@ function mods.lightweight_lua.setCrewName(crewmem, name)
     crewmem:SetName(nameTextString, true)
 end
 
+--Then we give some filter functions that might be broadly useful
+
+---Returns true for all crew.
+---@param crewmem Hyperspace.CrewMember
+---@return boolean
+function mods.lightweight_lua.noFilter(crewmem)
+    return true
+end
+
+---Currently living crew.
 ---@param crewmem Hyperspace.CrewMember
 ---@return boolean
 function mods.lightweight_lua.filterLivingCrew(crewmem)
-    return (not (crewmem:OutOfGame() or (crewmem.bDead and not (crewmem.clone_ready or crewmem.bCloned))))
+    return (not (crewmem:OutOfGame() or crewmem.bDead))
 end
 
 ---@param crewmem Hyperspace.CrewMember
@@ -729,10 +739,16 @@ end
 
 
 --[[  GEOMETRY UTILS  ]]--
+---
+---@param pointf Hyperspace.Pointf
+---@return Hyperspace.Point
 function mods.lightweight_lua.pointfToPoint(pointf)
     return Hyperspace.Point(math.floor(pointf.x), math.floor(pointf.y))
 end
 
+---
+---@param point Hyperspace.Point
+---@return Hyperspace.Pointf
 function mods.lightweight_lua.pointToPointf(point)
     return Hyperspace.Pointf(point.x, point.y)
 end
@@ -836,12 +852,6 @@ function mods.lightweight_lua.randomSlotRoom(roomNumber, shipId)
     local height = shape.h / TILE_SIZE
     local count_of_tiles_in_room = width * height
     return math.floor(math.random() * count_of_tiles_in_room) --zero indexed
-end
-
-
---Then we give some filter functions that might be broadly useful
-function mods.lightweight_lua.noFilter(crewmem)
-    return true
 end
 
 ---@param crewmem Hyperspace.CrewMember

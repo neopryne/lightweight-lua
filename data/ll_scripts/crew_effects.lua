@@ -487,7 +487,7 @@ end
 script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if not mSetupRequested then return end
     if not mCrewChangeObserver then --for now, include drones in valid targets.  FTL crew is weird enough drones probably count as people.
-        mCrewChangeObserver = lwcco.createCrewChangeObserver(lwl.filterLivingCrew)
+        mCrewChangeObserver = lwcco.createCrewChangeObserver(lwl.noFilter)
     end
     if not mCrewChangeObserver.isInitialized() then return end
     for _,listCrew in ipairs(mCrewList) do

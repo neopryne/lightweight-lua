@@ -13,5 +13,7 @@
 		<mod-append:script>data/ll_scripts/event_broadcaster.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/self_indexing_list.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/crew_effects.lua</mod-append:script>
+		<mod-append:script>data/ll_scripts/blood.lua</mod-append:script>
+		<mod-append:script>data/ll_scripts/clone_orders.lua</mod-append:script>
 	</mod:findLike>
 </FTL>

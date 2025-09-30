@@ -55,6 +55,9 @@ Object {x,y,getPos,height,width,visibilityFunction,renderFunction} --x and y are
 special
 scroll buttons must be square.  That's the law, it will throw you an error otherwise. --TODO implement
 --ScrollBarGraphicAssets(scrollUp, nubImage, renderScrollButton)
+
+Another law is that in order to inherit from something, you have to call its build function.
+So if you call buildObject, you are a class of object, and so on.
 --]]
 local TAG = "LW UI"
 local function NOOP() end
@@ -99,7 +102,8 @@ lwui.classNames = {
     INVENTORY_BUTTON = "inventoryButton",
     TEXT_BOX = "textBox",
     FIXED_TEXT_BOX = "fixedTextBox",
-    DYNAMIC_TEXT_BOX = "dynamicTextBox"
+    DYNAMIC_TEXT_BOX = "dynamicTextBox",
+    TOGGLE_BUTTON = "toggleButton"
 }
 local classNames = lwui.classNames
 
@@ -146,6 +150,7 @@ renderFunction:
 --]]
 function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunction)
     local object = {}
+
     local function renderObject()
         --print("should render? ", visibilityFunction())
         if not object.visibilityFunction then
@@ -187,9 +192,16 @@ function lwui.buildButton(x, y, width, height, visibilityFunction, renderFunctio
     if not (onRelease) then onRelease = NOOP end
     if not (onClick) then onClick = NOOP end
     local button
-    local function buttonClick(x1, y1)
+
+    local function buttonClick(self, x1, y1)
         if button.visibilityFunction then
-            onClick(x1, y1) --can't be button b/c that stack overflows.
+            onClick(self, x1, y1) --can't be button b/c that stack overflows.
+        end
+    end
+
+    local function buttonRelease(self, x1, y1)
+        if button.visibilityFunction then
+            onRelease(self, x1, y1) --can't be button b/c that stack overflows.
         end
     end
     
@@ -211,7 +223,7 @@ function lwui.buildButton(x, y, width, height, visibilityFunction, renderFunctio
     
     button = lwui.buildObject(x, y, width, height, visibilityFunction, renderButton)
     button.onClick = buttonClick
-    button.onRelease = onRelease
+    button.onRelease = buttonRelease
     button.className = classNames.BUTTON
     return button
 end
@@ -625,7 +637,7 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
     button.allowedItemsFunction = allowedItemsFunction
     button.onItemAddedFunction = onItemAddedFunction
     button.onItemRemovedFunction = onItemRemovedFunction
-    button.className = classNames.ITEM
+    button.className = classNames.INVENTORY_BUTTON
     button.name = name --todo move or remove
     return button
 end
@@ -719,6 +731,27 @@ function lwui.buildFixedTextBox(x, y, width, height, visibilityFunction, renderF
     return textBox
 end
 
+---Stateful button with an onClick that turns something on and off.
+---@param x number
+---@param y number
+---@param width number
+---@param height number
+---@param visibilityFunction function
+---@param renderFunction function Must be created with lwui.toggleButtonRenderFunction
+---@param onClick function called when state toggles, with self and new state
+---@return table
+function lwui.buildToggleButton(x, y, width, height, visibilityFunction, renderFunction, onClick)
+    local button
+    local function buttonClick(self)
+        self.state = not self.state
+        onClick(self, self.state)
+    end --todo move next to buildButton
+    
+    button = lwui.buildButton(x, y, width, height, visibilityFunction, renderFunction, buttonClick, NOOP)
+    button.className = classNames.TOGGLE_BUTTON
+    button.state = false
+    return button
+end
 ------------------------------------RENDER FUNCTIONS----------------------------------------------------------
 
 ---@return true
@@ -822,13 +855,44 @@ function lwui.dynamicSpriteRenderFunction(spritePaths, indexSelectFunction)
         --Render sprite image, might be larger than the stencil
         Graphics.CSurface.GL_PushMatrix()
         --TODO scale primative to the size of the object, but for now just get it working rendering images for things.
-        local primitive = primitiveListManager(spritePaths[indexSelectFunction()])
+        local primitive = primitiveListManager(spritePaths[indexSelectFunction(object)])
         Graphics.CSurface.GL_Translate(object.getPos().x, object.getPos().y, 0)
         Graphics.CSurface.GL_RenderPrimitive(primitive)
         Graphics.CSurface.GL_PopMatrix()
         Graphics.CSurface.GL_SetStencilMode(0,1,1)
         Graphics.CSurface.GL_PopStencilMode()
     end
+end
+
+---Four paths for the four states of a toggle button.
+---@param off any
+---@param on any
+---@param hoveredOff any
+---@param hoveredOn any
+---@return function
+function lwui.toggleButtonRenderFunction(off, on, hoveredOff, hoveredOn)
+    local function indexSelectFunction(toggleButton)
+        if toggleButton.class == classNames.TOGGLE_BUTTON then
+            --todo doesn't work with inheritance.  or rather, objects have no concept of parents right now.
+            --I should change that, actually.
+            print("Expected toggle button, found", toggleButton.class)
+        end
+        local enabled = toggleButton.state
+        if enabled then
+            if lwui.mHoveredButton == toggleButton then
+                return 4
+            else
+                return 2
+            end
+        else
+            if lwui.mHoveredButton == toggleButton then
+                return 3
+            else
+                return 1
+            end
+        end
+    end
+    return lwui.dynamicSpriteRenderFunction({off, on, hoveredOff, hoveredOn}, indexSelectFunction)
 end
 
 function lwui.spriteRenderFunction(spritePath)
@@ -906,6 +970,7 @@ function renderObjects(layerName)
     end
     if (lwui.mHoveredButton ~= nil and mLayersWithoutHover > 2 * lwl.countKeys(mTopLevelRenderLists)) then
         --print("Went ", mLayersWithoutHover, "layers without hovering, setting hover to nil.")
+        --todo this actually makes things feel laggy on some systems.  Revise.
         lwui.mHoveredButton = nil
     end
     Graphics.CSurface.GL_PopMatrix()
@@ -919,7 +984,7 @@ script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function
     --print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
     if lwui.mHoveredButton then
         --print("clicked ", lwui.mHoveredButton)
-        lwui.mHoveredButton.onClick(x, y)
+        lwui.mHoveredButton.onClick(lwui.mHoveredButton, x, y)
         lwui.mClickedButton = lwui.mHoveredButton
     end
 
@@ -928,7 +993,7 @@ end)
 
 script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x,y)
     if (lwui.mClickedButton) then
-        lwui.mClickedButton.onRelease()
+        lwui.mClickedButton.onRelease(lwui.mClickedButton, x, y)
         lwui.mClickedButton = nil
     end
     return Defines.Chain.CONTINUE
