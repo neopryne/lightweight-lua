@@ -231,12 +231,12 @@ end
 ---@return table|nil
 local function applyEffect(crewmem, amount, effectName)
     if not crewmem then
-        print("Failed to apply ", effectName, ": No such crewmember")
+        --print("Failed to apply ", effectName, ": No such crewmember")
         return
     end
     local listCrew = getListCrew(crewmem)
     if not listCrew then
-        print("Failed to apply ", effectName, ": No such known crewmember ", crewmem:GetName(), crewmem.extend.selfId)
+        --print("Failed to apply ", effectName, ": No such known crewmember ", crewmem:GetName(), crewmem.extend.selfId)
         return
     end
     local crewEffect = listCrew[effectName]
