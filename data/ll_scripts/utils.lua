@@ -1004,6 +1004,151 @@ function lwl.createIncrementalConditonal(trueEvery)
     end
 end
 
+
+-----------------------MEMORY_SAFE_CREW---------------------------
+
+---Creates a memory safe wrapper around a crewmember object.
+---@param crewmem Hyperspace.CrewMember
+---@return table wrapper
+lwl.createMemorySafeCrewWrapper = function(crewmem)
+    local crewWrapper = {}
+    crewWrapper.internalCrew = crewmem
+    crewWrapper.internalId = crewmem.extend.selfId
+
+    ---Call with a colon, returns the crew member this was created around, even if the original has gone out of scope.
+    ---@param self table
+    ---@return Hyperspace.CrewMember|nil Nil if no crew can be found with this id.
+    crewWrapper.get = function(self)
+        --When an object gets invalidated, all its fields become garbage.  We can use this to check
+        --when it happens, but also need to save selfId outside of that so we can get the crew again.
+        ---todo this might be too hacky, and we need a game-loaded hook because everything else is going to be a major hack.
+        if (not (self.internalCrew.currentShipId == 0 or self.internalCrew.currentShipId == 1)) or
+        (not (self.internalCrew.iShipId == 0 or self.internalCrew.iShipId == 1)) then
+            print("wsschrag resetting crew ", self.internalId) --todo it can't access selfId which is why we do it this way.
+            --It's not perfect, but it only happens when using jitsus.
+            self.internalCrew = lwl.getCrewById(self.internalId)
+        end
+        return self.internalCrew
+    end
+    return crewWrapper
+end
+
+-----------------------END MEMORY_SAFE_CREW---------------------------
+function lwl.floatEquals(f1, f2, epsilon)
+    epsilon = lwl.nilSet(epsilon, .0001)
+    return math.abs(f1-f2) < epsilon
+end
+
+function lwl.isMoving(crewmem)
+    return crewmem.speed_x + crewmem.speed_y > 0
+end
+
+------------------POINT UTILS---------------------
+function lwl.pointFuzzyEquals(p1, p2, epsilon)
+    if not epsilon then
+        epsilon = 1
+    end
+    --print("compare xx,yy", p1.x, p2.x, p1.y, p2.y)
+    return lwl.floatEquals(p1.x, p2.x, epsilon) and lwl.floatEquals(p1.y, p2.y, epsilon)
+end
+
+function lwl.goalExists(goalPoint)
+    return not (lwl.floatEquals(goalPoint.x, -1) and lwl.floatEquals(goalPoint.y, -1))
+end
+
+---Returns the angle in degrees, 0 being straight up.
+---@param point1 Hyperspace.Point|Hyperspace.Pointf
+---@param point2 Hyperspace.Point|Hyperspace.Pointf
+---@return number
+function lwl.distanceBetweenPoints(point1, point2)
+    return math.sqrt((point1.x - point2.x)^2 + (point1.y - point2.y)^2)
+end
+
+---Returns a new point given an existing point, an angle, and a distance.
+---@param origin Hyperspace.Point|Hyperspace.Pointf Point to calculate from.
+---@param angle number Angle in radians, 0 is straight right.
+---@param distance number
+---@return Hyperspace.Pointf
+function lwl.getPoint(origin, angle, distance)
+    return Hyperspace.Pointf(origin.x - (distance * math.cos(angle)), origin.y - (distance * math.sin(angle)))
+end
+
+function lwl.getDistance(origin, target)
+    return math.abs(math.sqrt((origin.x - target.x)^2 + (origin.y - target.y)^2))
+end
+
+function lwl.getAngle(origin, target)
+    local deltaX = origin.x - target.x
+    local deltaY = origin.y - target.y
+    local innerAngle = math.atan(deltaY, deltaX)
+    --print("Angle is ", innerAngle)
+    return innerAngle
+end
+------------------END POINT UTILS---------------------
+function lwl.crewSpeedToScreenSpeed(crewSpeed)
+    --1.333 ~= .4, it's probably linear.  And 0=0
+    return crewSpeed --* .4 / 1.334
+end
+------------------ANGLE UTILS---------------------
+---Converts an FTL style angle to a Brightness Particles style one.
+---That is, it rotates it by 90 degrees and converts it to degrees.
+---@param angle number
+---@return number
+function lwl.angleFtlToBrightness(angle)
+    return ((angle * 180 / math.pi) + 270) % 360
+end
+
+function lwl.angleBrightnessToFtl(angle)
+    return (((angle + 90) % 360) * math.pi / 180)
+end
+
+function lwl.clockwiseDistanceDegrees(heading, target)
+      return ((target - heading) + 360) % 360
+end
+
+function lwl.counterclockwiseDistanceDegrees(heading, target)
+      return ((heading - target) + 360) % 360
+end
+
+---
+---@param heading number angle in degrees
+---@param target number angle in degrees
+---@return number the shortest angular distance between the heading and the target directions.
+function lwl.angleDistanceDegrees(heading, target)
+    return math.min(lwl.clockwiseDistanceDegrees(heading, target), lwl.counterclockwiseDistanceDegrees(heading, target))
+end
+
+function lwl.rotateTowardsDegrees(heading, target, step) --todo how was this not jittering before?
+    local clockwise = lwl.clockwiseDistanceDegrees(heading, target)
+    local counterclockwise = lwl.counterclockwiseDistanceDegrees(heading, target)
+    if clockwise <= 1 or counterclockwise <= 1 then
+        --Close enough
+        return heading
+    end
+    if clockwise > counterclockwise then
+        return heading - step
+    else
+        return heading + step
+    end
+end
+
+---Returns the angle the crew is travelling in degrees, 0 being straight right.
+---@param crewmem Hyperspace.CrewMember
+---@return number the angle the crew is travelling in degrees, 0 being straight right.
+function lwl.getMovementDirection(crewmem)
+    return lwl.getAngle(crewmem:GetPosition(), crewmem:GetNextGoal())
+end
+
+---comment
+---@param direction number from CrewAnimation
+---@return number FTL angle in radians
+function lwl.animationDirectionToFtlAngle(direction)
+    return ((3 - direction) % 4) * math.pi / 2
+end
+
+---TODO! IT'S VERY IMPORTANT NOT TO MIX BRIGHTNESS ANGLES WITH NON-BRIGHTNESS ANGLES!
+------------------END ANGLE UTILS---------------------
+
 -------------------------------Stuff for Nauter----------------------------------
 --crewFilterFunction(crewmember): which crew this should apply to, conditionFunction(crewmember): when it should apply to them
 ---Allow types of crew to use wither-style personal teleporters under certain circumstances.
