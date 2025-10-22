@@ -60,9 +60,9 @@ end
 ---Adds a stat boost, which will apply until the game is closed or removed with removeStatBoost(boostId).
 ---@param crewStat any The CrewStat to be boosted.
 ---@param type string Describes the kind of data contained in amountValue
----@param action string One of
+---@param action string One of lwsb.ACTION_SET, lwsb.ACTION_NUMERIC_ADD, lwsb.ACTION_NUMERIC_MULTIPLY
 ---@param amountValue any The numeric amount, boolean value, string, or other content associated with this boot type.
----@param filterFunction function with one argument, a Hyperspace.CrewMember.  Should return true if this boost should apply to that crew.
+---@param filterFunction function with one argument, a Hyperspace.CrewMember.  Should return true if this boost should apply to that crew, and false otherwise.
 ---@return integer ID of the boost, for use with removeStatBoost.
 function lwsb.addStatBoost(crewStat, type, action, amountValue, filterFunction)
     mHighestId = mHighestId + 1

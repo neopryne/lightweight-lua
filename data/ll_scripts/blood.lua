@@ -160,20 +160,6 @@ end
 
 buildBloodMap()
 
-local testToggleButton = lwui.buildToggleButton(300, 300, 30, 30, lwui.alwaysOnVisibilityFunction, 
-lwui.toggleButtonRenderFunction(
-        "particles/effects/bleed/0.png",
-        "particles/effects/confusion/0.png",
-        "particles/effects/corruption/0.png",
-        "particles/blood/default/blood_7/0.png"
-), NOOP)
-
-local switchScreenButton = lwui.buildButton(1218, 585, 30, 30, --disco icon?
-    lwui.alwaysOnVisibilityFunction, lwui.solidRectRenderFunction(Graphics.GL_Color(1, 0, 0, 1)), NOOP, NOOP)
-
---lwui.addTopLevelObject(testToggleButton, "MOUSE_CONTROL_PRE")
---lwui.addTopLevelObject(switchScreenButton, "MOUSE_CONTROL_PRE")
-
 local mDangItRonPaulMode = false
 
 ---comment

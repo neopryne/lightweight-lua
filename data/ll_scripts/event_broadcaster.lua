@@ -82,6 +82,7 @@ end)
 
 
 local function addListener(listener, key)
+    mSetupRequested = true
     if not mListenerCategories[key] then
         mListenerCategories[key] = {}
     end
@@ -98,7 +99,6 @@ end
 --- When any crew dies (is no longer on screen), the listener function will be called. (Including drones)
 ---@param listener function to be called upon crew death
 function lweb.registerDeathListener(listener)
-    mSetupRequested = true
     addListener(listener, KEY_DEATH)
 end
 
@@ -109,7 +109,6 @@ end
 --- When any crew begins their death animation, the listener function will be called. (Including drones)
 ---@param listener function to be called upon crew death animation start
 function lweb.registerDeathAnimationListener(listener)
-    mSetupRequested = true
     addListener(listener, KEY_DEATH_ANIMATION)
 end
 
@@ -120,7 +119,6 @@ end
 --- When any crew begins their death animation, the listener function will be called. (Including drones)
 ---@param listener function to be called upon crew death animation start
 function lweb.registerClonedListener(listener)
-    mSetupRequested = true
     addListener(listener, KEY_CREW_CLONED)
 end
 

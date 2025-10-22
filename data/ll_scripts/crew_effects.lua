@@ -240,7 +240,7 @@ local function applyEffect(crewmem, amount, effectName)
         return
     end
     local crewEffect = listCrew[effectName]
-    --print("applying effect ", effectName, "is ", crewEffect)
+    --print("applying", amount, effectName, "to", crewEffect)
     if crewEffect then
         crewEffect.value = math.max(0, crewEffect.value + (amount * (1 - crewEffect.resist)))
     else
@@ -299,7 +299,7 @@ end
 ---@return table|nil
 function mods.lightweight_crew_effects.applyConfusion(crewmem, amount)
     local effect = applyEffect(crewmem, amount, lwce.KEY_CONFUSION)
-    if amount > 0 and effect.value == amount then --If this is a new effect for this crew
+    if amount > 0 and effect and effect.value == amount then --If this is a new effect for this crew
         effect.statBoostId = lwsb.addStatBoost(Hyperspace.CrewStat.CONTROLLABLE, lwsb.TYPE_BOOLEAN, lwsb.ACTION_SET, false, lwl.generateCrewFilterFunction(crewmem))
     end
     return effect
@@ -364,8 +364,8 @@ local function persistEffects()
                 for key,effect in pairs(listCrew) do
                     if not (key == "id") then
                         --print("Saving", crewmem:GetName(), " effect ", effect.name, effect.value, effect.resist, effect.flagValue)
-                        Hyperspace.metaVariables[PERSIST_KEY_EFFECT_VALUE..listCrew.id.."-"..effect.flagValue] = effect.value * DECIMAL_STORAGE_PERCISION_FACTOR
-                        Hyperspace.metaVariables[PERSIST_KEY_EFFECT_RESIST..listCrew.id.."-"..effect.flagValue] = effect.resist * DECIMAL_STORAGE_PERCISION_FACTOR
+                        Hyperspace.playerVariables[PERSIST_KEY_EFFECT_VALUE..listCrew.id.."-"..effect.flagValue] = effect.value * DECIMAL_STORAGE_PERCISION_FACTOR
+                        Hyperspace.playerVariables[PERSIST_KEY_EFFECT_RESIST..listCrew.id.."-"..effect.flagValue] = effect.resist * DECIMAL_STORAGE_PERCISION_FACTOR
                     end
                 end
             end
@@ -385,8 +385,8 @@ local function loadEffects()
                 for key,effect in pairs(listCrew) do
                     if not (key == "id") then
                         --print(crewmem:GetName(), " effect ", effect.name, effect.value, effect.resist, effect.flagValue)
-                        effect.value = Hyperspace.metaVariables[PERSIST_KEY_EFFECT_VALUE..listCrew.id.."-"..effect.flagValue] / DECIMAL_STORAGE_PERCISION_FACTOR
-                        effect.resist = Hyperspace.metaVariables[PERSIST_KEY_EFFECT_RESIST..listCrew.id.."-"..effect.flagValue] / DECIMAL_STORAGE_PERCISION_FACTOR
+                        effect.value = Hyperspace.playerVariables[PERSIST_KEY_EFFECT_VALUE..listCrew.id.."-"..effect.flagValue] / DECIMAL_STORAGE_PERCISION_FACTOR
+                        effect.resist = Hyperspace.playerVariables[PERSIST_KEY_EFFECT_RESIST..listCrew.id.."-"..effect.flagValue] / DECIMAL_STORAGE_PERCISION_FACTOR
                     end
                 end
             end
@@ -537,34 +537,6 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     --print("Icons repositioned!")
 end)
 
-------------------------------------ATTEMPTS TO RESET EFFECT VALUES--------------------------------------------
-local clearedShipCrew = false
-script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
-    if not clearedShipCrew and Hyperspace.ships(0) and Hyperspace.ships(0).iCustomizeMode == 2 then
-        for crewmem in vter(Hyperspace.ships(0).vCrewList) do
-            for j = 1,#mEffectDefinitions do
-                Hyperspace.metaVariables[PERSIST_KEY_EFFECT_VALUE..crewmem.extend.iShipId.."-"..j] = nil
-                Hyperspace.metaVariables[PERSIST_KEY_EFFECT_RESIST..crewmem.extend.iShipId.."-"..j] = nil
-            end
-        end
-        clearedShipCrew = true
-    end
-end)
-
---todo When you hit the start beacon, zero out effects for all crew.
-script.on_game_event("START_BEACON_REAL", false, function()
-        mCrewList = {}
-        --Reset all persisted status values  --this is too much, I need another way.  In hangar?  Clear effects from all that ship's crew.
-        for i = 0,2000 do --idk how high the crew values go
-            for j = 1,#mEffectDefinitions do
-                Hyperspace.metaVariables[PERSIST_KEY_EFFECT_VALUE..i.."-"..j] = nil
-                Hyperspace.metaVariables[PERSIST_KEY_EFFECT_RESIST..i.."-"..j] = nil
-            end
-        end
-        --reset all loaded effects
-        resetEffects()
-        end)
-------------------------------------END ATTEMPTS TO RESET EFFECT VALUES--------------------------------------------
 -----------------------------LEGEND BUTTON--------------------------------------
 local mHelpButton = lwui.buildButton(1, 0, 11, 11, lwui.alwaysOnVisibilityFunction, lwui.spriteRenderFunction("icons/help/effects_help.png"), NOOP, NOOP)
 mHelpButton.lwuiHelpText = "LWCE Statuses\nBleed:\n    Temporary flat damage over time\n    Resist reduces stacks gained and damage taken\nConfusion:\n    Crew becomes uncontrollable.\n    Resist reduces stacks gained.\nCorruption:\n    Permanent stacking damage over time\n    Resist reduces stacks gained\nTeleportitis:\n    Crew occasionally randomly teleports to another location."

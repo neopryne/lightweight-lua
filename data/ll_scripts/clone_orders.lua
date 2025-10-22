@@ -9,7 +9,7 @@ local lwce = mods.lightweight_crew_effects
 local lweb = mods.lightweight_event_broadcaster
 
 
---todo code to turn this on and off
+--todo make this maybe not function in the hangar so it throws less errors.
 
 
 local function temporaryInsanity(crewmem)

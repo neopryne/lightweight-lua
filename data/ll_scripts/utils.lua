@@ -44,12 +44,12 @@ lwl.SCREEN_WIDTH = 1280
 lwl.SCREEN_HEIGHT = 720
 --Breaking change, this is now a function.
 --mods.lightweight_lua.TILE_SIZE = TILE_SIZE --Deprecated, use mods.lightweight_lua.sTILE_SIZE() instead.
-function mods.lightweight_lua.TILE_SIZE() return TILE_SIZE end --getter to preserve immutible value.
-function mods.lightweight_lua.OWNSHIP() return 0 end
-function mods.lightweight_lua.CONTACT_1() return 1 end
-function mods.lightweight_lua.UNSELECTED() return 0 end
-function mods.lightweight_lua.SELECTED() return 1 end
-function mods.lightweight_lua.SELECTED_HOVER() return 2 end
+function lwl.TILE_SIZE() return TILE_SIZE end --getter to preserve immutible value.
+function lwl.OWNSHIP() return 0 end
+function lwl.CONTACT_1() return 1 end
+function lwl.UNSELECTED() return 0 end
+function lwl.SELECTED() return 1 end
+function lwl.SELECTED_HOVER() return 2 end
 
 local SYS_SHIELDS = 0
 local SYS_ENGINES = 1
@@ -77,55 +77,55 @@ local SKILL_REPAIR = 4
 local SKILL_COMBAT = 5
 
 ---@return integer
-function mods.lightweight_lua.SKILL_PILOT() return SKILL_PILOT end
+function lwl.SKILL_PILOT() return SKILL_PILOT end
 ---@return integer
-function mods.lightweight_lua.SKILL_ENGINES() return SKILL_ENGINES end
+function lwl.SKILL_ENGINES() return SKILL_ENGINES end
 ---@return integer
-function mods.lightweight_lua.SKILL_SHIELDS() return SKILL_SHIELDS end
+function lwl.SKILL_SHIELDS() return SKILL_SHIELDS end
 ---@return integer
-function mods.lightweight_lua.SKILL_WEAPONS() return SKILL_WEAPONS end
+function lwl.SKILL_WEAPONS() return SKILL_WEAPONS end
 ---@return integer
-function mods.lightweight_lua.SKILL_REPAIR() return SKILL_REPAIR end
+function lwl.SKILL_REPAIR() return SKILL_REPAIR end
 ---@return integer
-function mods.lightweight_lua.SKILL_COMBAT() return SKILL_COMBAT end
+function lwl.SKILL_COMBAT() return SKILL_COMBAT end
 
 ---@return integer
-function mods.lightweight_lua.SYS_SHIELDS() return SYS_SHIELDS end
+function lwl.SYS_SHIELDS() return SYS_SHIELDS end
 ---@return integer
-function mods.lightweight_lua.SYS_ENGINES() return SYS_ENGINES end
+function lwl.SYS_ENGINES() return SYS_ENGINES end
 ---@return integer
-function mods.lightweight_lua.SYS_OXYGEN() return SYS_OXYGEN end
+function lwl.SYS_OXYGEN() return SYS_OXYGEN end
 ---@return integer
-function mods.lightweight_lua.SYS_WEAPONS() return SYS_WEAPONS end
+function lwl.SYS_WEAPONS() return SYS_WEAPONS end
 ---@return integer
-function mods.lightweight_lua.SYS_DRONES() return SYS_DRONES end
+function lwl.SYS_DRONES() return SYS_DRONES end
 ---@return integer
-function mods.lightweight_lua.SYS_MEDBAY() return SYS_MEDBAY end
+function lwl.SYS_MEDBAY() return SYS_MEDBAY end
 ---@return integer
-function mods.lightweight_lua.SYS_PILOT() return SYS_PILOT end
+function lwl.SYS_PILOT() return SYS_PILOT end
 ---@return integer
-function mods.lightweight_lua.SYS_SENSORS() return SYS_SENSORS end
+function lwl.SYS_SENSORS() return SYS_SENSORS end
 ---@return integer
-function mods.lightweight_lua.SYS_DOORS() return SYS_DOORS end
+function lwl.SYS_DOORS() return SYS_DOORS end
 ---@return integer
-function mods.lightweight_lua.SYS_TELEPORTER() return SYS_TELEPORTER end
+function lwl.SYS_TELEPORTER() return SYS_TELEPORTER end
 ---@return integer
-function mods.lightweight_lua.SYS_CLOAKING() return SYS_CLOAKING end
+function lwl.SYS_CLOAKING() return SYS_CLOAKING end
 ---@return integer
-function mods.lightweight_lua.SYS_ARTILLERY() return SYS_ARTILLERY end
+function lwl.SYS_ARTILLERY() return SYS_ARTILLERY end
 ---@return integer
-function mods.lightweight_lua.SYS_BATTERY() return SYS_BATTERY end
+function lwl.SYS_BATTERY() return SYS_BATTERY end
 ---@return integer
-function mods.lightweight_lua.SYS_CLONEBAY() return SYS_CLONEBAY end
+function lwl.SYS_CLONEBAY() return SYS_CLONEBAY end
 ---@return integer
-function mods.lightweight_lua.SYS_MIND() return SYS_MIND end
+function lwl.SYS_MIND() return SYS_MIND end
 ---@return integer
-function mods.lightweight_lua.SYS_HACKING() return SYS_HACKING end
+function lwl.SYS_HACKING() return SYS_HACKING end
 ---@return integer
-function mods.lightweight_lua.SYS_TEMPORAL() return SYS_TEMPORAL end
+function lwl.SYS_TEMPORAL() return SYS_TEMPORAL end
 
 --This might be overkill, but it works
-function mods.lightweight_lua.isPaused()
+function lwl.isPaused()
     local commandGui = Hyperspace.Global.GetInstance():GetCApp().gui
     return commandGui.bPaused or commandGui.bAutoPaused or commandGui.event_pause or commandGui.menu_pause
 end
@@ -134,7 +134,7 @@ end
 ---@param object any
 ---@param value any
 ---@return any
-function mods.lightweight_lua.nilSet(object, value)
+function lwl.nilSet(object, value)
     if (object == nil) then
         object = value
     end
@@ -145,7 +145,7 @@ end
 ---@param object any
 ---@param value any
 ---@return any
-function mods.lightweight_lua.setIfNil(object, value)
+function lwl.setIfNil(object, value)
     return lwl.nilSet(object, value)
 end
 
@@ -153,24 +153,25 @@ end
 ---for use in printing all of a table
 ---@param o table
 ---@return string
-function mods.lightweight_lua.dumpObject(o)
-   if type(o) == 'table' then
-      local s = '{ '
-      for k,v in pairs(o) do
-         if type(k) ~= 'number' then k = '"'..k..'"' end
-         s = s .. '['..k..'] = ' .. mods.lightweight_lua.dumpObject(v) .. ','
-      end
-      return s .. '} '
-   else
-      return tostring(o)
-   end
+function lwl.dumpObject(o)
+    if o == nil then return "" end
+    if type(o) == 'table' then
+        local s = '{ '
+        for k,v in pairs(o) do
+            if type(k) ~= 'number' then k = '"'..k..'"' end
+            s = s .. '['..k..'] = ' .. lwl.dumpObject(v) .. ','
+        end
+        return s .. '} '
+    else
+        return tostring(o)
+    end
 end
 
 --one level deep copy of t1 and t2 to t3 deep, it's not recursive.  For full deep copy, use deepTableMerge
 ---@param t1 table
 ---@param t2 table
 ---@return table
-function mods.lightweight_lua.tableMerge(t1, t2)
+function lwl.tableMerge(t1, t2)
     local t3 = {}
     for i=1,#t1 do
         t3[#t3+1] = t1[i]
@@ -184,7 +185,7 @@ end
 ---note: does not copy objects in the table.
 ---@param t table
 ---@return table
-function mods.lightweight_lua.deepCopyTable(t)
+function lwl.deepCopyTable(t)
     if type(t) ~= "table" then
         return t  -- Return the value directly if it's not a table (base case)
     end
@@ -192,7 +193,7 @@ function mods.lightweight_lua.deepCopyTable(t)
     local copy = {}
     for k, v in pairs(t) do
         if type(v) == "table" then
-            copy[k] = mods.lightweight_lua.deepCopyTable(v)  -- Recursively copy nested tables
+            copy[k] = lwl.deepCopyTable(v)  -- Recursively copy nested tables
         else
             copy[k] = v  -- Directly copy non-table values
         end
@@ -206,7 +207,7 @@ end
 ---@param filterFunction function
 ---@param onRemove function
 ---@return table
-function mods.lightweight_lua.arrayRemove(table, filterFunction, onRemove)
+function lwl.arrayRemove(table, filterFunction, onRemove)
     local j, n = 1, #table;
     for i=1,n do
         if (filterFunction(table, i)) then
@@ -228,7 +229,7 @@ end
 ---returns nil if table is empty
 ---@param table table
 ---@return any|nil
-function mods.lightweight_lua.getRandomKey(table)
+function lwl.getRandomKey(table)
     local keys = {}
     for key in pairs(table) do
         keys[#keys + 1] = key
@@ -244,7 +245,7 @@ end
 ---@param newSet table
 ---@param initialSet table
 ---@return table
-function mods.lightweight_lua.getNewElements(newSet, initialSet)
+function lwl.getNewElements(newSet, initialSet)
     local elements = {}
     for _, newElement in ipairs(newSet) do
         local wasPresent = false
@@ -265,7 +266,7 @@ end
 ---@param baseSet table
 ---@param elementsToRemove table
 ---@return table
-function mods.lightweight_lua.setRemove(baseSet, elementsToRemove)
+function lwl.setRemove(baseSet, elementsToRemove)
     elements = {}
     for _, oldElement in ipairs(baseSet) do
         local wasPresent = false
@@ -286,7 +287,7 @@ end
 ---@param set1 table
 ---@param set2 table
 ---@return table
-function mods.lightweight_lua.setMerge(set1, set2)
+function lwl.setMerge(set1, set2)
     elements = lwl.deepCopyTable(set2)
     for _, newElement in ipairs(set1) do
         local wasPresent = false
@@ -307,7 +308,7 @@ end
 ---@param set1 table
 ---@param set2 table
 ---@return table
-function mods.lightweight_lua.setXor(set1, set2)
+function lwl.setXor(set1, set2)
    return lwl.setMerge(lwl.getNewElements(set1, set2), lwl.getNewElements(set2, set1))
 end
 
@@ -315,7 +316,7 @@ end
 ---@param set1 any
 ---@param set2 any
 ---@return table
-function mods.lightweight_lua.setIntersectionTable(set1, set2)
+function lwl.setIntersectionTable(set1, set2)
    local interSet = {}
    for i = 1,#set1 do
        local value = set1[i]
@@ -332,7 +333,7 @@ end
 ---@param userdata1 any
 ---@param userdata2 any
 ---@return table
-function mods.lightweight_lua.setIntersectionVter(userdata1, userdata2)
+function lwl.setIntersectionVter(userdata1, userdata2)
    local interSet = {}
    for door1 in vter(userdata1) do
        for door2 in vter(userdata2) do
@@ -347,7 +348,7 @@ end
 ---Returns the number of keys in the table
 ---@param table table
 ---@return integer
-function mods.lightweight_lua.countKeys(table)
+function lwl.countKeys(table)
     local count = 0
     for _ in pairs(table) do
         count = count + 1
@@ -359,7 +360,7 @@ end
 ---@param name string
 ---@param value integer
 ---@return boolean
-function mods.lightweight_lua.setMetavar(name, value)
+function lwl.setMetavar(name, value)
     if (value ~= nil) then
         Hyperspace.metaVariables[name] = value
     end
@@ -370,10 +371,10 @@ end
 ---@param t1 table
 ---@param t2 table
 ---@return table
-function mods.lightweight_lua.deepTableMerge(t1, t2)
-    local t1Copy = mods.lightweight_lua.deepCopyTable(t1)
-    local t2Copy = mods.lightweight_lua.deepCopyTable(t2)
-    return mods.lightweight_lua.tableMerge(t1Copy, t2Copy)
+function lwl.deepTableMerge(t1, t2)
+    local t1Copy = lwl.deepCopyTable(t1)
+    local t2Copy = lwl.deepCopyTable(t2)
+    return lwl.tableMerge(t1Copy, t2Copy)
 end
 
 function lwl.tableContains(currentTable, value)
@@ -390,7 +391,7 @@ end
 ---@param a boolean
 ---@param b boolean
 ---@return boolean
-function mods.lightweight_lua.xor(a,b)
+function lwl.xor(a,b)
     return (a or b) and (not(a and b))
 end
 
@@ -407,7 +408,7 @@ But the longer you've been evaling for, the more [power|resources] you should sp
 
 
 --[[  LOGGING UTILS  ]]--
-mods.lightweight_lua.LOG_LEVEL = 1 --Higher is more verbose, feel free to modify this.
+lwl.LOG_LEVEL = 1 --Higher is more verbose, feel free to modify this.
 --[[
     0 -- NO logs, not even errors, not recommended.
     1 -- Errors only
@@ -431,7 +432,7 @@ local LOG_LEVELS = {
 local function logInternal(tag, text, messageLogLevel, optionalLogLevel)
     local maxLogLevel = optionalLogLevel
     if (maxLogLevel == nil) then
-        maxLogLevel = mods.lightweight_lua.LOG_LEVEL
+        maxLogLevel = lwl.LOG_LEVEL
     end
     if (messageLogLevel <= maxLogLevel) then
         print(LOG_LEVELS[messageLogLevel].text..": "..tag.." - "..text)
@@ -444,38 +445,38 @@ end
 ---@param tag string Denote the source of the log
 ---@param text string
 ---@param optionalLogLevel integer|nil
-function mods.lightweight_lua.logError(tag, text, optionalLogLevel)
+function lwl.logError(tag, text, optionalLogLevel)
     logInternal(tag, text, 1, optionalLogLevel)
 end
 ---@param tag string Denote the source of the log
 ---@param text string
 ---@param optionalLogLevel integer|nil
-function mods.lightweight_lua.logWarn(tag, text, optionalLogLevel)
+function lwl.logWarn(tag, text, optionalLogLevel)
     logInternal(tag, text, 2, optionalLogLevel)
 end
 ---@param tag string Denote the source of the log
 ---@param text string
 ---@param optionalLogLevel integer|nil
-function mods.lightweight_lua.logDebug(tag, text, optionalLogLevel)
+function lwl.logDebug(tag, text, optionalLogLevel)
     logInternal(tag, text, 3, optionalLogLevel)
 end
 ---@param tag string Denote the source of the log
 ---@param text string
 ---@param optionalLogLevel integer|nil
-function mods.lightweight_lua.logInfo(tag, text, optionalLogLevel)
+function lwl.logInfo(tag, text, optionalLogLevel)
     logInternal(tag, text, 4, optionalLogLevel)
 end
 ---@param tag string Denote the source of the log
 ---@param text string
 ---@param optionalLogLevel integer|nil
-function mods.lightweight_lua.logVerbose(tag, text, optionalLogLevel)
+function lwl.logVerbose(tag, text, optionalLogLevel)
     logInternal(tag, text, 5, optionalLogLevel)
 end
 
 --[[  CREW UTILS  ]]--
 ---@param crewmem Hyperspace.CrewMember
 ---@param name string
-function mods.lightweight_lua.setCrewName(crewmem, name)
+function lwl.setCrewName(crewmem, name)
     local nameTextString = Hyperspace.TextString()
     nameTextString.data = name
     crewmem:SetName(nameTextString, true)
@@ -486,32 +487,32 @@ end
 ---Returns true for all crew.
 ---@param crewmem Hyperspace.CrewMember
 ---@return boolean
-function mods.lightweight_lua.noFilter(crewmem)
+function lwl.noFilter(crewmem)
     return true
 end
 
 ---Currently living crew.
 ---@param crewmem Hyperspace.CrewMember
 ---@return boolean
-function mods.lightweight_lua.filterLivingCrew(crewmem)
+function lwl.filterLivingCrew(crewmem)
     return (not (crewmem:OutOfGame() or crewmem.bDead))
 end
 
 ---@param crewmem Hyperspace.CrewMember
 ---@return boolean
-function mods.lightweight_lua.filterTrueCrewNoDrones(crewmem)
+function lwl.filterTrueCrewNoDrones(crewmem)
     return crewmem:CountForVictory()  --Crew is not a drone AND (Crew is not dead or dying) OR crew is preparing to clone --sillysandvich
 end
 
 ---@param crewmem Hyperspace.CrewMember
 ---@return boolean
-function mods.lightweight_lua.filterOwnshipTrueCrew(crewmem)
+function lwl.filterOwnshipTrueCrew(crewmem)
     return crewmem:CountForVictory() and crewmem.iShipId == 0
 end
 
 ---@param filterFunction function
 ---@return table
-function mods.lightweight_lua.getAllMemberCrewFromFactory(filterFunction)
+function lwl.getAllMemberCrewFromFactory(filterFunction)
     local memberCrew = {}
     for crewmem in vter(mCrewMemberFactory.crewMembers) do
         if filterFunction(crewmem) then
@@ -525,7 +526,7 @@ end
 ---@param tracking TrackingType|nil
 ---@param includeNoWarn boolean|nil
 ---@return table
-function mods.lightweight_lua.getAllMemberCrew(shipManager, tracking, includeNoWarn)
+function lwl.getAllMemberCrew(shipManager, tracking, includeNoWarn)
     tracking = lwl.setIfNil(tracking, "all")
     includeNoWarn = lwl.setIfNil(includeNoWarn, true)
     local function selectionFilter(crewmem)
@@ -539,7 +540,7 @@ end
 ---Searches all crew, both ships.  This is unique, so it can just return whatever it finds.
 ---@param selfId number
 ---@return nil|Hyperspace.CrewMember
-function mods.lightweight_lua.getCrewById(selfId)
+function lwl.getCrewById(selfId)
     local function selectionFilter(crewmem)
         return crewmem.extend.selfId == selfId
     end
@@ -553,7 +554,7 @@ end
 ---@param targetShipManager Hyperspace.ShipManager
 ---@param crewShipManager Hyperspace.ShipManager
 ---@return table
-function mods.lightweight_lua.getCrewOnSameShip(targetShipManager, crewShipManager)
+function lwl.getCrewOnSameShip(targetShipManager, crewShipManager)
     local function selectionFilter(crewmem)
         return crewmem.iShipId == crewShipManager.iShipId and crewmem.currentShipId == targetShipManager.iShipId
     end
@@ -561,7 +562,7 @@ function mods.lightweight_lua.getCrewOnSameShip(targetShipManager, crewShipManag
 end
 
 --todo call into factory with filter function.
-function mods.lightweight_lua.getSelectedCrew(selectionState)
+function lwl.getSelectedCrew(selectionState)
     local function selectionFilter(crewmem)
         return crewmem.selectionState == selectionState
     end
@@ -580,7 +581,7 @@ end
 ---@param getNonDrones boolean|nil
 ---@param maxCount integer|nil
 ---@return table
-function mods.lightweight_lua.get_ship_crew_point(shipManager, crewShipManager, x, y, getDrones, getNonDrones, maxCount)
+function lwl.get_ship_crew_point(shipManager, crewShipManager, x, y, getDrones, getNonDrones, maxCount)
     local res = {}
     x = x//TILE_SIZE
     y = y//TILE_SIZE
@@ -600,26 +601,26 @@ end
 ---@param crewmem Hyperspace.CrewMember
 ---@param location Hyperspace.Point
 ---@return table
-function mods.lightweight_lua.getFoesAtSpace(crewmem, location)
+function lwl.getFoesAtSpace(crewmem, location)
     local enemyList = {}
     local currentShipManager = Hyperspace.ships(crewmem.currentShipId)
     local foeShipManager = Hyperspace.ships(1 - crewmem.iShipId)
     if (currentShipManager and foeShipManager) then
-        enemyList = mods.lightweight_lua.get_ship_crew_point(currentShipManager, foeShipManager, location.x, location.y)
+        enemyList = lwl.get_ship_crew_point(currentShipManager, foeShipManager, location.x, location.y)
     end
     return enemyList
 end
 
 ---@param crewmem Hyperspace.CrewMember
 ---@return table
-function mods.lightweight_lua.getFoesAtSelf(crewmem)
+function lwl.getFoesAtSelf(crewmem)
     return lwl.getFoesAtSpace(crewmem, crewmem:GetPosition())
 end
 
 --- -1 in the unlikely event no room is found
 ---@param crewmem Hyperspace.CrewMember
 ---@return integer
-function mods.lightweight_lua.getRoomAtCrewmember(crewmem)
+function lwl.getRoomAtCrewmember(crewmem)
     local shipManager = Hyperspace.ships(crewmem.currentShipId)
     --need to call this with the shipManager of the ship you want to look at.
     local room = get_room_at_location(shipManager, crewmem:GetPosition(), true)
@@ -632,11 +633,11 @@ end
 ---@param roomIdFirst number
 ---@param roomIdSecond number
 ---@return table
-function mods.lightweight_lua.getSharedDoors(shipId, roomIdFirst, roomIdSecond)
+function lwl.getSharedDoors(shipId, roomIdFirst, roomIdSecond)
     local shipGraph = Hyperspace.ShipGraph.GetShipInfo(shipId)
     local doorList = shipGraph:GetDoors(roomIdFirst)
     local doorList2 = shipGraph:GetDoors(roomIdSecond)
-    local sharedDoors = mods.lightweight_lua.setIntersectionVter(doorList, doorList2)
+    local sharedDoors = lwl.setIntersectionVter(doorList, doorList2)
     return sharedDoors 
 end
 
@@ -647,7 +648,7 @@ end
 ---@param stunTime number
 ---@param directDamage number
 ---@return boolean
-function mods.lightweight_lua.damageFoesAtSpace(crewmem, location, damage, stunTime, directDamage)
+function lwl.damageFoesAtSpace(crewmem, location, damage, stunTime, directDamage)
     local foes_at_point = lwl.getFoesAtSpace(crewmem, location)
     for j = 1, #foes_at_point do
         local foe = foes_at_point[j]
@@ -665,8 +666,8 @@ end
 ---@param stunTime number
 ---@param directDamage number
 ---@return boolean
-function mods.lightweight_lua.damageFoesInSameSpace(crewmem, damage, stunTime, directDamage)
-    return mods.lightweight_lua.damageFoesAtSpace(crewmem, crewmem:GetPosition(), damage, stunTime, directDamage)
+function lwl.damageFoesInSameSpace(crewmem, damage, stunTime, directDamage)
+    return lwl.damageFoesAtSpace(crewmem, crewmem:GetPosition(), damage, stunTime, directDamage)
 end
 
 ---Ok this function doesn't make very much sense.  TODO rework this.
@@ -675,7 +676,7 @@ end
 ---@param stunTime number
 ---@param currentRoom number
 ---@param bystander Hyperspace.CrewMember
-function mods.lightweight_lua.damageEnemyHelper(activeCrew, amount, stunTime, currentRoom, bystander)
+function lwl.damageEnemyHelper(activeCrew, amount, stunTime, currentRoom, bystander)
     --print("bystander in helper: " bystander)
     --print(bystander:GetLongName(), "room ", bystander.iRoomId, " ", currentRoom, " ", bystander.currentShipId == activeCrew.currentShipId)
     --print(bystander:GetLongName(), "room ", bystander.iRoomId == currentRoom, " ", bystander.iShipId == ENEMY_SHIP, " ", bystander.currentShipId == activeCrew.currentShipId)
@@ -694,7 +695,7 @@ end
 ---@param shipId integer 0 or 1
 ---@param filterFunction function (Hyperspace.CrewMember) optional additional conditions for which crew to get.
 ---@return table
-function mods.lightweight_lua.getRoomCrew(roomId, shipId, filterFunction)
+function lwl.getRoomCrew(roomId, shipId, filterFunction)
     filterFunction = lwl.setIfNil(filterFunction, function (_)
         return true
     end)
@@ -709,7 +710,7 @@ end
 ---@param crewmem Hyperspace.CrewMember crew to get crew in the room of.
 ---@param filterFunction function (Hyperspace.CrewMember) optional additional conditions for which crew to get.
 ---@return table
-function mods.lightweight_lua.getSameRoomCrew(crewmem, filterFunction)
+function lwl.getSameRoomCrew(crewmem, filterFunction)
     filterFunction = lwl.setIfNil(filterFunction, function (_)
         return true
     end)
@@ -722,34 +723,33 @@ end
 ---@param activeCrew Hyperspace.CrewMember
 ---@param amount any
 ---@param stunTime any
-function mods.lightweight_lua.damageEnemyCrewInSameRoom(activeCrew, amount, stunTime)
-    local currentRoom = mods.lightweight_lua.getRoomAtCrewmember(activeCrew)
+function lwl.damageEnemyCrewInSameRoom(activeCrew, amount, stunTime)
+    local currentRoom = lwl.getRoomAtCrewmember(activeCrew)
         -- Modified from brightlord's modification of Arc's get_ship_crew_room().
     if (Hyperspace.ships.enemy) then
       for bystander in vter(Hyperspace.ships.enemy.vCrewList) do
             --print(bystander:GetLongName(), " was in the same room!")
-          mods.lightweight_lua.damageEnemyHelper(activeCrew, amount, stunTime, currentRoom, bystander)
+          lwl.damageEnemyHelper(activeCrew, amount, stunTime, currentRoom, bystander)
       end
     end
     --do the same for friendly ship
     for bystander in vter(Hyperspace.ships.player.vCrewList) do
-        mods.lightweight_lua.damageEnemyHelper(activeCrew, amount, stunTime, currentRoom, bystander)
+        lwl.damageEnemyHelper(activeCrew, amount, stunTime, currentRoom, bystander)
     end
 end
-
 
 --[[  GEOMETRY UTILS  ]]--
 ---
 ---@param pointf Hyperspace.Pointf
 ---@return Hyperspace.Point
-function mods.lightweight_lua.pointfToPoint(pointf)
+function lwl.pointfToPoint(pointf)
     return Hyperspace.Point(math.floor(pointf.x), math.floor(pointf.y))
 end
 
 ---
 ---@param point Hyperspace.Point
 ---@return Hyperspace.Pointf
-function mods.lightweight_lua.pointToPointf(point)
+function lwl.pointToPointf(point)
     return Hyperspace.Pointf(point.x, point.y)
 end
 
@@ -758,7 +758,7 @@ end
 ---@param origin Hyperspace.Point
 ---@param radius number
 ---@return Hyperspace.Pointf
-function mods.lightweight_lua.random_point_circle(origin, radius)
+function lwl.random_point_circle(origin, radius)
     local r = radius
     local theta = TAU*(math.random())
     return Hyperspace.Pointf(origin.x + r*math.cos(theta), origin.y + r*math.sin(theta))
@@ -769,7 +769,7 @@ end
 ---@param origin Hyperspace.Point
 ---@param radius number
 ---@return Hyperspace.Pointf
-function mods.lightweight_lua.random_point_radius(origin, radius)
+function lwl.random_point_radius(origin, radius)
     local r = radius*(math.random())
     local theta = TAU*(math.random())
     return Hyperspace.Pointf(origin.x + r*math.cos(theta), origin.y + r*math.sin(theta))
@@ -778,7 +778,7 @@ end
 ---Generate a random point within the radius of a given point
 ---@param origin Hyperspace.Point
 ---@return Hyperspace.Pointf
-function mods.lightweight_lua.random_point_adjacent(origin)
+function lwl.random_point_adjacent(origin)
     local r = TILE_SIZE
     local theta = math.pi*(math.floor(math.random(0, 4))) / 2
     return Hyperspace.Pointf(origin.x + r*math.cos(theta), origin.y + r*math.sin(theta))
@@ -789,7 +789,7 @@ end
 ---@param origin any
 ---@param shipManager any
 ---@return Hyperspace.Point|nil
-function mods.lightweight_lua.random_valid_space_point_adjacent(origin, shipManager)
+function lwl.random_valid_space_point_adjacent(origin, shipManager)
     local r = TILE_SIZE
     local theta = math.pi*(math.floor(math.random(0, 4))) / 2
     for i = 0,3 do
@@ -808,14 +808,14 @@ end
 ---@param shipId ShipId
 ---@param isIntruder boolean
 ---@return Hyperspace.Slot
-function mods.lightweight_lua.closestOpenSlot(point, shipId, isIntruder)
+function lwl.closestOpenSlot(point, shipId, isIntruder)
     local shipGraph = Hyperspace.ShipGraph.GetShipInfo(shipId)
     return shipGraph:GetClosestSlot(point, shipId, isIntruder)
 end
 
 ---@param crewmem Hyperspace.CrewMember
 ---@return Hyperspace.Slot
-function mods.lightweight_lua.closestOpenSlotToCrew(crewmem)
+function lwl.closestOpenSlotToCrew(crewmem)
     return lwl.closestOpenSlot(crewmem:GetPosition(), crewmem.currentShipId, crewmem.currentShipId ~= crewmem.iShipId)
 end
 
@@ -823,7 +823,7 @@ end
 ---@param point Hyperspace.Point
 ---@param shipManager Hyperspace.ShipManager
 ---@return integer
-function mods.lightweight_lua.slotIdAtPoint(point, shipManager)
+function lwl.slotIdAtPoint(point, shipManager)
     local shipGraph = Hyperspace.ShipGraph.GetShipInfo(shipManager.iShipId)
     local roomNumber = get_room_at_location(shipManager, point, true)
     if (roomNumber == -1) then
@@ -845,7 +845,7 @@ end
 ---@param roomNumber number
 ---@param shipId ShipId
 ---@return integer
-function mods.lightweight_lua.randomSlotRoom(roomNumber, shipId)
+function lwl.randomSlotRoom(roomNumber, shipId)
     local shipGraph = Hyperspace.ShipGraph.GetShipInfo(shipId)
     local shape = shipGraph:GetRoomShape(roomNumber)
     local width = shape.w / TILE_SIZE
@@ -856,7 +856,7 @@ end
 
 ---@param crewmem Hyperspace.CrewMember
 ---@return function Returns true if this crewmember is an exact match.
-function mods.lightweight_lua.generateCrewFilterFunction(crewmem)
+function lwl.generateCrewFilterFunction(crewmem)
     return function (crew)
         return crew.extend.selfId == crewmem.extend.selfId
     end
@@ -864,7 +864,7 @@ end
 
 ---@param crewmem Hyperspace.CrewMember
 ---@return function Returns true if this crewmember is an exact match.
-function mods.lightweight_lua.generateSameRoomAlliesFilterFunction(crewmem)
+function lwl.generateSameRoomAlliesFilterFunction(crewmem)
     return function ()
         return lwl.getSameRoomCrew(crewmem, function (crew)
             return crew.iShipId == crewmem.iShipId
@@ -874,7 +874,7 @@ end
 
 ---@param crewmem Hyperspace.CrewMember
 ---@return function Returns true if this crewmember is an exact match.
-function mods.lightweight_lua.generateSameRoomFoesFilterFunction(crewmem)
+function lwl.generateSameRoomFoesFilterFunction(crewmem)
     return function ()
         return lwl.getSameRoomCrew(crewmem, function (crew)
             return crew.iShipId ~= crewmem.iShipId
@@ -883,7 +883,7 @@ function mods.lightweight_lua.generateSameRoomFoesFilterFunction(crewmem)
 end
 
 --Generates a filter, not one itself.
-function mods.lightweight_lua.generateOpposingCrewFilter(crewmem)
+function lwl.generateOpposingCrewFilter(crewmem)
     return function (crew)
         return crew.iShipId ~= crewmem.iShipId
     end
@@ -894,14 +894,14 @@ end
 --toggle with INSert key, because this can be quite verbose
 --storage checks, sylvan, and the starting beacon are all very long.
 --Call the internal version instead if you ALWAYS want to print
-function mods.lightweight_lua.printChoiceInternal(choice, level) end
-function mods.lightweight_lua.printEventInternal(locationEvent, level) end
-mods.lightweight_lua.PRINT_EVENTS = false
+function lwl.printChoiceInternal(choice, level) end
+function lwl.printEventInternal(locationEvent, level) end
+lwl.PRINT_EVENTS = false
 
 script.on_internal_event(Defines.InternalEvents.ON_KEY_DOWN, function(key)
         if (key == Defines.SDL.KEY_INSERT) then
-            mods.lightweight_lua.PRINT_EVENTS = (not mods.lightweight_lua.PRINT_EVENTS)
-            print("Set event logging ", mods.lightweight_lua.PRINT_EVENTS)
+            lwl.PRINT_EVENTS = (not lwl.PRINT_EVENTS)
+            print("Set event logging ", lwl.PRINT_EVENTS)
         end
     end)
 
@@ -913,15 +913,15 @@ local function indentPrint(text, indentLevel)
     print(prefix..text)
 end
 
-function mods.lightweight_lua.printEvent(locationEvent)
-    if mods.lightweight_lua.PRINT_EVENTS then
-        mods.lightweight_lua.printEventInternal(locationEvent, 0)
+function lwl.printEvent(locationEvent)
+    if lwl.PRINT_EVENTS then
+        lwl.printEventInternal(locationEvent, 0)
     end
 end
 
-function mods.lightweight_lua.printChoice(choice)
-    if mods.lightweight_lua.PRINT_EVENTS then
-        mods.lightweight_lua.printChoiceInternal(choice, 0)
+function lwl.printChoice(choice)
+    if lwl.PRINT_EVENTS then
+        lwl.printChoiceInternal(choice, 0)
     end
 end
 
@@ -940,26 +940,26 @@ local function appendEventText(event, text)
 end
 
 --somehow this doesn't cause issues with recursive checks.
-mods.lightweight_lua.printChoiceInternal = function(choice, level)
+lwl.printChoiceInternal = function(choice, level)
     indentPrint("Choice Text: "..choice.text.data.." Requirement: "..choice.requirement.object.." min "..choice.requirement.min_level.." max "..choice.requirement.max_level.." max choice num "..choice.requirement.max_group, level)
     choiceEvent = choice.event
     if (choiceEvent ~= nil) then
-        mods.lightweight_lua.printEventInternal(choiceEvent, level + 1)
+        lwl.printEventInternal(choiceEvent, level + 1)
     end
 end
 
-mods.lightweight_lua.printEventInternal = function(locationEvent, level)
+lwl.printEventInternal = function(locationEvent, level)
     --recursive print through all event trees, using level to indent with tabs and newlines.
     indentPrint("Event Name: "..locationEvent.eventName, level)
     indentPrint("Event Text: "..locationEvent.text.data, level)
     local choices = locationEvent:GetChoices()
     for choice in vter(choices) do
-        mods.lightweight_lua.printChoiceInternal(choice, level + 1)
+        lwl.printChoiceInternal(choice, level + 1)
     end
 end
 
 -- written by arc
-function mods.lightweight_lua.convertMousePositionToPlayerShipPosition(mousePosition)
+function lwl.convertMousePositionToPlayerShipPosition(mousePosition)
     local cApp = Hyperspace.Global.GetInstance():GetCApp()
     local combatControl = cApp.gui.combatControl
     local playerPosition = combatControl.playerShipPosition
@@ -967,7 +967,7 @@ function mods.lightweight_lua.convertMousePositionToPlayerShipPosition(mousePosi
 end
 
 -- written by kokoro
- function mods.lightweight_lua.convertMousePositionToEnemyShipPosition(mousePosition)
+ function lwl.convertMousePositionToEnemyShipPosition(mousePosition)
     local cApp = Hyperspace.Global.GetInstance():GetCApp()
     local combatControl = cApp.gui.combatControl
     local position = combatControl.position
@@ -980,7 +980,7 @@ end
 local mTeleportConditions = {}
 
 --nil if none exists.
-function mods.lightweight_lua.getRoomAtLocation(position)
+function lwl.getRoomAtLocation(position)
     --Ships in mv don't overlap, so check both ships --poinf?
     local retRoom = get_room_at_location(Hyperspace.ships(OWNSHIP), lwl.convertMousePositionToPlayerShipPosition(mousePos), true)
     if retRoom then return retRoom end
@@ -991,7 +991,7 @@ end
 ---Returns a Function that returns true once every trueEvery calls.
 ---@param trueEvery function
 ---@return function
-function mods.lightweight_lua.createIncrementalConditonal(trueEvery)
+function lwl.createIncrementalConditonal(trueEvery)
     local counter = 1
     local maxValue = trueEvery
     return function()
@@ -1009,7 +1009,7 @@ end
 ---Allow types of crew to use wither-style personal teleporters under certain circumstances.
 ---@param conditionFunction function
 ---@param crewFilterFunction function
-function mods.lightweight_lua.registerConditionalTeleport(conditionFunction, crewFilterFunction)
+function lwl.registerConditionalTeleport(conditionFunction, crewFilterFunction)
     table.insert(mTeleportConditions, {conditionFunction, crewFilterFunction})
 end
 
@@ -1101,15 +1101,15 @@ local function resolveToTypeInternal(value, desiredType, previousValue, depth)
     end
 end
 
-function mods.lightweight_lua.resolveToNumber(value)
+function lwl.resolveToNumber(value)
     return resolveToTypeInternal(value, "number", nil, 0)
 end
 
-function mods.lightweight_lua.resolveToBoolean(value)
+function lwl.resolveToBoolean(value)
     return resolveToTypeInternal(value, "boolean", nil, 0)
 end
 
-function mods.lightweight_lua.resolveToString(value)
+function lwl.resolveToString(value)
     return resolveToTypeInternal(value, "string", nil, 0)
 end
 

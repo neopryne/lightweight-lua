@@ -870,7 +870,7 @@ end
 ---@param hoveredOff any
 ---@param hoveredOn any
 ---@return function
-function lwui.toggleButtonRenderFunction(off, on, hoveredOff, hoveredOn)
+function lwui.toggleButtonRenderFunction(off, hoveredOff, on, hoveredOn)
     local function indexSelectFunction(toggleButton)
         if toggleButton.class == classNames.TOGGLE_BUTTON then
             --todo doesn't work with inheritance.  or rather, objects have no concept of parents right now.
@@ -882,17 +882,17 @@ function lwui.toggleButtonRenderFunction(off, on, hoveredOff, hoveredOn)
             if lwui.mHoveredButton == toggleButton then
                 return 4
             else
-                return 2
+                return 3
             end
         else
             if lwui.mHoveredButton == toggleButton then
-                return 3
+                return 2
             else
                 return 1
             end
         end
     end
-    return lwui.dynamicSpriteRenderFunction({off, on, hoveredOff, hoveredOn}, indexSelectFunction)
+    return lwui.dynamicSpriteRenderFunction({off, hoveredOff, on, hoveredOn}, indexSelectFunction)
 end
 
 function lwui.spriteRenderFunction(spritePath)
@@ -951,7 +951,7 @@ lwui.testScrollBarSkin = lwui.constructScrollBarSkin(
         12)
 ------------------------------------RENDERING LOGIC----------------------------------------------------------
 --this makes the z-ordering of buttons based on the order of the sButtonList, Lower values on top.
-function renderObjects(layerName)
+local function renderObjects(layerName)
     --print("render layer "..layerName)
     local hovering = false
     Graphics.CSurface.GL_PushMatrix()
