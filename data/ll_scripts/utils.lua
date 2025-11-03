@@ -219,7 +219,9 @@ function lwl.arrayRemove(table, filterFunction, onRemove)
             end
             j = j + 1; -- Increment position of where we'll place the next kept value.
         else
-            onRemove(table[i])
+            if onRemove then
+                onRemove(table[i])
+            end
             table[i] = nil;
         end
     end
@@ -598,13 +600,14 @@ function lwl.get_ship_crew_point(shipManager, crewShipManager, x, y, getDrones, 
     return res
 end
 
----@param crewmem Hyperspace.CrewMember
+---@param allegiance number 0 if you are looking for foes of the player, and 1 if looking for foes of the enemy.
+---@param currentShip number the id of the ship to check the space relative to.
 ---@param location Hyperspace.Point
 ---@return table
-function lwl.getFoesAtSpace(crewmem, location)
+function lwl.getFoesAtSpace(allegiance, currentShip, location)
     local enemyList = {}
-    local currentShipManager = Hyperspace.ships(crewmem.currentShipId)
-    local foeShipManager = Hyperspace.ships(1 - crewmem.iShipId)
+    local currentShipManager = Hyperspace.ships(currentShip)
+    local foeShipManager = Hyperspace.ships(1 - allegiance)
     if (currentShipManager and foeShipManager) then
         enemyList = lwl.get_ship_crew_point(currentShipManager, foeShipManager, location.x, location.y)
     end
@@ -614,7 +617,7 @@ end
 ---@param crewmem Hyperspace.CrewMember
 ---@return table
 function lwl.getFoesAtSelf(crewmem)
-    return lwl.getFoesAtSpace(crewmem, crewmem:GetPosition())
+    return lwl.getFoesAtSpace(crewmem.iShipId, crewmem.currentShipId, crewmem:GetPosition())
 end
 
 --- -1 in the unlikely event no room is found
@@ -642,14 +645,15 @@ function lwl.getSharedDoors(shipId, roomIdFirst, roomIdSecond)
 end
 
 --returns true if it did anything and false otherwise
----@param crewmem Hyperspace.CrewMember
+---@param allegiance number 0 if you are looking for foes of the player, and 1 if looking for foes of the enemy.
+---@param currentShip number the id of the ship to check the space relative to.
 ---@param location Hyperspace.Point
 ---@param damage number
 ---@param stunTime number
 ---@param directDamage number
 ---@return boolean
-function lwl.damageFoesAtSpace(crewmem, location, damage, stunTime, directDamage)
-    local foes_at_point = lwl.getFoesAtSpace(crewmem, location)
+function lwl.damageFoesAtSpace(allegiance, currentShip, location, damage, stunTime, directDamage)
+    local foes_at_point = lwl.getFoesAtSpace(allegiance, currentShip, location)
     for j = 1, #foes_at_point do
         local foe = foes_at_point[j]
         foe.fStunTime = foe.fStunTime + stunTime
@@ -667,7 +671,7 @@ end
 ---@param directDamage number
 ---@return boolean
 function lwl.damageFoesInSameSpace(crewmem, damage, stunTime, directDamage)
-    return lwl.damageFoesAtSpace(crewmem, crewmem:GetPosition(), damage, stunTime, directDamage)
+    return lwl.damageFoesAtSpace(crewmem.iShipId, crewmem.currentShipId, crewmem:GetPosition(), damage, stunTime, directDamage)
 end
 
 ---Ok this function doesn't make very much sense.  TODO rework this.
@@ -854,20 +858,24 @@ function lwl.randomSlotRoom(roomNumber, shipId)
     return math.floor(math.random() * count_of_tiles_in_room) --zero indexed
 end
 
+---Note: Filter functions must not maintain a reference to CrewMember objects as they can go out of scope if you quit to menu and continue.
+---TODO: I might need to use memory safe crew for all filter functions that need to access dynamic crew fields.
 ---@param crewmem Hyperspace.CrewMember
 ---@return function Returns true if this crewmember is an exact match.
 function lwl.generateCrewFilterFunction(crewmem)
+    local crewId = crewmem.extend.selfId
     return function (crew)
-        return crew.extend.selfId == crewmem.extend.selfId
+        return crew.extend.selfId == crewId
     end
 end
 
 ---@param crewmem Hyperspace.CrewMember
 ---@return function Returns true if this crewmember is an exact match.
 function lwl.generateSameRoomAlliesFilterFunction(crewmem)
+    local allegiance = crewmem.iShipId
     return function ()
         return lwl.getSameRoomCrew(crewmem, function (crew)
-            return crew.iShipId == crewmem.iShipId
+            return crew.iShipId == allegiance
         end)
     end
 end
@@ -875,17 +883,19 @@ end
 ---@param crewmem Hyperspace.CrewMember
 ---@return function Returns true if this crewmember is an exact match.
 function lwl.generateSameRoomFoesFilterFunction(crewmem)
+    local allegiance = crewmem.iShipId
     return function ()
         return lwl.getSameRoomCrew(crewmem, function (crew)
-            return crew.iShipId ~= crewmem.iShipId
+            return crew.iShipId ~= allegiance
         end)
     end
 end
 
 --Generates a filter, not one itself.
 function lwl.generateOpposingCrewFilter(crewmem)
+    local allegiance = crewmem.iShipId
     return function (crew)
-        return crew.iShipId ~= crewmem.iShipId
+        return crew.iShipId ~= allegiance
     end
 end
 
@@ -1005,35 +1015,7 @@ function lwl.createIncrementalConditonal(trueEvery)
 end
 
 
------------------------MEMORY_SAFE_CREW---------------------------
 
----Creates a memory safe wrapper around a crewmember object.
----@param crewmem Hyperspace.CrewMember
----@return table wrapper
-lwl.createMemorySafeCrewWrapper = function(crewmem)
-    local crewWrapper = {}
-    crewWrapper.internalCrew = crewmem
-    crewWrapper.internalId = crewmem.extend.selfId
-
-    ---Call with a colon, returns the crew member this was created around, even if the original has gone out of scope.
-    ---@param self table
-    ---@return Hyperspace.CrewMember|nil Nil if no crew can be found with this id.
-    crewWrapper.get = function(self)
-        --When an object gets invalidated, all its fields become garbage.  We can use this to check
-        --when it happens, but also need to save selfId outside of that so we can get the crew again.
-        ---todo this might be too hacky, and we need a game-loaded hook because everything else is going to be a major hack.
-        if (not (self.internalCrew.currentShipId == 0 or self.internalCrew.currentShipId == 1)) or
-        (not (self.internalCrew.iShipId == 0 or self.internalCrew.iShipId == 1)) then
-            print("wsschrag resetting crew ", self.internalId) --todo it can't access selfId which is why we do it this way.
-            --It's not perfect, but it only happens when using jitsus.
-            self.internalCrew = lwl.getCrewById(self.internalId)
-        end
-        return self.internalCrew
-    end
-    return crewWrapper
-end
-
------------------------END MEMORY_SAFE_CREW---------------------------
 function lwl.floatEquals(f1, f2, epsilon)
     epsilon = lwl.nilSet(epsilon, .0001)
     return math.abs(f1-f2) < epsilon
@@ -1044,7 +1026,12 @@ function lwl.isMoving(crewmem)
 end
 
 ------------------POINT UTILS---------------------
-function lwl.pointFuzzyEquals(p1, p2, epsilon)
+---Returns true if two points are near each other
+---@param p1 Hyperspace.Point|Hyperspace.Pointf
+---@param p2 Hyperspace.Point|Hyperspace.Pointf
+---@param epsilon number How far apart they can be, in pixels.
+---@return boolean true if they are at least within epsilon pixels of each other.
+function lwl.pointFuzzyEquals(p1, p2, epsilon) --todo this should actually check the straight distance. As is it's a square.
     if not epsilon then
         epsilon = 1
     end
@@ -1052,6 +1039,9 @@ function lwl.pointFuzzyEquals(p1, p2, epsilon)
     return lwl.floatEquals(p1.x, p2.x, epsilon) and lwl.floatEquals(p1.y, p2.y, epsilon)
 end
 
+---Returns if a goalPoint actually exists, or is a value that indicates that it doesn't, but they didn't want to put nil.
+---@param goalPoint Hyperspace.Pointf a goal from a CrewMember object
+---@return boolean true if the goal exists, and false if the goal is the dummy, fake one.
 function lwl.goalExists(goalPoint)
     return not (lwl.floatEquals(goalPoint.x, -1) and lwl.floatEquals(goalPoint.y, -1))
 end
@@ -1067,8 +1057,8 @@ end
 ---Returns a new point given an existing point, an angle, and a distance.
 ---@param origin Hyperspace.Point|Hyperspace.Pointf Point to calculate from.
 ---@param angle number Angle in radians, 0 is straight right.
----@param distance number
----@return Hyperspace.Pointf
+---@param distance number in pixels
+---@return Hyperspace.Pointf the new point relative to the origin
 function lwl.getPoint(origin, angle, distance)
     return Hyperspace.Pointf(origin.x - (distance * math.cos(angle)), origin.y - (distance * math.sin(angle)))
 end
@@ -1077,6 +1067,10 @@ function lwl.getDistance(origin, target)
     return math.abs(math.sqrt((origin.x - target.x)^2 + (origin.y - target.y)^2))
 end
 
+---comment
+---@param origin Hyperspace.Point|Hyperspace.Pointf
+---@param target Hyperspace.Point|Hyperspace.Pointf
+---@return number FTL Angle in the direction of target from origin.
 function lwl.getAngle(origin, target)
     local deltaX = origin.x - target.x
     local deltaY = origin.y - target.y
@@ -1092,20 +1086,32 @@ end
 ------------------ANGLE UTILS---------------------
 ---Converts an FTL style angle to a Brightness Particles style one.
 ---That is, it rotates it by 90 degrees and converts it to degrees.
----@param angle number
----@return number
+---@param angle number FTL Angle (Radians, 0 is right)
+---@return number Brightness Angle (Degrees, 0 is up)
 function lwl.angleFtlToBrightness(angle)
     return ((angle * 180 / math.pi) + 270) % 360
 end
 
+---Converts an Brightness Particles style angle to an FTL style one.
+---That is, it rotates it by -90 degrees and converts it to radians.
+---@param angle number Brightness Angle (Degrees, 0 is up)
+---@return number FTL Angle (Radians, 0 is right)
 function lwl.angleBrightnessToFtl(angle)
     return (((angle + 90) % 360) * math.pi / 180)
 end
 
+---Returns the distance in degrees clockwise from heading to target.
+---@param heading number origin angle
+---@param target number angle to measure towards.
+---@return number the clockwise distance between the two angles
 function lwl.clockwiseDistanceDegrees(heading, target)
       return ((target - heading) + 360) % 360
 end
 
+---Returns the distance in degrees counterclockwise from heading to target.
+---@param heading number origin angle
+---@param target number angle to measure towards.
+---@return number the counterclockwise distance between the two angles
 function lwl.counterclockwiseDistanceDegrees(heading, target)
       return ((heading - target) + 360) % 360
 end
@@ -1118,6 +1124,11 @@ function lwl.angleDistanceDegrees(heading, target)
     return math.min(lwl.clockwiseDistanceDegrees(heading, target), lwl.counterclockwiseDistanceDegrees(heading, target))
 end
 
+---comment
+---@param heading number the current facing angle in degrees
+---@param target number angle in degrees to rotate towards
+---@param step number how much to rotate towards the target
+---@return number the new adjusted heading, now closer to target.
 function lwl.rotateTowardsDegrees(heading, target, step) --todo how was this not jittering before?
     local clockwise = lwl.clockwiseDistanceDegrees(heading, target)
     local counterclockwise = lwl.counterclockwiseDistanceDegrees(heading, target)
@@ -1217,7 +1228,6 @@ end
 When a thing fails, it should say how it failed, and then inform its calling process that it failed.
 Usually with how things are written these days, this bubbles all the way up to the main runtime.
 ]]
-
 local function resolveToTypeInternal(value, desiredType, previousValue, depth)
     depth = depth or 0
     if depth > 100 then
@@ -1246,14 +1256,23 @@ local function resolveToTypeInternal(value, desiredType, previousValue, depth)
     end
 end
 
+---Attempts to evaluate value until it returns a number.
+---@param value any but should be a number or a function that returns a ... function that returns a number.
+---@return number|nil Nil if this value cannot be resolved to a number.
 function lwl.resolveToNumber(value)
     return resolveToTypeInternal(value, "number", nil, 0)
 end
 
+---Attempts to evaluate value until it returns a boolean.
+---@param value any but should be a boolean or a function that returns a ... function that returns a boolean.
+---@return boolean|nil Nil if this value cannot be resolved to a boolean.
 function lwl.resolveToBoolean(value)
     return resolveToTypeInternal(value, "boolean", nil, 0)
 end
 
+---Attempts to evaluate value until it returns a string.
+---@param value any but should be a string or a function that returns a ... function that returns a string.
+---@return String|nil Nil if this value cannot be resolved to a string.
 function lwl.resolveToString(value)
     return resolveToTypeInternal(value, "string", nil, 0)
 end

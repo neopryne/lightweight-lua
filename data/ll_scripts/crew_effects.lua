@@ -30,7 +30,9 @@ are also only for player crew.
 if (not mods) then mods = {} end
 mods.lightweight_crew_effects = {}
 local lwce = mods.lightweight_crew_effects
+
 local lwl = mods.lightweight_lua
+local lwst = mods.lightweight_stable_time
 local lwui = mods.lightweight_user_interface
 local lwcco = mods.lightweight_crew_change_observer
 local lwsb = mods.lightweight_statboosts
@@ -483,56 +485,50 @@ local function onRemoveCrew(listCrew)
     end
 end
 
---todo scale to real time, ie convert to 30ticks/second rather than frames.
-script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+local function onTick()
     if not mSetupRequested then return end
     if not mCrewChangeObserver then --for now, include drones in valid targets.  FTL crew is weird enough drones probably count as people.
         mCrewChangeObserver = lwcco.createCrewChangeObserver(lwl.noFilter)
     end
     if not mCrewChangeObserver.isInitialized() then return end
+    
+    tickEffects()
+    local addedCrew = mCrewChangeObserver.getAddedCrew()
+    for _,crewId in ipairs(addedCrew) do
+        --print("EFFECT Added crew: ", lwl.getCrewById(crewId):GetName())
+        table.insert(mCrewList, {id=crewId}) --probably never added any crew 
+        --Set values.  ALL VALUES MUST BE SET HERE.
+        local realCrew = lwl.getCrewById(crewId)
+        if realCrew then
+            lwce.applyBleed(realCrew, 0)
+            lwce.applyConfusion(realCrew, 0)
+            local corruptionEffect = lwce.applyCorruption(realCrew, 0)
+            corruptionEffect.didDeathSave = false
+            local teleEffect = lwce.applyTeleportitis(realCrew, 0)
+            teleEffect.instability = 0
+        end
+        --print("EFFECT after adding ", crewId, " there are now ", #mCrewList, " crew")
+    end
+    for _,crewId in ipairs(mCrewChangeObserver.getRemovedCrew()) do
+        --print("EFFECT Removed crew: ", crewId)
+        lwl.arrayRemove(mCrewList, generateCrewMatchFilter(crewId), onRemoveCrew)
+        --print("EFFECT after removing ", crewId, " there are now ", #mCrewList, " crew left")
+    end
+    if not mInitialized and #addedCrew > 0 then --The first load will load all saved crew.
+        loadEffects()
+        mInitialized = true
+    end
+    persistEffects() --todo try to call this less.
+    mCrewChangeObserver.saveLastSeenState()
+    --print("EFFECTS: Compare ", #mCrewList, knownCrew, knownCrew == #mCrewList)
+end
+
+lwst.registerOnTick(onTick, false)
+
+--todo scale to real time, ie convert to 30ticks/second rather than frames.
+script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     for _,listCrew in ipairs(mCrewList) do
         repositionEffectStack(listCrew)
-    end
-
-    if not lwl.isPaused() then
-        --[[local crewids = ""
-        for _,crew in ipairs(mCrewList) do
-            crewids = crewids..crew.id..", "
-        end
-        print("List crew is ", crewids)--]]
-        mScaledLocalTime = mScaledLocalTime + (Hyperspace.FPS.SpeedFactor * 16 / 10) --this runs slightly slower than equipment and it's not clear why.
-        if (mScaledLocalTime > 1) then
-            tickEffects()
-            mScaledLocalTime = 0
-            local addedCrew = mCrewChangeObserver.getAddedCrew()
-            for _,crewId in ipairs(addedCrew) do
-                --print("EFFECT Added crew: ", lwl.getCrewById(crewId):GetName())
-                table.insert(mCrewList, {id=crewId}) --probably never added any crew 
-                --Set values.  ALL VALUES MUST BE SET HERE.
-                local realCrew = lwl.getCrewById(crewId)
-                if realCrew then
-                    lwce.applyBleed(realCrew, 0)
-                    lwce.applyConfusion(realCrew, 0)
-                    local corruptionEffect = lwce.applyCorruption(realCrew, 0)
-                    corruptionEffect.didDeathSave = false
-                    local teleEffect = lwce.applyTeleportitis(realCrew, 0)
-                    teleEffect.instability = 0
-                end
-                --print("EFFECT after adding ", crewId, " there are now ", #mCrewList, " crew")
-            end
-            for _,crewId in ipairs(mCrewChangeObserver.getRemovedCrew()) do
-                --print("EFFECT Removed crew: ", crewId)
-                lwl.arrayRemove(mCrewList, generateCrewMatchFilter(crewId), onRemoveCrew)
-                --print("EFFECT after removing ", crewId, " there are now ", #mCrewList, " crew left")
-            end
-            if not mInitialized and #addedCrew > 0 then --The first load will load all saved crew.
-                loadEffects()
-                mInitialized = true
-            end
-            persistEffects() --todo try to call this less.
-            mCrewChangeObserver.saveLastSeenState()
-            --print("EFFECTS: Compare ", #mCrewList, knownCrew, knownCrew == #mCrewList)
-        end
     end
     --print("Icons repositioned!")
 end)

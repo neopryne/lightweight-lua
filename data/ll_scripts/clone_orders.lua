@@ -10,7 +10,8 @@ local lweb = mods.lightweight_event_broadcaster
 
 
 --todo make this maybe not function in the hangar so it throws less errors.
-
+---also so that your crew doesn't randomly walk around when you start a run.  That's annoying.
+--todo this can lock you out of moving crew.  disable until fixed.
 
 local function temporaryInsanity(crewmem)
     if lwl.setIfNil(Hyperspace.metaVariables["lwl_clone_auto_pathing"], 0) == 1 then

@@ -19,29 +19,34 @@ local mCrewChangeObservers = {}
 local mSetupRequested = false
 
 --todo make it ignore crew you don't have.
+--todo update tele obs with resetignore
 --Fixed it already, but one correct solution to this is not to allow effects/equipment to add duplicate crewIds.  I think I may need to do that also.
 
 script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if not mSetupRequested then return end--todo use crew factory in some smart way, maybe let the user pass in a filter function that takes this object (and other things)
     --Initialization code
-    if not Hyperspace.ships(0) or Hyperspace.ships(0).iCustomizeMode == 2 or lwl.isPaused() then return end
+    if not (Hyperspace.ships(0)) or Hyperspace.ships(0).iCustomizeMode == 2 or lwl.isPaused() then return end
     --update mCrewIds
     for _,crewChangeObserver in ipairs(mCrewChangeObservers) do
-        crewChangeObserver.selfIsInitialized = true
-        local currentCrew = lwl.getAllMemberCrewFromFactory(crewChangeObserver.filterFunction)
-        crewChangeObserver.crew = {}
-        for _,crewmem in ipairs(currentCrew) do
-            table.insert(crewChangeObserver.crew, crewmem.extend.selfId)
+        if not crewChangeObserver.resetUpdate then
+            crewChangeObserver.selfIsInitialized = true
+            local currentCrew = lwl.getAllMemberCrewFromFactory(crewChangeObserver.filterFunction)
+            crewChangeObserver.crew = {}
+            for _,crewmem in ipairs(currentCrew) do
+                table.insert(crewChangeObserver.crew, crewmem.extend.selfId)
+            end
+            crewChangeObserver.selfIsInitialized = true
         end
-        crewChangeObserver.selfIsInitialized = true
     end
 end)
 
 script.on_game_event("START_BEACON_REAL", false, function() --reset observers on restart.  --todo also for tele if I still need it.  I do, but the way I use CCO means I personally don't.
+         --todo see if I can move this to on_init
         for _,crewChangeObserver in ipairs(mCrewChangeObservers) do
             if crewChangeObserver.selfIsInitialized then
                 crewChangeObserver.crew = {}
             end
+            crewChangeObserver.resetUpdate = true
         end
         end)
 
@@ -59,10 +64,12 @@ function lwcco.createCrewChangeObserver(filterFunction)
     crewChangeObserver.crew = {}
     crewChangeObserver.lastSeenCrew = {}
     crewChangeObserver.selfIsInitialized = false
+    crewChangeObserver.resetUpdate = false
 
     --actually no, just return a new object to all consumers so they don't conflict.
     local function saveLastSeenState()
         crewChangeObserver.lastSeenCrew = lwl.deepCopyTable(crewChangeObserver.crew)
+        crewChangeObserver.resetUpdate = false
     end
     local function getAddedCrew()
         --print("currentCrew", lwl.dumpObject(crewChangeObserver.crew))

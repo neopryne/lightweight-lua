@@ -20,7 +20,17 @@ local TAG = "LW Tele Status Observer"
 local KEY_DEATH = "CREW_DEATH_EVENT"
 local KEY_DEATH_ANIMATION = "CREW_DEATH_ANIMATION"
 local KEY_CREW_CLONED = "CREW_CLONED_EVENT"
+local KEY_PLAYER_VARIABLES_LOADED = "PLAYER_VARIABLES_LOADED"
+local KEY_ENTERED_HANGAR = "ENTERED_HANGAR" --Means the previous run has been removed.
 
+local KEY_HAS_RUN = "metavars_run_saved"
+local hasRun = Hyperspace.metaVariables[KEY_HAS_RUN]
+local mRunInitializationCode = false
+local mHangarBroadcastSent = false
+local mRunInitialized = false
+local mNewGame = false
+
+local mInitWatchRequested = false
 local mSetupRequested = false --todo should this be centralized like this?
 local mListenerCategories = {}
 
@@ -33,8 +43,7 @@ local function observerUpdate(condition, key)
     ]]
 end
 
-
-local function crewObserverUpdate(condition, key)
+local function crewObserverUpdate(condition, key, updateListeners)
     if not mListenerCategories[key] then return end
     local allCrew = lwl.getAllMemberCrewFromFactory(lwl.noFilter)
     for _,crewmem in ipairs(allCrew) do
@@ -52,34 +61,70 @@ local function crewObserverUpdate(condition, key)
     end
 end
 
-local function clonedUpdate()
-    local function deathCheck(crewmem)
+local function clonedUpdate(updateListeners) --todo check if this applies when any crew spawns, or just when they clone in.
+    local function clonedCheck(crewmem)
         return not crewmem.bDead
     end
-    crewObserverUpdate(deathCheck, KEY_CREW_CLONED)
+    crewObserverUpdate(clonedCheck, KEY_CREW_CLONED, updateListeners)
 end
 
-local function deathUpdate()
+local function deathUpdate(updateListeners)
     local function deathCheck(crewmem)
         return crewmem.bDead
     end
-    crewObserverUpdate(deathCheck, KEY_DEATH)
+    crewObserverUpdate(deathCheck, KEY_DEATH, updateListeners)
 end
 
-local function deathAnimationUpdate()
-    local function deathCheck(crewmem)
+local function deathAnimationUpdate(updateListeners)
+    local function deathAnimCheck(crewmem)
         return crewmem.health.first <= 0
     end
-    crewObserverUpdate(deathCheck, KEY_DEATH_ANIMATION)
+    crewObserverUpdate(deathAnimCheck, KEY_DEATH_ANIMATION, updateListeners)
 end
+
+local function hangarStatusUpdate()
+    local inHanger = (Hyperspace.ships(0)) and Hyperspace.ships(0).iCustomizeMode == 2
+    if inHanger then
+        if not mHangarBroadcastSent then
+            for _,listener in ipairs(mListenerCategories[KEY_ENTERED_HANGAR]) do
+                listener()
+            end
+            mHangarBroadcastSent = true
+            mRunInitialized = false
+        end
+    else
+        mHangarBroadcastSent = false
+    end
+end
+
+local function playerVariablesLoadedUpdate() --todo If I broke stuff, this commit is probably the one that did it.
+    --if not mInitWatchRequested then return end
+    if mRunInitializationCode then
+        deathUpdate(false)
+        deathAnimationUpdate(false)
+        clonedUpdate(false)
+        for _,listener in ipairs(mListenerCategories[KEY_PLAYER_VARIABLES_LOADED]) do
+            listener(mNewGame)
+        end
+    end
+    mRunInitializationCode = false
+    mRunInitialized = true
+end
+
+--todo need a broadcast for when in the hangar.
+---Then, I need to toggle the rest of these off until the player variables load, and 
+----No actually, what I need to do is mark the current status of everyone when the player variables load.
+---So go through and call all the callbacks except don't call this listeners.
 
 script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if not mSetupRequested then return end
-    deathUpdate()
-    deathAnimationUpdate()
-    clonedUpdate()
+    hangarStatusUpdate()
+    playerVariablesLoadedUpdate()
+    if not mRunInitialized then return end
+    deathUpdate(true)
+    deathAnimationUpdate(true)
+    clonedUpdate(true)
 end)
-
 
 local function addListener(listener, key)
     mSetupRequested = true
@@ -89,6 +134,11 @@ local function addListener(listener, key)
     table.insert(mListenerCategories[key], listener)
     print("registered for", key)
 end
+
+script.on_init(function(new) --todo actually is it a problem if I don't reset anything when entering the hangar?
+    mRunInitializationCode = true
+    mNewGame = new
+end)
 
 -------------------API-----------
 
@@ -120,6 +170,17 @@ end
 ---@param listener function to be called upon crew death animation start
 function lweb.registerClonedListener(listener)
     addListener(listener, KEY_CREW_CLONED)
+end
+
+---More like a callback than a listener.
+---The function passed should take the following arguments:
+---     boolean newGame, true if this is a new run and false otherwise.
+--- Example: lweb.registerPlayerVariableInitializationListener(function(newGame) print("player vars loaded!", newGame) end)
+--- When any crew begins their death animation, the listener function will be called. (Including drones)
+---@param listener function to be called upon crew death animation start
+function lweb.registerPlayerVariableInitializationListener(listener)
+    mInitWatchRequested = true
+    addListener(listener, KEY_PLAYER_VARIABLES_LOADED)
 end
 
 -------------------API-----------
