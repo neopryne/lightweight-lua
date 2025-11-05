@@ -329,6 +329,7 @@ function lwk.registerKeyFunctionCombo(operatorKey, modifierKeys, keyPressCallbac
     end
     --print("registered ", operatorKey, modKey)
     --print("Key binds are now\n",lwl.dumpObject(mKeyBindings))
+    --todo return an ID that cen be used to deregister this callback.
 end
 
     

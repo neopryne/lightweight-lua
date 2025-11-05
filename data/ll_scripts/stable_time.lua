@@ -5,10 +5,12 @@ local lwl = mods.lightweight_lua
 
 local IGNORE_PAUSE = 1
 local PAUSE = 2
+local NO_SCALING_IGNORE_PAUSE = 3
+local NO_SCALING_PAUSE = 4
 
 local mSetupRequested = false
 local mScaledLocalTime = {0, 0}
-local mOnTickList = {{}, {}}
+local mOnTickList = {{}, {}, {}, {}}
 
 --[[
 LWST is a library that handles framerate differences for you, giving you consistent tick frequency regardless of the current framerate.
@@ -24,6 +26,21 @@ lwst.registerOnTick = function(onTick, tickWhilePaused)
         table.insert(mOnTickList[IGNORE_PAUSE], onTick)
     else
         table.insert(mOnTickList[PAUSE], onTick)
+    end
+end
+
+lwst.registerTrueOnTick = function(onTick, tickWhilePaused)
+    mSetupRequested = true
+    if tickWhilePaused then
+        table.insert(mOnTickList[NO_SCALING_IGNORE_PAUSE], onTick)
+    else
+        table.insert(mOnTickList[NO_SCALING_PAUSE], onTick)
+    end
+end
+
+local function doTicks(pauseBehavior)
+    for _,onTick in ipairs(mOnTickList[pauseBehavior]) do
+        onTick()
     end
 end
 
@@ -44,7 +61,9 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
         16 / speedFactor = ticks per second
         tps * functor = 32
         --]]
+        doTicks(NO_SCALING_PAUSE)
         advanceTicks(PAUSE)
     end
+    doTicks(NO_SCALING_IGNORE_PAUSE)
     advanceTicks(IGNORE_PAUSE)
 end)

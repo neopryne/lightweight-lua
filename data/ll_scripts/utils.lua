@@ -236,11 +236,20 @@ function lwl.getRandomKey(table)
     for key in pairs(table) do
         keys[#keys + 1] = key
     end
-    if #keys == 0 then 
-        return nil 
+    if #keys == 0 then
+        return nil
     end
     local randomIndex = math.random(#keys)
     return keys[randomIndex]
+end
+
+---returns nil if table is empty
+---@param table table
+---@return any a random non-nil value stored in the table.
+function lwl.getRandomValue(table)
+    local key = lwl.getRandomKey(table)
+    if key == nil then return nil end
+    return table[key]
 end
 
 ---Returns the set of elements in newSet that are not in initialSet.  Arguments should not have duplicate entries.
@@ -285,12 +294,20 @@ function lwl.setRemove(baseSet, elementsToRemove)
     return elements
 end
 
+function lwl.vterToTable(vterObject)
+    local tableObject = {}
+    for item in vter(vterObject) do
+        table.insert(tableObject, item)
+    end
+    return tableObject
+end
+
 ---Arguments should not have duplicate entries.  Returns the set union of both sets.
 ---@param set1 table
 ---@param set2 table
 ---@return table
 function lwl.setMerge(set1, set2)
-    elements = lwl.deepCopyTable(set2)
+    local elements = lwl.deepCopyTable(set2)
     for _, newElement in ipairs(set1) do
         local wasPresent = false
         for _, oldElement in ipairs(set2) do

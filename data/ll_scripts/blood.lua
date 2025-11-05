@@ -86,36 +86,50 @@ Wow, technicolor blood splatters really pave the way for aliens that might have 
 local function NOOP() end
 
 --do these in order so that the engis get checked before the ponys.
-local function getBlueprintListSafe(name)
+function lwl.getBlueprintListSafe(name)
     return lwl.setIfNil(Hyperspace.Blueprints:GetBlueprintList(name), {})
 end
 
+local CREW_LISTS = {}
+local function addCrewList(name)
+    local crewList = lwl.getBlueprintListSafe(name)
+    table.insert(CREW_LISTS, crewList)
+    return crewList
+end
+local engi = addCrewList("LIST_CREW_ENGI")
+local zoltan = addCrewList("LIST_CREW_ZOLTAN")
+local orchid = addCrewList("LIST_CREW_ORCHID")
+local shell = addCrewList("LIST_CREW_SHELL")
+local mantis = addCrewList("LIST_CREW_MANTIS")
+local rock = addCrewList("LIST_CREW_ROCK")
+local crystal = addCrewList("LIST_CREW_CRYSTAL")
+local lanius = addCrewList("LIST_CREW_LANIUS")
+local ghost = addCrewList("LIST_CREW_GHOST")
+local slug = addCrewList("LIST_CREW_SLUG")
+local leech = addCrewList("LIST_CREW_LEECH")
+local obelisk = addCrewList("LIST_CREW_ANCIENT")
+local cognitive = addCrewList("LIST_CREW_COGNITIVE_ALL")
+local spider = addCrewList("LIST_CREW_SPIDER")
+local pony = addCrewList("LIST_CREW_PONY")
+local lizard = addCrewList("LIST_CREW_LIZARD")
+local salt = addCrewList("LIST_CREW_OBYN")
+local morph = addCrewList("LIST_CREW_MORPH")
+local siren = addCrewList("LIST_CREW_SIREN")
+local eldritch = addCrewList("LIST_CREW_ELDRITCH")
 
-local engi = getBlueprintListSafe("LIST_CREW_ENGI")
-local zoltan = getBlueprintListSafe("LIST_CREW_ZOLTAN")
-local orchid = getBlueprintListSafe("LIST_CREW_ORCHID")
-local shell = getBlueprintListSafe("LIST_CREW_SHELL")
-local mantis = getBlueprintListSafe("LIST_CREW_MANTIS")
-local rock = getBlueprintListSafe("LIST_CREW_ROCK")
-local crystal = getBlueprintListSafe("LIST_CREW_CRYSTAL")
-local lanius = getBlueprintListSafe("LIST_CREW_LANIUS")
-local ghost = getBlueprintListSafe("LIST_CREW_GHOST")
-local slug = getBlueprintListSafe("LIST_CREW_SLUG")
-local leech = getBlueprintListSafe("LIST_CREW_LEECH")
-local obelisk = getBlueprintListSafe("LIST_CREW_ANCIENT")
-local cognitive = getBlueprintListSafe("LIST_CREW_COGNITIVE_ALL")
-local spider = getBlueprintListSafe("LIST_CREW_SPIDER")
-local pony = getBlueprintListSafe("LIST_CREW_PONY")
-local lizard = getBlueprintListSafe("LIST_CREW_LIZARD")
-local salt = getBlueprintListSafe("LIST_CREW_OBYN")
-local morph = getBlueprintListSafe("LIST_CREW_MORPH")
-local siren = getBlueprintListSafe("LIST_CREW_SIREN")
-local eldritch = getBlueprintListSafe("LIST_CREW_ELDRITCH")
+local function allCrewList()
+    local completeSet = {}
+    for _,crewList in ipairs(CREW_LISTS) do
+        completeSet = lwl.setMerge(completeSet, lwl.vterToTable(crewList))
+    end
+    return completeSet
+end
+lwl.allCrew = allCrewList() --todo make this more complete.  You can't use lists, you have to compile this from EVERY crew definition in the game.
 
-local plant_drones = getBlueprintListSafe("LIST_DRONES_VAMPWEED")
+local plant_drones = addCrewList("LIST_DRONES_VAMPWEED")
 
 ----Non-drones
-local bloodOrange = {orchid, lanius}
+local bloodOrange = {orchid, lanius, plant_drones}
 local bloodGreen = {zoltan, shell, mantis, slug, spider, lizard}
 local bloodBlue = {engi, crystal, ghost}
 local bloodPurple = {cognitive, siren}
@@ -126,7 +140,8 @@ local bloodHer = {eldritch}
 local bloodBlack = {} --DD, SS, HB, CD
 local bloodWarmStatic = {} --FFFTL
 --Anything not on this list is red blood.
-----Drones
+----Drones default to brown.
+---todo add other mod crew dynamically.
 
 local mBloodTypes = {"orange", "green", "blue", "purple", "brown", "grey", "her", "black", "static"}
 
@@ -169,10 +184,14 @@ local function getBloodType(crewmem)
     local bloodType = mBloodMap[crewmem:GetSpecies()]
     if not bloodType then
         mDangItRonPaulMode = Hyperspace.playerVariables.stability < 100
-        if mDangItRonPaulMode then
-            return "pink"
+        if crewmem:IsDrone() then
+            return "brown"
         else
-            return "default"
+            if mDangItRonPaulMode then
+                return "pink"
+            else
+                return "default"
+            end
         end
     end
     return bloodType
