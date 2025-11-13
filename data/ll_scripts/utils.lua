@@ -14,7 +14,7 @@ PS: I Vim Pulchritude Imagination u
 
 
 ]]
-mods.lightweight_lua = {}
+--mods.lightweight_lua = {}
 local lwl = mods.lightweight_lua
 if not mods.brightness then
     error("Brightness Particles was not patched, or was patched after Lightweight Lua.  Install it properly or face undefined behavior.")
@@ -44,7 +44,8 @@ lwl.SCREEN_WIDTH = 1280
 lwl.SCREEN_HEIGHT = 720
 --Breaking change, this is now a function.
 --mods.lightweight_lua.TILE_SIZE = TILE_SIZE --Deprecated, use mods.lightweight_lua.sTILE_SIZE() instead.
-function lwl.TILE_SIZE() return TILE_SIZE end --getter to preserve immutible value.
+lwl.NOOP = function() end
+function lwl.TILE_SIZE() return TILE_SIZE end --getter to preserve immutible value. --todo this doesn't actually solve anything and just adds needless complexity.
 function lwl.OWNSHIP() return 0 end
 function lwl.CONTACT_1() return 1 end
 function lwl.UNSELECTED() return 0 end
@@ -759,6 +760,16 @@ function lwl.damageEnemyCrewInSameRoom(activeCrew, amount, stunTime)
     end
 end
 
+local mTeleportConditions = {}
+
+--nil if none exists.
+function mods.lightweight_lua.getRoomAtLocation(position)
+    --Ships in mv don't overlap, so check both ships --poinf?
+    local retRoom = get_room_at_location(Hyperspace.ships(OWNSHIP), lwl.convertMousePositionToPlayerShipPosition(position), true)
+    if retRoom then return retRoom end
+    return get_room_at_location(Hyperspace.ships(ENEMY_SHIP), lwl.convertMousePositionToEnemyShipPosition(position), true)
+end
+
 --[[  GEOMETRY UTILS  ]]--
 ---
 ---@param pointf Hyperspace.Pointf
@@ -772,6 +783,19 @@ end
 ---@return Hyperspace.Pointf
 function lwl.pointToPointf(point)
     return Hyperspace.Pointf(point.x, point.y)
+end
+
+---Use with points or pointfs, but don't mix them.
+---@param point1 Hyperspace.Point|Hyperspace.Pointf
+---@param point2 Hyperspace.Point|Hyperspace.Pointf
+---@return boolean True if these points have the same values.
+function mods.lightweight_lua.pointEquals(point1, point2)
+    return point1.x == point2.x and point1.y == point2.y
+end
+
+function lwl.floatCompare(a, b, epsilon)
+    epsilon = epsilon or 1e-6
+    return a == b or math.abs(a - b) < epsilon
 end
 
 --- Generate a random point radius away from a point
@@ -875,6 +899,9 @@ function lwl.randomSlotRoom(roomNumber, shipId)
     return math.floor(math.random() * count_of_tiles_in_room) --zero indexed
 end
 
+function lwl.getRandomSystem(shipManager)
+    return shipManager.vSystemList[math.random(1, shipManager.vSystemList:size())]
+end
 ---Note: Filter functions must not maintain a reference to CrewMember objects as they can go out of scope if you quit to menu and continue.
 ---TODO: I might need to use memory safe crew for all filter functions that need to access dynamic crew fields.
 ---@param crewmem Hyperspace.CrewMember
@@ -925,7 +952,7 @@ function lwl.printChoiceInternal(choice, level) end
 function lwl.printEventInternal(locationEvent, level) end
 lwl.PRINT_EVENTS = false
 
-script.on_internal_event(Defines.InternalEvents.ON_KEY_DOWN, function(key)
+lwl.safe_script.on_internal_event("lwl_event_logging_keystroke", Defines.InternalEvents.ON_KEY_DOWN, function(key)
         if (key == Defines.SDL.KEY_INSERT) then
             lwl.PRINT_EVENTS = (not lwl.PRINT_EVENTS)
             print("Set event logging ", lwl.PRINT_EVENTS)
@@ -1244,6 +1271,28 @@ end
 --[[
 When a thing fails, it should say how it failed, and then inform its calling process that it failed.
 Usually with how things are written these days, this bubbles all the way up to the main runtime.
+
+
+Can't you have dynamic loading of code at runtime if you paste in the new lua code?
+As long as you have top-level things like script blocks abstracted into functions, it's not an issue?
+Hm, actually, you need it to have some stuff it skips if it's 
+
+You want to write your script in such a way that if it is run any number of times, it still ends up in a good state.
+So you may have some logic that handles anything a previous run may have set up and you need to handle differently if it is.
+
+You need a block like this:
+if (alreadyset == nil) then
+    --do stuff that should only be done once, and would break if run multiple times
+    --This is stuff like all your script blocks, and anything that calls script.whatever.
+end
+
+You also need to ensure that your calls in the alreadyset block refer to references that can be changed at global scope.
+This means you will need global variables like myModName_onTick() that you pass in to these.
+
+Actually, that is what we are trying to construct here.
+
+
+
 ]]
 local function resolveToTypeInternal(value, desiredType, previousValue, depth)
     depth = depth or 0

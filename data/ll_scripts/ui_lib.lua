@@ -27,7 +27,7 @@ lwui.addHelpButton(mHelpButton)
 --]]
 
 if (not mods) then mods = {} end
-mods.lightweight_user_interface = {}
+mods.lightweight_user_interface = lwl.setIfNil(mods.lightweight_user_interface, {})
 local lwui = mods.lightweight_user_interface
 local lwl = mods.lightweight_lua
 
@@ -312,7 +312,7 @@ function lwui.buildContainer(x, y, width, height, visibilityFunction, renderFunc
         --adjust visibilityFunction
         --object is only visible if partially inside container.
         local oldVisibilityFunction = object.visibilityFunction
-        local function containedVisibilityFunction()--TODO is this outdated?
+        local function containedVisibilityFunction()--TODO if this breaks, it's probably because I made this local.
             local retVal = false
             if container.renderOutsideBounds then return true end
             if ((object.getPos().x > container.getPos().x + container.width) or (object.getPos().x + object.width < container.getPos().x) or
@@ -397,7 +397,7 @@ end
 --Content is a single item with a y coordinate of 0. It can have variable size, and can be longer than the scroll container, but not wider.
 --scroll bars always grow to fit their content, if you want one that doesn't, ping me.
 --NOTE: the contained elements of the scroll bar are refered to statically here, but I don't see a reason why they would be replaced, so I'm leaving it.
-function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFunction, content, scrollBarSkin)
+function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFunction, content, scrollBarSkin) --TODO scroll bars should basically always have containers inside them.  Maybe do that by default.  A container of the same direction as the bar.
     local barWidth = scrollBarSkin.barWidth
     local scrollIncrement = 30 --seems fine
     --scrollValue is absolute position of the scroll bar.
@@ -979,7 +979,7 @@ end
 --item ticking should be left up to the consumers.
 
 --yeah, select those items and hold them!
-script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
+lwl.safe_script.on_internal_event("lwui_hovered_button", Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
     local mousePos = Hyperspace.Mouse.position
     --print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
     if lwui.mHoveredButton then
@@ -991,7 +991,7 @@ script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function
     return Defines.Chain.CONTINUE
 end)
 
-script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x,y)
+lwl.safe_script.on_internal_event("lwui_clicked_button", Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x,y)
     if (lwui.mClickedButton) then
         lwui.mClickedButton.onRelease(lwui.mClickedButton, x, y)
         lwui.mClickedButton = nil
@@ -999,7 +999,7 @@ script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x
     return Defines.Chain.CONTINUE
 end)
 
-script.on_internal_event(Defines.InternalEvents.ON_MOUSE_SCROLL, function(direction)
+lwl.safe_script.on_internal_event("lwui_scroll_action", Defines.InternalEvents.ON_MOUSE_SCROLL, function(direction)
     if not mHoveredScrollContainer then return end
     if lwl.xor(direction > 0, mHoveredScrollContainer.invertScroll) then
         mHoveredScrollContainer.scrollDown()
@@ -1013,7 +1013,7 @@ local function registerRenderEvents(eventList)
     for name, _ in pairs(eventList) do
         mTopLevelRenderLists[name] = {}
         mTopLevelRenderLists[name.."_PRE"] = {}
-        script.on_render_event(Defines.RenderEvents[name], function(_)
+        lwl.safe_script.on_render_event("lwui_"..name.."render_layer", Defines.RenderEvents[name], function(_)
             renderObjects(name .. "_PRE")
         end, function(_)
             renderObjects(name)
@@ -1039,7 +1039,7 @@ function lwui.addHelpButton(helpButton)
     mHelpBarContainer.addObject(helpButton)
 end
 
-script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+lwl.safe_script.on_internal_event("lwui_render_help", Defines.InternalEvents.ON_TICK, function()
     if lwui.mHoveredButton then
         local helpText = lwui.mHoveredButton.lwuiHelpText
         if helpText then

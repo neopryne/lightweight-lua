@@ -2,6 +2,7 @@
 
 <FTL>
 	<mod:findLike type="scripts">
+		<mod-append:script>data/ll_scripts/safe_script.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/utils.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/stable_time.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/event_broadcaster.lua</mod-append:script>

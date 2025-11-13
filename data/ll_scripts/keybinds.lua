@@ -296,7 +296,7 @@ end
 ---multiple functions can be registered for the same key
 ---Currently, only ctrl, shift, and meta are accepted as modifiers, but I don't see any reason why I couldn't change that in the future. 
 ---@param operatorKey number Hyperspace KeyId
----@param modifierKeys table Valid values: lwk.SHIFT, lwk.CTRL, and lwk.META.
+---@param modifierKeys table|nil Valid values: lwk.SHIFT, lwk.CTRL, and lwk.META.
 ---@param keyPressCallback function|nil
 ---@param keyReleaseCallback function|nil
 function lwk.registerKeyFunctionCombo(operatorKey, modifierKeys, keyPressCallback, keyReleaseCallback)
