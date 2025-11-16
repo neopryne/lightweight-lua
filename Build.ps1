@@ -2,7 +2,7 @@
 
 # Variables
 $relativeFile = "Lightweight Lua.zip"
-$absolutePath = "F:\User Data\workspace\ftlman-x86_64-pc-windows-gnu\ftlman\mods\$relativeFile"
+$absolutePath = "C:\Users\GunBuild-1\Documents\Workspace\ftlman-x86_64-pc-windows-gnu\ftlman\mods\$relativeFile"
 $tempZipDir = Join-Path $env:TEMP "zip_temp"
 $filesToInclude = @("data", "mod-appendix", "img")
 
@@ -43,18 +43,15 @@ if (Test-Path $relativeFile) {
 }
 
 # Run patching command
-$ftlmanDir = "F:\User Data\workspace\ftlman-x86_64-pc-windows-gnu\ftlman"
+$ftlmanDir = "C:\Users\GunBuild-1\Documents\Workspace\ftlman-x86_64-pc-windows-gnu\ftlman"
 Push-Location $ftlmanDir
 .\ftlman.exe patch `
     "Multiverse 5.5 - Assets (Patch above Data).zip" `
     "Multiverse 5.5 - Data.zip" `
     "Vertex-Util.ftl" `
 	"Brightness Particles 1.4.1.zip" `
-    $relativeFile `
-    "Crew_Equipment_Library.zip" `
-	"Grimdark_Expy.zip" `
-	"Print_Mouse_Position_1.1.zip"
+    $relativeFile
 Pop-Location
 
 # Launch FTL
-Start-Process -FilePath "C:\Program Files (x86)\GOG Galaxy\Games\FTL Advanced Edition\FTLGame.exe"
+Start-Process -FilePath "C:\Program Files (x86)\Steam\steamapps\common\FTL Faster Than Light\FTLGame.exe"

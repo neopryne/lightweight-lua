@@ -952,7 +952,8 @@ function lwl.printChoiceInternal(choice, level) end
 function lwl.printEventInternal(locationEvent, level) end
 lwl.PRINT_EVENTS = false
 
-lwl.safe_script.on_internal_event("lwl_event_logging_keystroke", Defines.InternalEvents.ON_KEY_DOWN, function(key)
+-- lwl.safe_script.on_internal_event("lwl_event_logging_keystroke", Defines.InternalEvents.ON_KEY_DOWN, function(key)
+script.on_internal_event(Defines.InternalEvents.ON_KEY_DOWN, function(key)
         if (key == Defines.SDL.KEY_INSERT) then
             lwl.PRINT_EVENTS = (not lwl.PRINT_EVENTS)
             print("Set event logging ", lwl.PRINT_EVENTS)
@@ -960,7 +961,7 @@ lwl.safe_script.on_internal_event("lwl_event_logging_keystroke", Defines.Interna
     end)
 
 local function indentPrint(text, indentLevel)
-    prefix = ""
+    local prefix = ""
     for i = 0,indentLevel do
         prefix = prefix.."\t"
     end
@@ -996,7 +997,7 @@ end
 --somehow this doesn't cause issues with recursive checks.
 lwl.printChoiceInternal = function(choice, level)
     indentPrint("Choice Text: "..choice.text.data.." Requirement: "..choice.requirement.object.." min "..choice.requirement.min_level.." max "..choice.requirement.max_level.." max choice num "..choice.requirement.max_group, level)
-    choiceEvent = choice.event
+    local choiceEvent = choice.event
     if (choiceEvent ~= nil) then
         lwl.printEventInternal(choiceEvent, level + 1)
     end

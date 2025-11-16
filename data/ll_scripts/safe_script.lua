@@ -19,38 +19,109 @@ local lwl = mods.lightweight_lua
 local MAX_EXPECTED_ARGUMENTS = 15
 
 --Dear got we need varargs, this entire method is a huge kludge to work around this HS quirk.
-local function safe_varargs_standin_register_event(definesEvent, identifier, maxArgs)
-    maxArgs = maxArgs or MAX_EXPECTED_ARGUMENTS  -- configurable upper bound
+local function safe_varargs_standin_register_event(definesEvent, identifier)
 
-    for n = maxArgs, 0, -1 do
-        -- Dynamically build a wrapper function with n arguments
-        local params = {}
-        for i = 1, n do params[i] = "a" .. i end
-        local paramList = table.concat(params, ", ")
-        local funcBody = string.format([[
-            return function(%s)
-                local handler = lwl.safe_script.eventFunctionWrappers[%q]
-                if handler then
-                    return handler(%s)
-                end
+    local function makeWrapper(n)
+        if n == 0 then
+            return function()
+                local handler = lwl.safe_script.eventFunctionWrappers[identifier]
+                if handler then handler() end
             end
-        ]], paramList, identifier, paramList)
-
-        local ok, eventFunctionWrapper = pcall(load(funcBody))
-        if not ok then
-            print("Failed to build wrapper for arg count", n, ":", eventFunctionWrapper)
+        elseif n == 1 then
+            return function(a1)
+                local handler = lwl.safe_script.eventFunctionWrappers[identifier]
+                if handler then handler(a1) end
+            end
+        elseif n == 2 then
+            return function(a1, a2)
+                local handler = lwl.safe_script.eventFunctionWrappers[identifier]
+                if handler then handler(a1, a2) end
+            end
+        elseif n == 3 then
+            return function(a1, a2, a3)
+                local handler = lwl.safe_script.eventFunctionWrappers[identifier]
+                if handler then handler(a1, a2, a3) end
+            end
+        elseif n == 4 then
+            return function(a1, a2, a3, a4)
+                local handler = lwl.safe_script.eventFunctionWrappers[identifier]
+                if handler then handler(a1, a2, a3, a4) end
+            end
         else
-            -- Try registering this wrapper
-            local success, err = pcall(function()
-                script.on_internal_event(definesEvent, eventFunctionWrapper)
-            end)
-
-            if success then
-                print("✅ Successfully registered wrapper with", n, "args")
-                return eventFunctionWrapper, n
-            else
-                print("❌ Failed to register wrapper with", n, "args:", err)
+            return function(a1, a2, a3, a4, a5)
+                local handler = lwl.safe_script.eventFunctionWrappers[identifier]
+                if handler then handler(a1, a2, a3, a4, a5) end
             end
+        end
+    end
+
+    for n = 5, 0, -1 do
+        local eventFunctionWrapper = makeWrapper(n)
+        local success, err = pcall(function()
+            script.on_internal_event(definesEvent, eventFunctionWrapper)
+        end)
+
+        if success then
+            print("✅ Successfully registered wrapper with", n, "args for ", definesEvent)
+            return eventFunctionWrapper, n
+        else
+            print("❌ Failed to register wrapper with", n, "args:", err)
+        end
+    end
+
+    return nil, "No valid wrapper signature found"
+end
+
+--Render version to handle dumbness.
+local function safe_varargs_standin_register_render_event(definesEvent, identifier)
+
+    local function makeWrapper(n, type)
+        if n == 0 then
+            return function()
+                local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
+                if handler then handler() end
+            end
+        elseif n == 1 then
+            return function(a1)
+                local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
+                if handler then handler(a1) end
+            end
+        elseif n == 2 then
+            return function(a1, a2)
+                local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
+                if handler then handler(a1, a2) end
+            end
+        elseif n == 3 then
+            return function(a1, a2, a3)
+                local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
+                if handler then handler(a1, a2, a3) end
+            end
+        elseif n == 4 then
+            return function(a1, a2, a3, a4)
+                local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
+                if handler then handler(a1, a2, a3, a4) end
+            end
+        else
+            return function(a1, a2, a3, a4, a5)
+                local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
+                if handler then handler(a1, a2, a3, a4, a5) end
+            end
+        end
+    end --todo it seems like this isn't doing anything.  It's not crashing, but it's not calling properly.
+
+    for n = 5, 0, -1 do
+        local eventFunctionWrapper = makeWrapper(n)
+        local success, err = pcall(function()
+            local beforeFunctionWrapper = makeWrapper(n, "before")
+            local afterFunctionWrapper = makeWrapper(n, "after")
+            script.on_render_event(definesEvent, beforeFunctionWrapper, afterFunctionWrapper)
+        end)
+
+        if success then
+            print("✅ Successfully registered render wrapper with", n, "args for ", definesEvent)
+            return eventFunctionWrapper, n
+        else
+            print("❌ Failed to register wrapper with", n, "args:", err)
         end
     end
 
@@ -73,9 +144,6 @@ lwl.safe_script.on_internal_event = function(identifier, definesEvent, eventFunc
     lwl.safe_script.eventFunctionWrappers[identifier] = eventFunction
 
     if firstCreation then
-        -- local function eventFunctionWrapper(...)
-        --     lwl.safe_script.eventFunctionWrappers[identifier](table.unpack(arg))
-        -- end
         safe_varargs_standin_register_event(definesEvent, identifier)
     end
 end
@@ -98,13 +166,7 @@ lwl.safe_script.on_render_event = function(identifier, definesEvent, beforeFunct
     lwl.safe_script.eventFunctionWrappers[identifier] = {beforeFunction=beforeFunction, afterFunction=afterFunction}
 
     if firstCreation then
-        local function beforeFunctionWrapper(...) --todo idk how to pass a list of all arguments
-            lwl.safe_script.eventFunctionWrappers[identifier].beforeFunction(table.unpack(arg))
-        end
-        local function afterFunctionWrapper(...)
-            lwl.safe_script.eventFunctionWrappers[identifier].afterFunction(table.unpack(arg))
-        end
-        script.on_render_event(definesEvent, beforeFunctionWrapper, afterFunctionWrapper)
+        safe_varargs_standin_register_render_event(definesEvent, identifier)
     end
 end
 
@@ -155,8 +217,12 @@ end
 ---Which is I give you a textbox you can type in.  However, that only works if I can listen to key events from ahk.
 --You also need to strip out single line comments if you want to collapse everything to one line.  multi line is fine., it works.
 
-lwl.safe_script.on_render_event("example_oi;juewrnkljewr;lj", Defines.RenderEvents.TABBED_WINDOW, lwl.NOOP, function(tabName)
-    print("2Current tab is", tabName)
-end)
+-- lwl.safe_script.on_render_event("example_oi;juewrnkljewr;lj", Defines.RenderEvents.TABBED_WINDOW, lwl.NOOP, function(tabName)
+--     print("2Current tab is", tabName)
+-- end)
 
+
+-- lwl.safe_script.on_internal_event("example_2", Defines.InternalEvents.ON_TICK, function()
+--     print("tick worked")
+-- end)
 -- lua mods.lightweight_lua.safe_script.on_render_event("example_oi;juewrnkljewr;lj", Defines.RenderEvents.TABBED_WINDOW, mods.lightweight_lua.NOOP, function(tabName) print("wow that worked", tabName) end)

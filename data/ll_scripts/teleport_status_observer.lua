@@ -13,19 +13,20 @@ My use for this is in crew_change_observer, but really this is the only way to t
 --]]
 
 if (not mods) then mods = {} end
-mods.lightweight_teleport_status_observer = {}
-local lwtso = mods.lightweight_teleport_status_observer
 local lwl = mods.lightweight_lua
+mods.lightweight_teleport_status_observer = lwl.setIfNil(mods.lightweight_teleport_status_observer, {})
+local lwtso = mods.lightweight_teleport_status_observer
 
 local TAG = "LW Tele Status Observer"
 
-local mTeleportStatusObservers = {}
-local mSetupRequested = false
-local mGlobal
+local mTeleportStatusObservers = {} --ok, I'm not actually sure there's a way to make libraries not break whatever you refresh them.
+local mSetupRequested = false --It would probably require putting everything into a table.  That's probably going to be best practice from now on.
+local mGlobal  --But this is a decent attempt at getting there.  At least I can start using the 
 
 --Crew blink out of existance for one frame when teleporting (only on the way back???)
 --todo optimize maybe.  Ok actually not maybe, and instead of optimal we want clean because this stuff is MESSY and lots of important things depend on it.
-lwl.safe_script.on_internal_event(TAG.."onTick", Defines.InternalEvents.ON_TICK, function()
+-- lwl.safe_script.on_internal_event(TAG.."onTick", Defines.InternalEvents.ON_TICK, function()
+script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if not mSetupRequested then return end
     --Initialization code
     if not mGlobal then

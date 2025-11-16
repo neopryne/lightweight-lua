@@ -11,7 +11,7 @@ mods.lightweight_doublylinkedlist.__index = mods.lightweight_doublylinkedlist
 
 local lwl = mods.lightweight_lua
 local LOG_TAG = "lightweight_doublylinkedlist"
-local DEBUG_LEVEL = 1
+local DEBUG_LEVEL = 1 --todo make this global or remove.
 
 function mods.lightweight_doublylinkedlist:new()
     return setmetatable({ head = nil, tail = nil, current = nil, size = 0 }, self)

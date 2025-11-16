@@ -9,9 +9,9 @@ CCO is an alternative to saving crew.  If you're using CCO, don't persist your c
 --]]
 
 if (not mods) then mods = {} end
+local lwl = mods.lightweight_lua
 mods.lightweight_crew_change_observer = {}
 local lwcco = mods.lightweight_crew_change_observer
-local lwl = mods.lightweight_lua
 
 local TAG = "LW Crew Change Observer"
 
@@ -22,7 +22,8 @@ local mSetupRequested = false
 --todo update tele obs with resetignore
 --Fixed it already, but one correct solution to this is not to allow effects/equipment to add duplicate crewIds.  I think I may need to do that also.
 
-lwl.safe_script.on_internal_event(TAG.."onTick", Defines.InternalEvents.ON_TICK, function()
+-- lwl.safe_script.on_internal_event(TAG.."onTick", Defines.InternalEvents.ON_TICK, function()
+script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if not mSetupRequested then return end--todo use crew factory in some smart way, maybe let the user pass in a filter function that takes this object (and other things)
     --Initialization code
     if not (Hyperspace.ships(0)) or Hyperspace.ships(0).iCustomizeMode == 2 or lwl.isPaused() then return end
