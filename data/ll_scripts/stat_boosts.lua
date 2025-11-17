@@ -90,6 +90,16 @@ function lwsb.removeStatBoost(id)
     end
     return elementRemoved
 end
+
+---Removes a given stat boost.  Does not complain if you pass it a nil value.
+---@param id integer the ID returned by lwsb.addStatBoost.
+---@return boolean succeess true if it found a boost to remove, and false otherwise.
+function lwsb.removeStatBoostAllowNil(id)
+    if id ~= nil then
+        return lwsb.removeStatBoost(id)
+    end
+    return false
+end
 ------------------------------------END External API-------------------------
 --[[
 Ipairs is only valid for contigious tables, so I can't put holes in them.

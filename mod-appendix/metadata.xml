@@ -2,23 +2,36 @@
   <title><![CDATA[ Lightweight Lua]]></title>
   <threadUrl><![CDATA[https://ftlmultiverse.boards.net/thread/115/mv-5-less-managable-crew]]></threadUrl>
   <author><![CDATA[ Limrix ]]></author>
-  <version><![CDATA[ 0.7 ]]></version>
+  <version><![CDATA[ 0.15 ]]></version>
   <description>
 <![CDATA[
 # Lightweight Lua
-A library of several useful functions, also 3D rendering.  Aims to make lua scripting less of a pain.
+A library of several useful functions.  Aims to make lua scripting less of a pain.
+Categories:
+    Logging, Crew, Geometry, Point, Angle, Events, Control Flow
 
 ### Lightweight 3D
 A simplistic 3d rendering library, lw3.  This is what Omen in FFFTL uses.
 
 ### UI Library
-Do all sorts of things with a whole bunch of visual elements.  Used in Grimdark Expy.
+Do all sorts of things with a whole bunch of visual elements.  Used in Grimdark Expy.  Includes:
+    Buttons, Scroll bars, text boxes, and more!
+
+### Stable Time
+A library that takes care of normalizing onTick logic across all fram
+
+### Event Broadcaster
+Informs you of when things happen that are annoying to track.  Supports:
+    Crew death animation started, crew death animation finished, crew cloned, hangar entered, player variables loaded.
+
+### Meta and Player Variable Structure
+Gives an object-oriented way of registering persistent variables.  This keeps track of how many of a kind of object are stored, and what properties those objects have.
 
 ### Status Effects Library
 Apply statuses to crew, such as bleed, corruption, and confusion. Used in Grimdark Expy.
 
 ### Keybinds
-Create your own key combinations; and longer form commands in the minibuffer
+Gives an easy interface for registering key press events, including combinations of modifier keys.
 
 ### XML Generation
 Lua scripts for creating the xml required for animations and lab upgrades.  Leave suggestions if you think I should add something here.
@@ -34,6 +47,12 @@ Register to know when your ship's crew changes
 
 ### Teleport Status Observers
 Register to know if any crew is teleporting
+
+### Blood
+Not a library, this is a toggleable feature that adds crew-specific bloodstains on death.
+
+### Clone Orders
+This is another toggleable feature, this time making your crew go do something when they clone in instead of standing there.
 
 ## Requirements
 [Multiverse](https://ftlmultiverse.boards.net/)

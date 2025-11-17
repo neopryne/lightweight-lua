@@ -19,6 +19,7 @@ Ok, this library is all about letting you define player variables for things tha
 You can have numbers or number-indexed tables.  You can't store strings here.
 
 The hard thing this helps with is being able to return you a list of all the uuids for a given interface.
+Then you can kind of refer to the registered things as objects, with properties you can get through this interface.
 
 There is no way to remove items from the list as it stands.
 ]]
