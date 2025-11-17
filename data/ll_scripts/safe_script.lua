@@ -128,6 +128,8 @@ local function safe_varargs_standin_register_render_event(definesEvent, identifi
     return nil, "No valid wrapper signature found"
 end
 
+
+---------------------------------------------API---------------------------------------------------
 ---A script register function that is safe to call multiple times.
 ---Additional calls with the same identifier will replace existing behavior, allowing you to remove or override script events you have added.
 ---
@@ -172,11 +174,11 @@ lwl.safe_script.on_render_event = function(identifier, definesEvent, beforeFunct
     end
 end
 
----comment
----@param identifier any
----@param eventName any
----@param onLoadOnly any
----@param callback function takes no arguments because I don't know what arguments it gets passed, if any.
+---Multicall-safe wrapper for script.on_game_event.
+---@param identifier string Unique to the call, you must ensure that nothing else uses the same name or this will fail to register your event.
+---@param eventName string The name of the event, as you would pass to script.on_game_event()
+---@param onLoadOnly boolean true if this should be called when the event loads, false if it should be called when the event happens.
+---@param callback function takes no arguments
 lwl.safe_script.on_game_event = function(identifier, eventName, onLoadOnly, callback)
     print("Registering game event", identifier)
     local firstCreation = lwl.safe_script.eventFunctionWrappers[identifier] == nil
@@ -185,12 +187,15 @@ lwl.safe_script.on_game_event = function(identifier, eventName, onLoadOnly, call
 
     if firstCreation then
         local function gameFunctionWrapper() --todo idk how to pass a list of all arguments
-            lwl.safe_script.eventFunctionWrappers[identifier]()
+            return lwl.safe_script.eventFunctionWrappers[identifier]()
         end
-        return script.on_game_event(eventName, onLoadOnly, gameFunctionWrapper) --todo only halfway done, todo finish
+        script.on_game_event(eventName, onLoadOnly, gameFunctionWrapper)
     end
 end
 
+---Multicall-safe wrapper for script.on_load.
+---@param identifier string Unique to the call, you must ensure that nothing else uses the same name or this will fail to register your event.
+---@param callback function takes one argument, boolean newGame.  True if this is a new game and false otherwise.
 lwl.safe_script.on_load = function(identifier, callback)
     print("Registering load event", identifier)
     local firstCreation = lwl.safe_script.eventFunctionWrappers[identifier] == nil
@@ -198,13 +203,16 @@ lwl.safe_script.on_load = function(identifier, callback)
     lwl.safe_script.eventFunctionWrappers[identifier] = callback
 
     if firstCreation then
-        local function loadFunctionWrapper(onLoad)
-            lwl.safe_script.eventFunctionWrappers[identifier](onLoad)
+        local function loadFunctionWrapper(newGame)
+            return lwl.safe_script.eventFunctionWrappers[identifier](newGame)
         end
-        return script.on_load(loadFunctionWrapper)
+        script.on_load(loadFunctionWrapper)
     end
 end
 
+---Multicall-safe wrapper for script.on_init.
+---@param identifier string Unique to the call, you must ensure that nothing else uses the same name or this will fail to register your event.
+---@param callback function takes one argument, boolean newGame.  True if this is a new game and false otherwise.
 lwl.safe_script.on_init = function(identifier, callback)
     print("Registering init event", identifier)
     local firstCreation = lwl.safe_script.eventFunctionWrappers[identifier] == nil
@@ -212,12 +220,13 @@ lwl.safe_script.on_init = function(identifier, callback)
     lwl.safe_script.eventFunctionWrappers[identifier] = callback
 
     if firstCreation then
-        local function initFunctionWrapper(onLoad)
-            lwl.safe_script.eventFunctionWrappers[identifier](onLoad)
+        local function initFunctionWrapper(newGame)
+            return lwl.safe_script.eventFunctionWrappers[identifier](newGame)
         end
-        return script.on_init(initFunctionWrapper)
+        script.on_init(initFunctionWrapper)
     end
 end
+-------------------------------------------END API---------------------------------------------------
 
 --upgrades, crew, equipment
 --todo I realize that lwst needs to add this, and every place I use script, I should be using this instead.  TODO how to handle newlines in functions required to type proper lua code?
