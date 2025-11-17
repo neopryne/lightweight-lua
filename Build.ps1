@@ -50,7 +50,9 @@ Push-Location $ftlmanDir
     "Multiverse 5.5 - Data.zip" `
     "Vertex-Util.ftl" `
 	"Brightness Particles 1.4.1.zip" `
-    $relativeFile
+    $relativeFile `
+    "Crew_Equipment_Library.zip" `
+	"Grimdark_Expy.zip"
 Pop-Location
 
 # Launch FTL

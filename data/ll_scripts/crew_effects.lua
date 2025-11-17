@@ -526,7 +526,8 @@ end
 lwst.registerOnTick(onTick, false)
 
 --todo scale to real time, ie convert to 30ticks/second rather than frames.
-script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+lwl.safe_script.on_internal_event("lwce_reposition_stack", Defines.InternalEvents.ON_TICK, function()
+-- script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     for _,listCrew in ipairs(mCrewList) do
         repositionEffectStack(listCrew)
     end

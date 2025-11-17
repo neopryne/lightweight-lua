@@ -54,7 +54,9 @@ local function advanceTicks(pauseBehavior)
     end
 end
 
-script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+
+lwl.safe_script.on_internal_event("lwst_main_tick", Defines.InternalEvents.ON_TICK, function()
+-- script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if not mSetupRequested then return end
     if not lwl.isPaused() then
         --[[ formula to turn ticks into 1/32 second

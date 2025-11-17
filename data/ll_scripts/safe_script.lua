@@ -25,32 +25,32 @@ local function safe_varargs_standin_register_event(definesEvent, identifier)
         if n == 0 then
             return function()
                 local handler = lwl.safe_script.eventFunctionWrappers[identifier]
-                if handler then handler() end
+                if handler then return handler() end
             end
         elseif n == 1 then
             return function(a1)
                 local handler = lwl.safe_script.eventFunctionWrappers[identifier]
-                if handler then handler(a1) end
+                if handler then return handler(a1) end
             end
         elseif n == 2 then
             return function(a1, a2)
                 local handler = lwl.safe_script.eventFunctionWrappers[identifier]
-                if handler then handler(a1, a2) end
+                if handler then return handler(a1, a2) end
             end
         elseif n == 3 then
             return function(a1, a2, a3)
                 local handler = lwl.safe_script.eventFunctionWrappers[identifier]
-                if handler then handler(a1, a2, a3) end
+                if handler then return handler(a1, a2, a3) end
             end
         elseif n == 4 then
             return function(a1, a2, a3, a4)
                 local handler = lwl.safe_script.eventFunctionWrappers[identifier]
-                if handler then handler(a1, a2, a3, a4) end
+                if handler then return handler(a1, a2, a3, a4) end
             end
         else
             return function(a1, a2, a3, a4, a5)
                 local handler = lwl.safe_script.eventFunctionWrappers[identifier]
-                if handler then handler(a1, a2, a3, a4, a5) end
+                if handler then return handler(a1, a2, a3, a4, a5) end
             end
         end
     end
@@ -79,32 +79,32 @@ local function safe_varargs_standin_register_render_event(definesEvent, identifi
         if n == 0 then
             return function()
                 local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
-                if handler then handler() end
+                if handler then return handler() end
             end
         elseif n == 1 then
             return function(a1)
                 local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
-                if handler then handler(a1) end
+                if handler then return handler(a1) end
             end
         elseif n == 2 then
             return function(a1, a2)
                 local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
-                if handler then handler(a1, a2) end
+                if handler then return handler(a1, a2) end
             end
         elseif n == 3 then
             return function(a1, a2, a3)
                 local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
-                if handler then handler(a1, a2, a3) end
+                if handler then return handler(a1, a2, a3) end
             end
         elseif n == 4 then
             return function(a1, a2, a3, a4)
                 local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
-                if handler then handler(a1, a2, a3, a4) end
+                if handler then return handler(a1, a2, a3, a4) end
             end
         else
             return function(a1, a2, a3, a4, a5)
                 local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
-                if handler then handler(a1, a2, a3, a4, a5) end
+                if handler then return handler(a1, a2, a3, a4, a5) end
             end
         end
     end --todo it seems like this isn't doing anything.  It's not crashing, but it's not calling properly.
@@ -139,6 +139,7 @@ end
 ---@param definesEvent integer event name from Hyperspace.Defines
 ---@param eventFunction function Called before the event
 lwl.safe_script.on_internal_event = function(identifier, definesEvent, eventFunction) --TODO MAKE THESE VARARGS WHEN HYPERSPACE SUPPORTS IT.
+    print("Registering internal event", identifier)
     local firstCreation = lwl.safe_script.eventFunctionWrappers[identifier] == nil
 
     lwl.safe_script.eventFunctionWrappers[identifier] = eventFunction
@@ -161,6 +162,7 @@ end
 ---@param beforeFunction function Called before the event
 ---@param afterFunction function Called after the event
 lwl.safe_script.on_render_event = function(identifier, definesEvent, beforeFunction, afterFunction)
+    print("Registering render event", identifier)
     local firstCreation = lwl.safe_script.eventFunctionWrappers[identifier] == nil
 
     lwl.safe_script.eventFunctionWrappers[identifier] = {beforeFunction=beforeFunction, afterFunction=afterFunction}
@@ -170,42 +172,50 @@ lwl.safe_script.on_render_event = function(identifier, definesEvent, beforeFunct
     end
 end
 
+---comment
+---@param identifier any
+---@param eventName any
+---@param onLoadOnly any
+---@param callback function takes no arguments because I don't know what arguments it gets passed, if any.
 lwl.safe_script.on_game_event = function(identifier, eventName, onLoadOnly, callback)
+    print("Registering game event", identifier)
     local firstCreation = lwl.safe_script.eventFunctionWrappers[identifier] == nil
 
     lwl.safe_script.eventFunctionWrappers[identifier] = callback
 
     if firstCreation then
-        local function gameFunctionWrapper(...) --todo idk how to pass a list of all arguments
-            lwl.safe_script.eventFunctionWrappers[identifier](table.unpack(arg))
+        local function gameFunctionWrapper() --todo idk how to pass a list of all arguments
+            lwl.safe_script.eventFunctionWrappers[identifier]()
         end
-        script.on_render_event(eventName, onLoadOnly, gameFunctionWrapper) --todo only halfway done, todo finish
+        return script.on_game_event(eventName, onLoadOnly, gameFunctionWrapper) --todo only halfway done, todo finish
     end
 end
 
-lwl.safe_script.on_load = function(identifier, eventName, onLoadOnly, callback)
+lwl.safe_script.on_load = function(identifier, callback)
+    print("Registering load event", identifier)
     local firstCreation = lwl.safe_script.eventFunctionWrappers[identifier] == nil
 
     lwl.safe_script.eventFunctionWrappers[identifier] = callback
 
     if firstCreation then
-        local function gameFunctionWrapper(arg1, arg2, arg3, arg4, arg5) --todo idk how to pass a list of all arguments
-            lwl.safe_script.eventFunctionWrappers[identifier].beforeFunction(arg1, arg2, arg3, arg4, arg5)
+        local function loadFunctionWrapper(onLoad)
+            lwl.safe_script.eventFunctionWrappers[identifier](onLoad)
         end
-        script.on_render_event(eventName, onLoadOnly, gameFunctionWrapper) --todo only halfway done, todo finish
+        return script.on_load(loadFunctionWrapper)
     end
 end
 
-lwl.safe_script.on_init = function(identifier, eventName, onLoadOnly, callback)
+lwl.safe_script.on_init = function(identifier, callback)
+    print("Registering init event", identifier)
     local firstCreation = lwl.safe_script.eventFunctionWrappers[identifier] == nil
 
     lwl.safe_script.eventFunctionWrappers[identifier] = callback
 
     if firstCreation then
-        local function gameFunctionWrapper(arg1, arg2, arg3, arg4, arg5) --todo idk how to pass a list of all arguments
-            lwl.safe_script.eventFunctionWrappers[identifier].beforeFunction(arg1, arg2, arg3, arg4, arg5)
+        local function initFunctionWrapper(onLoad)
+            lwl.safe_script.eventFunctionWrappers[identifier](onLoad)
         end
-        script.on_render_event(eventName, onLoadOnly, gameFunctionWrapper) --todo only halfway done, todo finish
+        return script.on_init(initFunctionWrapper)
     end
 end
 

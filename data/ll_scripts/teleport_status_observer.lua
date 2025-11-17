@@ -25,8 +25,8 @@ local mGlobal  --But this is a decent attempt at getting there.  At least I can 
 
 --Crew blink out of existance for one frame when teleporting (only on the way back???)
 --todo optimize maybe.  Ok actually not maybe, and instead of optimal we want clean because this stuff is MESSY and lots of important things depend on it.
--- lwl.safe_script.on_internal_event(TAG.."onTick", Defines.InternalEvents.ON_TICK, function()
-script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+lwl.safe_script.on_internal_event(TAG.."onTick", Defines.InternalEvents.ON_TICK, function()
+-- script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if not mSetupRequested then return end
     --Initialization code
     if not mGlobal then

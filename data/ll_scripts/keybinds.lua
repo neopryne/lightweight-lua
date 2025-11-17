@@ -296,9 +296,9 @@ end
 ---multiple functions can be registered for the same key
 ---Currently, only ctrl, shift, and meta are accepted as modifiers, but I don't see any reason why I couldn't change that in the future. 
 ---@param operatorKey number Hyperspace KeyId
----@param modifierKeys table|nil Valid values: lwk.SHIFT, lwk.CTRL, and lwk.META.
----@param keyPressCallback function|nil
----@param keyReleaseCallback function|nil
+---@param modifierKeys table|nil Valid values: any combination of lwk.SHIFT, lwk.CTRL, and lwk.META.
+---@param keyPressCallback function|nil The return value of this function is a boolean that tells lwk if it should override the normal keypress.  It is passed the calling key.
+---@param keyReleaseCallback function|nil The return value of this function is a boolean that tells lwk if it should override the normal keypress.
 function lwk.registerKeyFunctionCombo(operatorKey, modifierKeys, keyPressCallback, keyReleaseCallback)
     if not modifierKeys then modifierKeys = {} end
     --print("registering ", operatorKey, modKey)
@@ -342,6 +342,10 @@ end
 -----------------------------------END API--------------------------------------
 
 -- Function to execute callbacks for a given key press
+---Returns true if any callbacks requested to preempt, and false otherwise.
+---@param operatorKey any
+---@param operation any
+---@return boolean
 local function executeKeyFunctions(operatorKey, operation)
     --print("xec", operatorKey, operation)
     local modKeys = getModifiersAsString(getActiveModifiers())
@@ -362,16 +366,18 @@ local function executeKeyFunctions(operatorKey, operation)
     else
         error("Incorrect operation", operation)
     end
+    local shouldPreempt = false
     if callbacks then
         for _, callback in ipairs(callbacks) do
             --print("found callback for ", operatorKey, modKey)
-            callback(operatorKey)
+            if callback(operatorKey) then
+                shouldPreempt = true
+            end
         end
-        return true
     else
         --print("No callbacks found for", operatorKey, modKeys, operation)
     end
-    return false
+    return shouldPreempt
 end
 
 
@@ -394,21 +400,23 @@ local function onFtlKeyUp(keyId)
     return executeKeyFunctions(keyId, ON_KEY_UP)
 end
 
---If you register a keybind for an existing key, it will overwrite the normal functionality.  This allows you to do keybinds, actually.
+--If you register a keybind for an existing key, it will overwrite the normal functionality if you return true in your callback.  This allows you to do dynamic keybinds, actually.
 --I should consider letting you decide if things should preempt here.
-script.on_internal_event(Defines.InternalEvents.ON_KEY_DOWN, function(Key)
+-- script.on_internal_event(Defines.InternalEvents.ON_KEY_DOWN, function(Key)
+lwl.safe_script.on_internal_event("lwk_key_down", Defines.InternalEvents.ON_KEY_DOWN, function(Key)
         --print("onDown ", keyNameTable[Key])
-        local keybindTriggered = onFtlKeyDown(Key)
-        if keybindTriggered then
+        local shouldPreempt = onFtlKeyDown(Key)
+        if shouldPreempt then
             return Defines.Chain.PREEMPT
         else
             return Defines.Chain.CONTINUE
         end
     end)
-script.on_internal_event(Defines.InternalEvents.ON_KEY_UP, function(Key)
-        --print("onUp ", keyNameTable[Key])
-        local keybindTriggered = onFtlKeyUp(Key)
-        if keybindTriggered then
+-- script.on_internal_event(Defines.InternalEvents.ON_KEY_UP, function(Key)
+lwl.safe_script.on_internal_event("lwk_key_up", Defines.InternalEvents.ON_KEY_UP, function(Key)
+    --print("onUp ", keyNameTable[Key])
+        local shouldPreempt = onFtlKeyUp(Key)
+        if shouldPreempt then
             return Defines.Chain.PREEMPT
         else
             return Defines.Chain.CONTINUE

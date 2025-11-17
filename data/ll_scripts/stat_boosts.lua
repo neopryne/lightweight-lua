@@ -96,16 +96,21 @@ Ipairs is only valid for contigious tables, so I can't put holes in them.
 ]]
 
 
-script.on_internal_event(Defines.InternalEvents.CALCULATE_STAT_PRE,
+-- script.on_internal_event(Defines.InternalEvents.CALCULATE_STAT_PRE,
+lwl.safe_script.on_internal_event("lwsb_stat_replace_pre", Defines.InternalEvents.CALCULATE_STAT_PRE,
 function(crew, stat, def, amount, value)
+    -- print("sb 0")
     for _,crewStat in pairs(Hyperspace.CrewStat) do
+        --print("sb 1", crewStat)
         if stat == crewStat then
+            -- print("sb 2", stat)
             --Apply all valid stat boosts; if any applied, preempt
             local appliedBoost = false
             local boostValues = {}
             boostValues[lwsb.ACTION_NUMERIC_ADD] = 0
             boostValues[lwsb.ACTION_NUMERIC_MULTIPLY] = 1
             for _,statBoostId in pairs(mStatBoostTable[stat]) do
+                -- print("sb 3", statBoostId)
                 local statBoost = mStatBoostsUnsorted[statBoostId]
                 if statBoost ~= nil then
                     local valueAmount = nil
@@ -116,7 +121,9 @@ function(crew, stat, def, amount, value)
                     elseif statBoost.type == lwsb.TYPE_STRING then
                         valueAmount = lwl.resolveToString(statBoost.valueAmount)
                     end
+                    -- print("sb 4", statBoost.type)
                     if statBoost.filterFunction(crew) then
+                        -- print("sb 5", crew:GetName())
                         appliedBoost = true
                         if statBoost.action == lwsb.ACTION_SET then
                             boostValues[statBoost.type] = valueAmount

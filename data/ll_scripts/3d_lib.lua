@@ -1,4 +1,4 @@
-mods.lightweight_3d = {}
+mods.lightweight_3d = {} --todo actually you don't need to avoid resetting this if this is the only file that you 
 
 --[[Usage:
     local lw3 = mods.lightweight_3d

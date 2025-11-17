@@ -952,8 +952,8 @@ function lwl.printChoiceInternal(choice, level) end
 function lwl.printEventInternal(locationEvent, level) end
 lwl.PRINT_EVENTS = false
 
--- lwl.safe_script.on_internal_event("lwl_event_logging_keystroke", Defines.InternalEvents.ON_KEY_DOWN, function(key)
-script.on_internal_event(Defines.InternalEvents.ON_KEY_DOWN, function(key)
+lwl.safe_script.on_internal_event("lwl_event_logging_keystroke", Defines.InternalEvents.ON_KEY_DOWN, function(key)
+-- script.on_internal_event(Defines.InternalEvents.ON_KEY_DOWN, function(key)
         if (key == Defines.SDL.KEY_INSERT) then
             lwl.PRINT_EVENTS = (not lwl.PRINT_EVENTS)
             print("Set event logging ", lwl.PRINT_EVENTS)

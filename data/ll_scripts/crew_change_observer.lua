@@ -22,8 +22,8 @@ local mSetupRequested = false
 --todo update tele obs with resetignore
 --Fixed it already, but one correct solution to this is not to allow effects/equipment to add duplicate crewIds.  I think I may need to do that also.
 
--- lwl.safe_script.on_internal_event(TAG.."onTick", Defines.InternalEvents.ON_TICK, function()
-script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+lwl.safe_script.on_internal_event(TAG.."onTick", Defines.InternalEvents.ON_TICK, function()
+-- script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if not mSetupRequested then return end--todo use crew factory in some smart way, maybe let the user pass in a filter function that takes this object (and other things)
     --Initialization code
     if not (Hyperspace.ships(0)) or Hyperspace.ships(0).iCustomizeMode == 2 or lwl.isPaused() then return end
@@ -41,8 +41,9 @@ script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     end
 end)
 
-script.on_game_event("START_BEACON_REAL", false, function() --reset observers on restart.  --todo also for tele if I still need it.  I do, but the way I use CCO means I personally don't.
-         --todo see if I can move this to on_init
+-- script.on_game_event("START_BEACON_REAL", false, function() --reset observers on restart.  --todo also for tele if I still need it.  I do, but the way I use CCO means I personally don't.
+lwl.safe_script.on_game_event(TAG.."_reset_at_start_beacon", "START_BEACON_REAL", false, function()
+    --todo see if I can move this to on_init
         for _,crewChangeObserver in ipairs(mCrewChangeObservers) do
             if crewChangeObserver.selfIsInitialized then
                 crewChangeObserver.crew = {}

@@ -979,8 +979,8 @@ end
 --item ticking should be left up to the consumers.
 
 --yeah, select those items and hold them!
--- lwl.safe_script.on_internal_event("lwui_hovered_button", Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
-script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
+lwl.safe_script.on_internal_event("lwui_hovered_button", Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
+-- script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
     local mousePos = Hyperspace.Mouse.position
     --print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
     if lwui.mHoveredButton then
@@ -992,8 +992,8 @@ script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function
     return Defines.Chain.CONTINUE
 end)
 
--- lwl.safe_script.on_internal_event("lwui_clicked_button", Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x,y)
-script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x,y)
+lwl.safe_script.on_internal_event("lwui_clicked_button", Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x,y)
+-- script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x,y)
     if (lwui.mClickedButton) then
         lwui.mClickedButton.onRelease(lwui.mClickedButton, x, y)
         lwui.mClickedButton = nil
@@ -1001,8 +1001,8 @@ script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x
     return Defines.Chain.CONTINUE
 end)
 
--- lwl.safe_script.on_internal_event("lwui_scroll_action", Defines.InternalEvents.ON_MOUSE_SCROLL, function(direction)
-script.on_internal_event(Defines.InternalEvents.ON_MOUSE_SCROLL, function(direction)
+lwl.safe_script.on_internal_event("lwui_scroll_action", Defines.InternalEvents.ON_MOUSE_SCROLL, function(direction)
+-- script.on_internal_event(Defines.InternalEvents.ON_MOUSE_SCROLL, function(direction)
     if not mHoveredScrollContainer then return end
     if lwl.xor(direction > 0, mHoveredScrollContainer.invertScroll) then
         mHoveredScrollContainer.scrollDown()
@@ -1043,8 +1043,8 @@ function lwui.addHelpButton(helpButton)
     mHelpBarContainer.addObject(helpButton)
 end
 
--- lwl.safe_script.on_internal_event("lwui_render_help", Defines.InternalEvents.ON_TICK, function()
-script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+lwl.safe_script.on_internal_event("lwui_render_help", Defines.InternalEvents.ON_TICK, function()
+-- script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if lwui.mHoveredButton then
         local helpText = lwui.mHoveredButton.lwuiHelpText
         if helpText then
