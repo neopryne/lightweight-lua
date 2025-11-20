@@ -36,8 +36,8 @@ function lwl.CreateMetaVariableInterface(name)
     local buildUuidToIndexTable
 
     local function printInterface(interface)
-        print("total number", Hyperspace.metaVariables[GLOBAL_NAME..name..GLOBAL_NUMBER_KEY])
-        print("uuidtable", lwl.dumpObject(buildUuidToIndexTable()))
+        -- print("total number", Hyperspace.metaVariables[GLOBAL_NAME..name..GLOBAL_NUMBER_KEY])
+        -- print("uuidtable", lwl.dumpObject(buildUuidToIndexTable()))
     end
 
     local buildKey = function(uuid, key)
@@ -49,7 +49,7 @@ function lwl.CreateMetaVariableInterface(name)
     end
 
     interface.getCount = function()
-        print("getting", GLOBAL_NAME..name..GLOBAL_NUMBER_KEY, "is", Hyperspace.metaVariables[GLOBAL_NAME..name..GLOBAL_NUMBER_KEY])
+        -- print("getting", GLOBAL_NAME..name..GLOBAL_NUMBER_KEY, "is", Hyperspace.metaVariables[GLOBAL_NAME..name..GLOBAL_NUMBER_KEY])
         return Hyperspace.metaVariables[GLOBAL_NAME..name..GLOBAL_NUMBER_KEY]
     end
 
@@ -81,7 +81,7 @@ function lwl.CreateMetaVariableInterface(name)
             Hyperspace.metaVariables[GLOBAL_NAME..name..GLOBAL_NUMBER_KEY] = lwl.setIfNil(interface.getCount(), 0) + 1
         end
         Hyperspace.metaVariables[buildKey(uuid, key)] = value
-        print("set variable", buildKey(uuid, key), Hyperspace.metaVariables[buildKey(uuid, key)])
+        -- print("set variable", buildKey(uuid, key), Hyperspace.metaVariables[buildKey(uuid, key)])
         printInterface(interface)
     end
 

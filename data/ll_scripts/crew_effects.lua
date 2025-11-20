@@ -523,7 +523,7 @@ local function onTick()
     --print("EFFECTS: Compare ", #mCrewList, knownCrew, knownCrew == #mCrewList)
 end
 
-lwst.registerOnTick(onTick, false)
+lwst.registerOnTick(TAG.."main_tick", onTick, false)
 
 --todo scale to real time, ie convert to 30ticks/second rather than frames.
 lwl.safe_script.on_internal_event("lwce_reposition_stack", Defines.InternalEvents.ON_TICK, function()

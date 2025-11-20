@@ -9,7 +9,7 @@ local NO_SCALING_IGNORE_PAUSE = 3
 local NO_SCALING_PAUSE = 4
 
 local mSetupRequested = false
-local mScaledLocalTime = {0, 0}
+local mScaledLocalTime = {0, 0, 0, 0}
 local mOnTickList = {{}, {}, {}, {}}
 
 --[[
@@ -20,26 +20,27 @@ Usage:
     lwst.reg
 ]]
 
-lwst.registerOnTick = function(onTick, tickWhilePaused)
+--todo I need to update this to require a tag like safe_script.
+lwst.registerOnTick = function(identifier, onTick, tickWhilePaused)
     mSetupRequested = true
     if tickWhilePaused then
-        table.insert(mOnTickList[IGNORE_PAUSE], onTick)
+        mOnTickList[IGNORE_PAUSE][identifier] = onTick
     else
-        table.insert(mOnTickList[PAUSE], onTick)
+        mOnTickList[PAUSE][identifier] =  onTick
     end
 end
 
-lwst.registerTrueOnTick = function(onTick, tickWhilePaused)
+lwst.registerTrueOnTick = function(identifier, onTick, tickWhilePaused)
     mSetupRequested = true
     if tickWhilePaused then
-        table.insert(mOnTickList[NO_SCALING_IGNORE_PAUSE], onTick)
+        mOnTickList[NO_SCALING_IGNORE_PAUSE][identifier] = onTick
     else
-        table.insert(mOnTickList[NO_SCALING_PAUSE], onTick)
+        mOnTickList[NO_SCALING_PAUSE][identifier] = onTick
     end
 end
 
 local function doTicks(pauseBehavior)
-    for _,onTick in ipairs(mOnTickList[pauseBehavior]) do
+    for _,onTick in pairs(mOnTickList[pauseBehavior]) do
         onTick()
     end
 end
@@ -47,7 +48,7 @@ end
 local function advanceTicks(pauseBehavior)
     mScaledLocalTime[pauseBehavior] = mScaledLocalTime[pauseBehavior] + (Hyperspace.FPS.SpeedFactor * 16 / 10)
     if (mScaledLocalTime[pauseBehavior] > 1) then
-        for _,onTick in ipairs(mOnTickList[pauseBehavior]) do
+        for _,onTick in pairs(mOnTickList[pauseBehavior]) do
             onTick()
         end
         mScaledLocalTime[pauseBehavior] = 0

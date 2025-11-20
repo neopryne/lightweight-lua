@@ -886,17 +886,24 @@ function lwl.slotIdAtPoint(point, shipManager)
     return indexX + (indexY * width)
 end
 
---Returns a random slot id in the given room.
+---Returns the number of slots/tiles in a given room on a ship.
 ---@param roomNumber number
 ---@param shipId ShipId
----@return integer
-function lwl.randomSlotRoom(roomNumber, shipId)
+---@return number of tiles in that room
+function lwl.tilesInRoom(roomNumber, shipId)
     local shipGraph = Hyperspace.ShipGraph.GetShipInfo(shipId)
     local shape = shipGraph:GetRoomShape(roomNumber)
     local width = shape.w / TILE_SIZE
     local height = shape.h / TILE_SIZE
-    local count_of_tiles_in_room = width * height
-    return math.floor(math.random() * count_of_tiles_in_room) --zero indexed
+    return width * height
+end
+
+---Returns a random slot id in the given room.
+---@param roomNumber number
+---@param shipId ShipId
+---@return integer
+function lwl.randomSlotRoom(roomNumber, shipId)
+    return math.floor(math.random() * lwl.tilesInRoom(roomNumber, shipId)) --zero indexed
 end
 
 function lwl.getRandomSystem(shipManager)

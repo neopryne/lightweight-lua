@@ -65,7 +65,8 @@ function lwl.CreatePlayerVariableInterface(name)
     end
 
     interface.getCount = function()
-        print("getting", GLOBAL_NAME..name..GLOBAL_NUMBER_KEY, "is", Hyperspace.playerVariables[GLOBAL_NAME..name..GLOBAL_NUMBER_KEY])
+
+
         return Hyperspace.playerVariables[GLOBAL_NAME..name..GLOBAL_NUMBER_KEY]
     end
 
@@ -82,9 +83,9 @@ function lwl.CreatePlayerVariableInterface(name)
         local uuids = {}
         for i=1,interface.getCount() do
             uuids[Hyperspace.playerVariables[GLOBAL_NAME..name..GLOBAL_UUID_KEY..i]] = i
-            print("uuid", Hyperspace.playerVariables[GLOBAL_NAME..name..GLOBAL_UUID_KEY..i], "index", i, "key", GLOBAL_NAME..name..GLOBAL_UUID_KEY..i)
+            -- print("uuid", Hyperspace.playerVariables[GLOBAL_NAME..name..GLOBAL_UUID_KEY..i], "index", i, "key", GLOBAL_NAME..name..GLOBAL_UUID_KEY..i)
         end
-        print("uuidtable:", lwl.dumpObject(uuids))
+        -- print("uuidtable:", lwl.dumpObject(uuids))
         return uuids
     end
 
@@ -99,7 +100,7 @@ function lwl.CreatePlayerVariableInterface(name)
             Hyperspace.playerVariables[GLOBAL_NAME..name..GLOBAL_NUMBER_KEY] = lwl.setIfNil(interface.getCount(), 0) + 1
         end
         Hyperspace.playerVariables[buildKey(uuid, key)] = value
-        print("set variable", buildKey(uuid, key), Hyperspace.playerVariables[buildKey(uuid, key)])
+        -- print("set variable", buildKey(uuid, key), Hyperspace.playerVariables[buildKey(uuid, key)])
         printInterface(interface)
     end
 
@@ -125,7 +126,7 @@ function lwl.CreatePlayerVariableInterface(name)
     --if the interface has any local structure, populate it from stored vars.
     --You have to do this inside of a run.
     local function setupSave(newGame)
-        print("Loadedpvs, is new game?", newGame)
+        -- print("Loadedpvs, is new game?", newGame)
         if newGame then
             --noop
         else

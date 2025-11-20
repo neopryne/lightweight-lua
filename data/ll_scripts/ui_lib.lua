@@ -34,6 +34,13 @@ local lwui = mods.lightweight_user_interface
 --[[
 
 TODO:
+
+
+ALL OBJECTS should have onHover, onClick, and onRelase events, just usually they are no-ops.
+
+
+
+
 Does mean I need a way to stretch an image.  I wonder if GL will just do that for me.
 
 Radio buttons maybe?  You can do this yourself, but I'll see if it seems worth putting here when I build it.
@@ -484,11 +491,12 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
         scrollContainer.scrollValue = math.max(minWindowScroll(), math.min(maxWindowScroll(), scrollContainer.scrollValue))
         scrollNub.y = scrollToNub(scrollContainer.scrollValue)
         
-        content.y = -scrollContainer.scrollValue
+        content.y = -scrollContainer.scrollValue --todo does this size the scroll bar correctly?
         --print("Rendering content level")
     end
     
     --todo decide about scroll bar backgrounds
+    --TODO I should put the vertical container inside the scroll bar so you don't have to keep making it yourself.
     contentContainer = lwui.buildContainer(0, 0, width - barWidth, height, visibilityFunction, renderContent, {content}, false, false)
     scrollContainer = lwui.buildContainer(x, y, width, height, visibilityFunction, scrollBarSkin.backgroundRender,
         {contentContainer, scrollBar, scrollUpButton, scrollDownButton, scrollNub}, false, false)
@@ -1043,8 +1051,8 @@ function lwui.addHelpButton(helpButton)
     mHelpBarContainer.addObject(helpButton)
 end
 
-lwl.safe_script.on_internal_event("lwui_render_help", Defines.InternalEvents.ON_TICK, function()
--- script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+-- lwl.safe_script.on_internal_event("lwui_render_help", Defines.InternalEvents.ON_TICK, function()
+script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if lwui.mHoveredButton then
         local helpText = lwui.mHoveredButton.lwuiHelpText
         if helpText then

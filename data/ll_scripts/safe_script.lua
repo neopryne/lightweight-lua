@@ -65,7 +65,7 @@ local function safe_varargs_standin_register_event(definesEvent, identifier)
             print("✅ Successfully registered wrapper with", n, "args for ", definesEvent)
             return eventFunctionWrapper, n
         else
-            print("❌ Failed to register wrapper with", n, "args:", err)
+            -- print("❌ Failed to register wrapper with", n, "args:", err)
         end
     end
 
@@ -121,7 +121,7 @@ local function safe_varargs_standin_register_render_event(definesEvent, identifi
             print("✅ Successfully registered render wrapper with", n, "args for ", definesEvent)
             return eventFunctionWrapper, n
         else
-            print("❌ Failed to register wrapper with", n, "args:", err)
+            print("Attempt to register with", n, "args failed, trying one fewer...")
         end
     end
 
