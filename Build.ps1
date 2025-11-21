@@ -1,7 +1,7 @@
 # Build.ps1
 
 # Variables
-$relativeFile = "Lightweight Lua.zip"
+$relativeFile = "Lightweight_Lua_0.14.zip"
 $absolutePath = "C:\Users\GunBuild-1\Documents\Workspace\ftlman-x86_64-pc-windows-gnu\ftlman\mods\$relativeFile"
 $tempZipDir = Join-Path $env:TEMP "zip_temp"
 $filesToInclude = @("data", "mod-appendix", "img")
@@ -52,9 +52,8 @@ Push-Location $ftlmanDir
     "Vertex-Util.ftl" `
 	"Brightness Particles 1.4.1.zip" `
     $relativeFile `
-    "Crew_Equipment_Library.zip" `
-	"Grimdark_Expy.zip" `
-    "Selectively Independent Crew Control.zip"
+    "Crew_Equipment_Library_0.9.zip" `
+	"Grimdark_Expy_1.3.zip"
 Pop-Location
 
 # Launch FTL

@@ -108,9 +108,11 @@ lwui.classNames = {
 local classNames = lwui.classNames
 
 local mTopLevelRenderLists = {}
-lwui.mHoveredButton = nil
+lwui.mHoveredObject = nil
+lwui.mHoveredButton = nil --todo deprecated
 local mHoveredScrollContainer = nil
-lwui.mClickedButton = nil --mouseUp will be called on this.
+lwui.mClickedObject = nil
+lwui.mClickedButton = nil --mouseUp will be called on this.  --todo deprecated
 local mItemList = {}
 local mLayersWithoutHover = 0
 
@@ -173,6 +175,22 @@ function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunctio
     local function setMaskFunction(maskFunc)
         object.maskFunction = maskFunc
     end
+
+    object.setOnClick = function(onClickFunction)
+        object.onClick = function(self, x1, y1)
+            if object.visibilityFunction then
+                onClickFunction(self, x1, y1) --can't be button b/c that stack overflows.
+            end
+        end
+    end
+
+    object.setOnRelease = function(onReleaseFunction)
+        object.onRelease = function(self, x1, y1)
+            if object.visibilityFunction then
+                onReleaseFunction(self, x1, y1) --can't be button b/c that stack overflows.
+            end
+        end
+    end
     
     object.x = x
     object.y = y
@@ -184,26 +202,18 @@ function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunctio
     object.setMaskFunction = setMaskFunction
     object.maskFunction = maskFunctionNoOp --call this each frame to get the mask to pass to render func.
     object.className = classNames.OBJECT
+    object.onClick = NOOP
+    object.onRelease = NOOP
     return object
 end
 
 --onClick(x, y): args being passed are global position of the cursor when click occurs.
+--todo instead define functions to add onClick and onRelease, and a clickable thing that makes object ignore themselves for mHoveredObject
 function lwui.buildButton(x, y, width, height, visibilityFunction, renderFunction, onClick, onRelease)--todo order changed, update calls.
+
     if not (onRelease) then onRelease = NOOP end
     if not (onClick) then onClick = NOOP end
     local button
-
-    local function buttonClick(self, x1, y1)
-        if button.visibilityFunction then
-            onClick(self, x1, y1) --can't be button b/c that stack overflows.
-        end
-    end
-
-    local function buttonRelease(self, x1, y1)
-        if button.visibilityFunction then
-            onRelease(self, x1, y1) --can't be button b/c that stack overflows.
-        end
-    end
     
     local function renderButton()
         local hovering = false
@@ -222,8 +232,10 @@ function lwui.buildButton(x, y, width, height, visibilityFunction, renderFunctio
     end
     
     button = lwui.buildObject(x, y, width, height, visibilityFunction, renderButton)
-    button.onClick = buttonClick
-    button.onRelease = buttonRelease
+
+    button.setOnClick(onClick)
+    button.setOnRelease(onRelease)
+
     button.className = classNames.BUTTON
     return button
 end
