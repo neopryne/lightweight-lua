@@ -566,6 +566,8 @@ script.on_game_event("START_BEACON_REAL", false, function()
         end)
 ------------------------------------END ATTEMPTS TO RESET EFFECT VALUES--------------------------------------------
 -----------------------------LEGEND BUTTON--------------------------------------
+-- print("bottom of lwce1")
 local mHelpButton = lwui.buildButton(1, 0, 11, 11, lwui.alwaysOnVisibilityFunction, lwui.spriteRenderFunction("icons/help/effects_help.png"), NOOP, NOOP)
 mHelpButton.lwuiHelpText = "LWCE Statuses\nBleed:\n    Temporary flat damage over time\n    Resist reduces stacks gained and damage taken\nConfusion:\n    Crew becomes uncontrollable.\n    Resist reduces stacks gained.\nCorruption:\n    Permanent stacking damage over time\n    Resist reduces stacks gained\nTeleportitis:\n    Crew occasionally randomly teleports to another location."
+-- print("bottom of lwce2")
 lwui.addHelpButton(mHelpButton)

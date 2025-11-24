@@ -151,19 +151,26 @@ end
 
 --[[  TABLE UTILS  ]]--
 ---for use in printing all of a table
+
+local function dumpObjectInternal(o, depth, maxDepth)
+    if depth >= maxDepth then return "ABORTING, MAX LIMIT REACHED: "..maxDepth end
+    if type(o) == 'table' then
+       local s = '{ '
+       for k,v in pairs(o) do
+          if type(k) ~= 'number' then k = '"'..k..'"' end
+          s = s .. '['..k..'] = ' .. dumpObjectInternal(v, depth + 1, maxDepth) .. ','
+       end
+       return s .. '} '
+    else
+       return tostring(o)
+    end
+ end
+
 ---@param o table
 ---@return string
-function mods.lightweight_lua.dumpObject(o)
-   if type(o) == 'table' then
-      local s = '{ '
-      for k,v in pairs(o) do
-         if type(k) ~= 'number' then k = '"'..k..'"' end
-         s = s .. '['..k..'] = ' .. mods.lightweight_lua.dumpObject(v) .. ','
-      end
-      return s .. '} '
-   else
-      return tostring(o)
-   end
+function mods.lightweight_lua.dumpObject(o, maxDepth)
+    maxDepth = lwl.setIfNil(maxDepth, 10)
+    return dumpObjectInternal(o, 0, maxDepth)
 end
 
 --one level deep copy of t1 and t2 to t3 deep, it's not recursive.  For full deep copy, use deepTableMerge
@@ -1075,6 +1082,9 @@ Usually with how things are written these days, this bubbles all the way up to t
 
 local function resolveToTypeInternal(value, desiredType, previousValue, depth)
     depth = depth or 0
+    if value == nil then
+        return nil
+    end
     if depth > 100 then
         error("Exceeded maximum resolution depth")
         return nil
