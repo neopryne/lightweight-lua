@@ -72,61 +72,63 @@ local function safe_varargs_standin_register_event(definesEvent, identifier)
     return nil, "No valid wrapper signature found"
 end
 
---Render version to handle dumbness.
-local function safe_varargs_standin_register_render_event(definesEvent, identifier)
+-- --Render version to handle dumbness.
+-- --todo it seems like the varargs registration isn't working, and it just blindly accepts whatever.  I may actually want varargs in this case.
+--Thankfully on_render lets us use varargs.  If it ever stops, use this instead.
+-- local function safe_varargs_standin_register_render_event(definesEvent, identifier)
 
-    local function makeWrapper(n, type)
-        if n == 0 then
-            return function()
-                local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
-                if handler then return handler() end
-            end
-        elseif n == 1 then
-            return function(a1)
-                local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
-                if handler then return handler(a1) end
-            end
-        elseif n == 2 then
-            return function(a1, a2)
-                local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
-                if handler then return handler(a1, a2) end
-            end
-        elseif n == 3 then
-            return function(a1, a2, a3)
-                local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
-                if handler then return handler(a1, a2, a3) end
-            end
-        elseif n == 4 then
-            return function(a1, a2, a3, a4)
-                local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
-                if handler then return handler(a1, a2, a3, a4) end
-            end
-        else
-            return function(a1, a2, a3, a4, a5)
-                local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
-                if handler then return handler(a1, a2, a3, a4, a5) end
-            end
-        end
-    end --todo it seems like this isn't doing anything.  It's not crashing, but it's not calling properly.
+--     local function makeWrapper(n, type)
+--         if n == 0 then
+--             return function()
+--                 local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
+--                 if handler then return handler() end
+--             end
+--         elseif n == 1 then
+--             return function(a1)
+--                 local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
+--                 if handler then return handler(a1) end
+--             end
+--         elseif n == 2 then
+--             return function(a1, a2)
+--                 local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
+--                 if handler then return handler(a1, a2) end
+--             end
+--         elseif n == 3 then
+--             return function(a1, a2, a3)
+--                 local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
+--                 if handler then return handler(a1, a2, a3) end
+--             end
+--         elseif n == 4 then
+--             return function(a1, a2, a3, a4)
+--                 local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
+--                 if handler then return handler(a1, a2, a3, a4) end
+--             end
+--         else
+--             return function(a1, a2, a3, a4, a5)
+--                 local handler = lwl.safe_script.eventFunctionWrappers[identifier][type]
+--                 if handler then return handler(a1, a2, a3, a4, a5) end
+--             end
+--         end
+--     end --todo it seems like this isn't doing anything.  It's not crashing, but it's not calling properly.
 
-    for n = 5, 0, -1 do
-        local eventFunctionWrapper = makeWrapper(n)
-        local success, err = pcall(function()
-            local beforeFunctionWrapper = makeWrapper(n, "before")
-            local afterFunctionWrapper = makeWrapper(n, "after")
-            script.on_render_event(definesEvent, beforeFunctionWrapper, afterFunctionWrapper)
-        end)
+--     for n = 5, 0, -1 do
+--         local eventFunctionWrapper = makeWrapper(n)
+--         local success, err = pcall(function()
+--             local beforeFunctionWrapper = makeWrapper(n, "before")
+--             local afterFunctionWrapper = makeWrapper(n, "after")
+--             script.on_render_event(definesEvent, beforeFunctionWrapper, afterFunctionWrapper)
+--         end)
 
-        if success then
-            print("✅ Successfully registered render wrapper with", n, "args for ", definesEvent)
-            return eventFunctionWrapper, n
-        else
-            print("Attempt to register with", n, "args failed, trying one fewer...")
-        end
-    end
+--         if success then
+--             print("✅ Successfully registered render wrapper with", n, "args for ", definesEvent)
+--             return eventFunctionWrapper, n
+--         else
+--             print("Attempt to register with", n, "args failed, trying one fewer...")
+--         end
+--     end
 
-    return nil, "No valid wrapper signature found"
-end
+--     return nil, "No valid wrapper signature found"
+-- end
 
 
 ---------------------------------------------API---------------------------------------------------
@@ -170,7 +172,13 @@ lwl.safe_script.on_render_event = function(identifier, definesEvent, beforeFunct
     lwl.safe_script.eventFunctionWrappers[identifier] = {beforeFunction=beforeFunction, afterFunction=afterFunction}
 
     if firstCreation then
-        safe_varargs_standin_register_render_event(definesEvent, identifier)
+        local function renderBeforeFunctionWrapper(...)
+            return lwl.safe_script.eventFunctionWrappers[identifier].beforeFunction(...)
+        end
+        local function renderAfterFunctionWrapper(...)
+            return lwl.safe_script.eventFunctionWrappers[identifier].afterFunction(...)
+        end
+        script.on_render_event(definesEvent, renderBeforeFunctionWrapper, renderAfterFunctionWrapper)
     end
 end
 
@@ -245,3 +253,72 @@ end
 --     print("tick worked")
 -- end)
 -- lua mods.lightweight_lua.safe_script.on_render_event("example_oi;juewrnkljewr;lj", Defines.RenderEvents.TABBED_WINDOW, mods.lightweight_lua.NOOP, function(tabName) print("wow that worked", tabName) end)
+
+
+-------------------------------------------TESTS---------------------------------------------------
+
+
+--Register one kind of each wrapper, to ensure that all of them work.  Actually, right now, the one that I care about is the onRender callback.
+--[[
+These are commented out because you should be running them with the code injection interface.
+
+
+mods.lightweight_lua.safe_script.on_render_event("lwlss_test_render_event_2", Defines.RenderEvents_CHOICE_BOX, function (choiceBox)
+    print("choice box new listener2")
+end)
+
+mods.lightweight_lua.safe_script.on_render_event("lwlss_test_render_event3", Defines.RenderEvents_LAYER_FOREGROUND, function (choiceBox)
+    print("foreground" new listener1")
+end)
+--Step 1, register and press a key to verify it works.
+mods.lightweight_lua.safe_script.on_internal_event("lwlss_test_internal_event", Defines.InternalEvents_ON_KEY_DOWN, function (key)
+    print("key down initial listener")
+end)
+--Step 2, register and verify only the new listener fires.
+mods.lightweight_lua.safe_script.on_internal_event("lwlss_test_internal_event", Defines.InternalEvents_ON_KEY_DOWN, function (key)
+    print("key down new listener")
+end)
+mods.lightweight_lua.safe_script.on_internal_event("lwlss_test_internal_event", Defines.InternalEvents_ON_KEY_DOWN, function (key)
+    print("key down new listener2")
+end)
+
+--Test by opening the internal menu
+mods.lightweight_lua.safe_script.on_render_event("lwlss_test_render_event", Defines.RenderEvents_CHOICE_BOX, function (choiceBox)
+    print("choice box initial listener")
+end)
+mods.lightweight_lua.safe_script.on_render_event("lwlss_test_render_event", Defines.RenderEvents_CHOICE_BOX, function (choiceBox)
+    print("choice box new listener")
+end)
+mods.lightweight_lua.safe_script.on_render_event("lwlss_test_render_event", Defines.RenderEvents_CHOICE_BOX, function (choiceBox)
+    print("choice box new listener2")
+end)
+
+
+mods.lightweight_lua.safe_script.on_load("lwlss_test_on_load", function (newGame)
+    print("on load initial listener")
+end)
+mods.lightweight_lua.safe_script.on_load("lwlss_test_on_load", function (newGame)
+    print("on load new listener")
+end)
+mods.lightweight_lua.safe_script.on_load("lwlss_test_on_load", function (newGame)
+    print("on load new listener2")
+end)
+
+
+mods.lightweight_lua.safe_script.on_init("lwlss_test_on_init", function (newGame)
+    print("on init initial listener")
+end)
+mods.lightweight_lua.safe_script.on_init("lwlss_test_on_init", function (newGame)
+    print("on init new listener")
+end)
+mods.lightweight_lua.safe_script.on_init("lwlss_test_on_init", function (newGame)
+    print("on init new listener2")
+end)
+--todo I'm not actually sure how on_load is supposed to work, so I can't write tests for it.
+]]
+
+
+--todo so it seems like the on_render stuff just isn't registering properly or something.  Hard to say?
+    --This was because on_render can use varargs, and so my workaround didn't work for it.
+
+-------------------------------------------END TESTS---------------------------------------------------
