@@ -201,7 +201,19 @@ renderFunction:
 ---I guess I need to fix that before someone (me) runs into that.  I had only been using lwui for global stuff like player interfaces.
 ---
 ---
----Properties 
+---Properties:
+--- focusable: False by default. Determines if the object can be hovered.
+---     If multiple items that can be hovered are in a stack, only the top one will be hovered.
+--- 
+--- setOnClick(onClickFunction) Call this to give the object an onClick function which takes three arguments:
+---     the object, the x coordinate of the mouse click, and the y coordinate of the mouse click.
+---     Also implicitly sets focusable to true.
+--- 
+--- setOnRelease(onReleaseFunction) Call this to give the object an onClick function which takes three arguments:
+---     the object, the x coordinate of the mouse click, and the y coordinate of the mouse click.
+---     Also implicitly sets focusable to true
+--- 
+--- className: Each kind of object has its own name to help differentiate them when debugging.
 ---
 ---@param x number (in pixels) x position relative to this object's container.  If top level, is x position.
 ---@param y number (in pixels) y position relative to this object's container.  If top level, is y position.
@@ -295,7 +307,7 @@ function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunctio
 end
 
 --onClick(x, y): args being passed are global position of the cursor when click occurs.
----comment
+---A button is an object that can be clicked and hovered by default.
 ---@param x number (in pixels) x position relative to this object's container.  If top level, is x position.
 ---@param y number (in pixels) y position relative to this object's container.  If top level, is y position.
 ---@param width number in pixels
@@ -365,6 +377,22 @@ addObject(object): call this if you need to add something to the container after
 renderOutsideBounds: if true, objects will render even if out of bounds of the container.
 sizeToContent: if true, the container will dynamically adjust itself to the smallest sizes that hold all of its contents.
 --]]
+
+---Constructs a container, an object that can hold other objects.
+---
+---Properties:
+--- addObject(object) Puts this object inside this container.  It will render relative to its immediate container.
+---@param x number (in pixels) x position relative to this object's container.  If top level, is x position.
+---@param y number (in pixels) y position relative to this object's container.  If top level, is y position.
+---@param width number in pixels
+---@param height number in pixels
+---@param visibilityFunction function returns true if this object should render, and false otherwise.  Takes no arguments.
+---@param renderFunction function Takes one argument, which will be the created object.  This is where you put your render code,
+---@ such as lwui.solidRectRenderFunction.
+---@param objects table of lwui objects (all elements are objects)
+---@param renderOutsideBounds boolean if false, will only render contents strictly inside the container's rectangle.
+---@param sizeToContent boolean if true, will dynamically resize the container to fit its contents.
+---@return table the container
 function lwui.buildContainer(x, y, width, height, visibilityFunction, renderFunction, objects, renderOutsideBounds, sizeToContent)
     local container
     --Append container rendering behavior to whatever function the user wants (if any) to show up as the container's background.
@@ -470,6 +498,22 @@ end
 --You can't create this type of container with contents in the constructor, they must be added later with addObject() --TODO also this new style fixes this!
 --Maybe don't use dynamicHeightTextBoxes inside positional containers, they will bully your other items.
 --todo might be an issue where sizeToContent=false causes issues
+---Constructs a container that forces its items to be in a column, starting from the top.
+---
+---Properties:
+--- addObject(object) Puts this object inside this container.  This container will control where it renders.
+---@param x number (in pixels) x position relative to this object's container.  If top level, is x position.
+---@param y number (in pixels) y position relative to this object's container.  If top level, is y position.
+---@param width number in pixels
+---@param height number in pixels
+---@param visibilityFunction function returns true if this object should render, and false otherwise.  Takes no arguments.
+---@param renderFunction function Takes one argument, which will be the created object.  This is where you put your render code,
+---@ such as lwui.solidRectRenderFunction.
+---@param objects table of lwui objects (all elements are objects)
+---@param renderOutsideBounds boolean if false, will only render contents strictly inside the container's rectangle.
+---@param sizeToContent boolean if true, will dynamically resize the container to fit its contents.
+---@param padding any The space between items in the container.
+---@return table the container
 function lwui.buildVerticalContainer(x, y, width, height, visibilityFunction, renderFunction, objects, renderOutsideBounds, sizeToContent, padding)
     local container
     local function verticalSnapRender(maskFunction)
@@ -491,6 +535,22 @@ function lwui.buildVerticalContainer(x, y, width, height, visibilityFunction, re
     return container
 end
 
+---Constructs a container that forces its items to be in a row, starting from the left.
+---
+---Properties:
+--- addObject(object) Puts this object inside this container.  This container will control where it renders.
+---@param x number (in pixels) x position relative to this object's container.  If top level, is x position.
+---@param y number (in pixels) y position relative to this object's container.  If top level, is y position.
+---@param width number in pixels
+---@param height number in pixels
+---@param visibilityFunction function returns true if this object should render, and false otherwise.  Takes no arguments.
+---@param renderFunction function Takes one argument, which will be the created object.  This is where you put your render code,
+---@ such as lwui.solidRectRenderFunction.
+---@param objects table of lwui objects (all elements are objects)
+---@param renderOutsideBounds boolean if false, will only render contents strictly inside the container's rectangle.
+---@param sizeToContent boolean if true, will dynamically resize the container to fit its contents.
+---@param padding any The space between items in the container.
+---@return table the container
 function lwui.buildHorizontalContainer(x, y, width, height, visibilityFunction, renderFunction, objects, renderOutsideBounds, sizeToContent, padding)
     local container
     local function horizontalSnapRender(maskFunction)
@@ -521,6 +581,19 @@ end
 --Content is a single item with a y coordinate of 0. It can have variable size, and can be longer than the scroll container, but not wider.
 --scroll bars always grow to fit their content, if you want one that doesn't, ping me.
 --NOTE: the contained elements of the scroll bar are refered to statically here, but I don't see a reason why they would be replaced, so I'm leaving it.
+---Constructs a scrollable container.  You usually want to put a verticalContainer inside as the only object, and
+--- then put other things inside that.
+---
+---Properties:
+--- addObject(object) Puts this object inside this container.  This container will control where it renders.
+---@param x number (in pixels) x position relative to this object's container.  If top level, is x position.
+---@param y number (in pixels) y position relative to this object's container.  If top level, is y position.
+---@param width number in pixels
+---@param height number in pixels
+---@param visibilityFunction function returns true if this object should render, and false otherwise.  Takes no arguments.
+---@param content table The contents of the scroll bar.  This cannot be changed after initialization, so you probably want it to be a conteiner.
+---@param scrollBarSkin table created with lwui.constructScrollBarSkin.  defaultScrollBarSkin is the usual window style.
+---@return table
 function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFunction, content, scrollBarSkin) --TODO scroll bars should basically always have containers inside them.  Maybe do that by default.  A container of the same direction as the bar.
     local barWidth = scrollBarSkin.barWidth
     local scrollIncrement = 30 --seems fine
@@ -644,6 +717,22 @@ renderFunction: hopefully a png that's the same size as their button.
 --visibility function inherited from the button they're attached to.
 --containingButton is the inventoryButton that holds this item.  render won't be called if this is nil as said button is the thing that calls it.
 --onCreate is passed the item, all others are for external use, and it's up to you to define their signatures and what they do.
+---Items are objects that exist within inventoryButtons, and as such, do not have their own position.
+---They can be dragged between any inventoryButtons defined as being able to hold them.
+---
+---@param name string the name of the item
+---@param itemType string Used in determining which inventoryButtons can hold which items.
+---@param width number in pixels
+---@param height number in pixels
+---@param visibilityFunction function returns true if this object should render, and false otherwise.  Takes no arguments.
+---@param renderFunction function Takes one argument, which will be the created object.  This is where you put your render code,
+---@ such as lwui.solidRectRenderFunction.
+---@param description string Some information about the object for your players.
+---@param onCreate function Called when the object is being created.
+---@param onTick function External use. Your UI implementation should call this whenever a given object should be ticking.
+---@param onEquip function External use. Your UI implementation should call this whenever a given object is put into an active state.
+---@param onRemove function External use. Your UI implementation should call this whenever a given object is removed from an active state.
+---@return table the item
 function lwui.buildItem(name, itemType, width, height, visibilityFunction, renderFunction, description, onCreate, onTick, onEquip, onRemove)
     local item
     local function itemRender()
@@ -692,6 +781,21 @@ end
 --todo is this also a container for the item?  not currently.
 --todo add onRemove?
 --onItemAddedFunction: called with (button, item) when an item is added to this button successfully.
+---Creates a button that can hold items.
+---@param name string the name of the inventoryButton
+---@param x number (in pixels) x position relative to this object's container.  If top level, is x position.
+---@param y number (in pixels) y position relative to this object's container.  If top level, is y position.
+---@param width number in pixels
+---@param height number in pixels
+---@param visibilityFunction function returns true if this object should render, and false otherwise.  Takes no arguments.
+---@param renderFunction function Takes one argument, which will be the created object.  This is where you put your render code,
+---@ such as lwui.solidRectRenderFunction.
+---@param allowedItemsFunction function takes a lwui item, returns a boolean: true if this button can hold the item, and false otherwise.
+---@param onItemAddedFunction function takes a button (this button) and an item (the added item), returns nothing.  Called when an item
+---@    is successfully added to this button.
+---@param onItemRemovedFunction function takes a button (this button) and an item (the removed item), returns nothing.  Called when an item
+---@    is successfully removed from this button.
+---@return table
 function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction, renderFunction, allowedItemsFunction, onItemAddedFunction, onItemRemovedFunction)
     --todo custom logic has to go somewhere else, as these need to work even when the button isn't rendered.
     local button
@@ -822,6 +926,16 @@ end
 
 --Minimum font size is five, choosing smaller will make it bigger than five.
 --You can put this one inside of a scroll window for good effect
+---Creates an object that contains and displays text, and resizes its height dynamically to accomidate it.
+---@param x number (in pixels) x position relative to this object's container.  If top level, is x position.
+---@param y number (in pixels) y position relative to this object's container.  If top level, is y position.
+---@param width number in pixels
+---@param height number in pixels
+---@param visibilityFunction function returns true if this object should render, and false otherwise.  Takes no arguments.
+---@param renderFunction function Takes one argument, which will be the created object.  This is where you put your render code,
+---@ such as lwui.solidRectRenderFunction.
+---@param fontSize number How big the font should be.  Numbers smaller than 6 are all the same.
+---@return table the text box
 function lwui.buildDynamicHeightTextBox(x, y, width, height, visibilityFunction, renderFunction, fontSize)
     local textBox
     local function expandingRenderFunction()
@@ -840,6 +954,16 @@ function lwui.buildDynamicHeightTextBox(x, y, width, height, visibilityFunction,
 end
 
 --Font shrinks to accomidate text, I don't think this one looks as good generally, but I wanted to make it available.
+---Creates an object that contains and displays text, and dynamically resizes the font to fit the text in the box.
+---@param x number (in pixels) x position relative to this object's container.  If top level, is x position.
+---@param y number (in pixels) y position relative to this object's container.  If top level, is y position.
+---@param width number in pixels
+---@param height number in pixels
+---@param visibilityFunction function returns true if this object should render, and false otherwise.  Takes no arguments.
+---@param renderFunction function Takes one argument, which will be the created object.  This is where you put your render code,
+---@ such as lwui.solidRectRenderFunction.
+---@param maxFontSize number The largest font this box should try to use.
+---@return table the text box
 function lwui.buildFixedTextBox(x, y, width, height, visibilityFunction, renderFunction, maxFontSize)
     local textBox
     local function scalingFontRenderFunction()
@@ -946,6 +1070,8 @@ function lwui.inventoryButtonCustomColors(object, mainColor, frameColor)
         mask.width - xScaling, mask.height - yScaling, mainColor)
 end
 
+---A render function.  A nice skin for inventoryButtons that fits well with the standard game UI.
+---@param object any
 function lwui.inventoryButtonDefault(object)
     lwui.inventoryButtonCustomColors(object, Graphics.GL_Color(4/255, 8/255, 13/255, 1), Graphics.GL_Color(63/255, 63/255, 67/255, 1))
 end
@@ -1010,11 +1136,11 @@ function lwui.dynamicSpriteRenderFunction(spritePaths, indexSelectFunction)
 end
 
 ---Four paths for the four states of a toggle button.
----@param off any
----@param on any
----@param hoveredOff any
----@param hoveredOn any
----@return function
+---@param off string path to the image for the off state
+---@param on string path to the image for the on state
+---@param hoveredOff string path to the image for the off but hovered state
+---@param hoveredOn string path to the image for the on but hovered state
+---@return function a render function that changes based on the associated button's state.
 function lwui.toggleButtonRenderFunction(off, hoveredOff, on, hoveredOn)
     local function indexSelectFunction(toggleButton)
         if toggleButton.class == classNames.TOGGLE_BUTTON then

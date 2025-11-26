@@ -1105,7 +1105,7 @@ function lwl.goalExists(goalPoint)
     return not (lwl.floatEquals(goalPoint.x, -1) and lwl.floatEquals(goalPoint.y, -1))
 end
 
----Returns the angle in degrees, 0 being straight up.
+---Returns the distance in pixels between two points.  Pythagorian.
 ---@param point1 Hyperspace.Point|Hyperspace.Pointf
 ---@param point2 Hyperspace.Point|Hyperspace.Pointf
 ---@return number
@@ -1126,7 +1126,7 @@ function lwl.getDistance(origin, target)
     return math.abs(math.sqrt((origin.x - target.x)^2 + (origin.y - target.y)^2))
 end
 
----comment
+---Returns the angle in degrees, 0 being straight up.
 ---@param origin Hyperspace.Point|Hyperspace.Pointf
 ---@param target Hyperspace.Point|Hyperspace.Pointf
 ---@return number FTL Angle in the direction of target from origin.
@@ -1138,9 +1138,9 @@ function lwl.getAngle(origin, target)
     return innerAngle
 end
 ------------------END POINT UTILS---------------------
+---This doesn't actually do anything, crew speed is screen speed.
 function lwl.crewSpeedToScreenSpeed(crewSpeed)
-    --1.333 ~= .4, it's probably linear.  And 0=0
-    return crewSpeed --* .4 / 1.334
+    return crewSpeed
 end
 ------------------ANGLE UTILS---------------------
 ---Converts an FTL style angle to a Brightness Particles style one.
