@@ -35,11 +35,8 @@ local lwui = mods.lightweight_user_interface
 
 TODO:
 
-
-ALL OBJECTS should have onHover, onClick, and onRelase events, just usually they are no-ops.
-
-
-
+Containers that don't resize themselves are broken, and have the wrong box size.
+    I can't reproduce this anymore, revisit if it happens again.
 
 Does mean I need a way to stretch an image.  I wonder if GL will just do that for me.
 
@@ -115,9 +112,9 @@ lwui.classNames = {
 local classNames = lwui.classNames
 
 local mTopLevelRenderLists = {}
-lwui.mHoveredButton = nil
+lwui.mHoveredButton = nil --todo this means you need to update your CEL in lockstep.  todo change to mHoveredObject
 local mHoveredScrollContainer = nil
-lwui.mClickedButton = nil --mouseUp will be called on this.
+lwui.mClickedButton = nil --mouseUp will be called on this. --todo rename
 local mItemList = {}
 local mLayersWithoutHover = 0
 
@@ -141,6 +138,50 @@ function lwui.addTopLevelObject(object, renderLayer)
     error("Invalid layer name ", renderLayer)
 end
 
+--chatgpt created
+function lwl.print_function_source(f)
+    local info = debug.getinfo(f, "S")
+
+    -- 1. No source available (e.g. C function, stripped bytecode)
+    if info.what ~= "Lua" then
+        print("No Lua source available for this function.")
+        return
+    end
+
+    -- 2. Function created with load/loadfile? The source is inside info.source.
+    -- If it's from a file, info.source starts with '@'.
+    if info.source:sub(1,1) == "@" then
+        print("File source")
+        local filename = info.source:sub(2)
+        local file = io.open(filename, "r")
+        if not file then
+            print("Could not open file:", filename)
+            return
+        end
+        local lines = {}
+        for line in file:lines() do
+            table.insert(lines, line)
+        end
+        file:close()
+
+        print("File source", filename, info.linedefined, info.lastlinedefined)
+        -- print only the lines that correspond to this function
+        for i = info.linedefined, info.lastlinedefined do
+            print(lines[i] or "")
+        end
+        return
+    end
+
+    -- 3. Function created from a string chunk: source *is literally the string*
+    -- and includes the leading '=' or actual source text.
+    if info.source:sub(1,1) == "=" then
+        print("String source ", info.source:sub(2))
+        return
+    end
+
+    -- 4. Raw chunk from load("...") — entire source is inside info.source
+    print("Raw source", info.source)
+end
 
 --[[
 Objects must be registered somehow with the topLevelRenderList to appear, be visible, and thus be interacted with.
@@ -172,19 +213,40 @@ renderFunction:
 ---@return table the constructed object
 function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunction)
     local object = {}
+    object.focusable = false
 
-    local function renderObject()
+    local function renderObject(mask)
         --print("should render? ", visibilityFunction())
         if not object.visibilityFunction then
             lwl.logError(TAG, "vis func for object "..object.getPos().x..", "..object.getPos().y.." is nil!")
             return true
         end
         if object.visibilityFunction() then
-            return renderFunction(object)
+            local hovering = false
+            if object.focusable then
+                local mousePos = Hyperspace.Mouse.position
+                local objectMask = object.maskFunction()
+                --print("rendering button ", button.getPos().x)
+                if lwui.isWithinMask(mousePos, objectMask) then
+                    hovering = true
+                    -- if not (lwui.mHoveredObject == object) then
+                    --     print("button_hovered ", button)
+                    -- end
+                    lwui.mHoveredButton = object
+                end
+            end
+            local internalHover = lwl.resolveToBoolean(renderFunction(object)) --todo this is a hack for this returning a function, TODO fix this by ensuring we don't return functions here.
+            -- if hovering or internalHover then 
+            --     print("robject", x, y, internalHover, hovering)
+            --     --lwl.print_function_source(thing)
+            -- end
+            return hovering or internalHover --TODO ensure every render function returns the proper hover values.
         end
     end
     
     local function getPosition()
+        if (object.x == nil) then error("x was nil for"..lwl.dumpObject(object)) end
+        if (object.y == nil) then error("y was nil for"..lwl.dumpObject(object)) end
         return {x=object.x, y=object.y}
     end
     
@@ -194,6 +256,26 @@ function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunctio
     
     local function setMaskFunction(maskFunc)
         object.maskFunction = maskFunc
+    end
+
+    object.setOnClick = function(onClickFunction)
+        object.focusable = true
+        object.onClick = function(self, x1, y1)
+            --print("Clicked", object)
+            if object.visibilityFunction then
+                onClickFunction(self, x1, y1) --can't be button b/c that stack overflows.
+            end
+        end
+    end
+
+    object.setOnRelease = function(onReleaseFunction)
+        object.focusable = true
+        object.onRelease = function(self, x1, y1)
+            --print("Released", object)
+            if object.visibilityFunction then
+                onReleaseFunction(self, x1, y1) --can't be button b/c that stack overflows.
+            end
+        end
     end
     
     object.x = x
@@ -206,6 +288,9 @@ function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunctio
     object.setMaskFunction = setMaskFunction
     object.maskFunction = maskFunctionNoOp --call this each frame to get the mask to pass to render func.
     object.className = classNames.OBJECT
+    object.onClick = NOOP
+    object.onRelease = NOOP
+    -- print("\nCreating object", lwl.dumpObject(object))
     return object
 end
 
@@ -224,42 +309,26 @@ end
 ---@    Takes three arguments: the object, the x coordinate of the mouse click, and the y coordinate of the mouse click.
 ---@return table the button
 function lwui.buildButton(x, y, width, height, visibilityFunction, renderFunction, onClick, onRelease)--todo order changed, update calls.
-    if not (onRelease) then onRelease = NOOP end
-    if not (onClick) then onClick = NOOP end
     local button
-
-    local function buttonClick(self, x1, y1)
-        if button.visibilityFunction then
-            onClick(self, x1, y1) --can't be button b/c that stack overflows.
-        end
-    end
-
-    local function buttonRelease(self, x1, y1)
-        if button.visibilityFunction then
-            onRelease(self, x1, y1) --can't be button b/c that stack overflows.
-        end
-    end
     
-    local function renderButton()
-        local hovering = false
-        local mousePos = Hyperspace.Mouse.position
-        local buttonMask = button.maskFunction()
-        --print("rendering button ", button.getPos().x)
-        if lwui.isWithinMask(mousePos, buttonMask) then
-            hovering = true
-            if not (lwui.mHoveredButton == button) then
-                --print("button_hovered ", button)
-                lwui.mHoveredButton = button
-            end
-        end
-        renderFunction(button)
-        return hovering
+    local function renderButton(mask)
+        local hovered = renderFunction(mask)
+        -- if hovering then
+        -- print("rendering button", x, y, hovered)
+        -- end
+        return hovered
     end
-    
+
     button = lwui.buildObject(x, y, width, height, visibilityFunction, renderButton)
-    button.onClick = buttonClick
-    button.onRelease = buttonRelease
+    
+    if onClick then
+        button.setOnClick(onClick)
+    end
+    if onRelease then
+        button.setOnRelease(onRelease)
+    end
     button.className = classNames.BUTTON
+    -- print("\nCreating button", lwl.dumpObject(button))
     return button
 end
 
@@ -300,7 +369,7 @@ function lwui.buildContainer(x, y, width, height, visibilityFunction, renderFunc
     local container
     --Append container rendering behavior to whatever function the user wants (if any) to show up as the container's background.
     local function renderContainer(mask)
-        renderFunction(container)
+        local hovered = renderFunction(container)
         local hovering = false
         --todo Render contents, shifting window to cut off everything outside it., setting hovering to true as in the tab render
         --This will obfuscate the fact that buttons are wonky near container edges, so I should TODO go back and fix this.
@@ -317,7 +386,10 @@ function lwui.buildContainer(x, y, width, height, visibilityFunction, renderFunc
             end
             i = i + 1
         end
-        return hovering
+        -- if hovering then
+        -- print("rendering container", x, y, hovering)
+        -- end
+        return hovering or hovered
     end
     
     --This should be called once the thing is created with the default maskFunction
@@ -332,6 +404,14 @@ function lwui.buildContainer(x, y, width, height, visibilityFunction, renderFunc
     end
     
     local function addObject(object)
+        if object == nil then
+            print("Container at ", container.x, container.y, "Registered nil object!") --TODO add this back
+            return
+        end
+        -- print("addobject", object)
+        -- if object then
+        --     print("addobject ", lwl.dumpObject(object, 2))
+        -- end
         if not container.renderOutsideBounds then
             object.setMaskFunction(combineMasks(container, object))
         end
@@ -389,16 +469,21 @@ end
 --This type of container does not respect its contents x and y position, and controls them itself.
 --You can't create this type of container with contents in the constructor, they must be added later with addObject() --TODO also this new style fixes this!
 --Maybe don't use dynamicHeightTextBoxes inside positional containers, they will bully your other items.
+--todo might be an issue where sizeToContent=false causes issues
 function lwui.buildVerticalContainer(x, y, width, height, visibilityFunction, renderFunction, objects, renderOutsideBounds, sizeToContent, padding)
     local container
     local function verticalSnapRender(maskFunction)
-        renderFunction(maskFunction)
+        local hovering = renderFunction(maskFunction)
         local maxPos = 0
         for i=1,#container.objects do
             local object = container.objects[i]
             object.y = maxPos
             maxPos = maxPos + container.padding + object.height
         end
+        -- if hovering then
+        -- print("Rendering vcontainer", hovering)
+        -- end
+        return hovering
     end
     container = lwui.buildContainer(x, y, width, height, visibilityFunction, verticalSnapRender, objects, renderOutsideBounds, sizeToContent)
     container.padding = padding
@@ -409,13 +494,17 @@ end
 function lwui.buildHorizontalContainer(x, y, width, height, visibilityFunction, renderFunction, objects, renderOutsideBounds, sizeToContent, padding)
     local container
     local function horizontalSnapRender(maskFunction)
-        renderFunction(maskFunction)
+        local hovering = renderFunction(maskFunction)
         local maxPos = 0
         for i=1,#container.objects do
             local object = container.objects[i]
             object.x = maxPos
             maxPos = maxPos + container.padding + object.width
         end
+        -- if hovering then
+        -- print("Rendering hcontainer", hovering)
+        -- end
+        return hovering
     end
     container = lwui.buildContainer(x, y, width, height, visibilityFunction, horizontalSnapRender, objects, renderOutsideBounds, sizeToContent)
     container.padding = padding
@@ -566,7 +655,11 @@ function lwui.buildItem(name, itemType, width, height, visibilityFunction, rende
             item.x = item.containingButton.getPos().x
             item.y = item.containingButton.getPos().y
         end
-        renderFunction(item)
+        local hovering = renderFunction(item)
+        -- if hovering then
+        -- print("Rendering item", name, hovering)
+        -- end
+        return hovering
     end
     
     local function itemMask()
@@ -661,11 +754,15 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
     end
     
     local function buttonRender() --todo make render args consistent cross all these.
-        renderFunction(button)
+        local hovering = renderFunction(button)
         if (button.item) then
             --print("rendering item ", button.item.name)
             button.item.renderFunction(button.item)
         end
+        -- if hovering then
+        -- print("Rendering ibutton", name, hovering)
+        -- end
+        return hovering
     end
     
     button = lwui.buildButton(x, y, width, height, visibilityFunction, buttonRender, onClick, onRelease)
@@ -691,7 +788,10 @@ local function buildTextBox(x, y, width, height, visibilityFunction, renderFunct
     
     local function renderText()
         local mask = textBox.maskFunction()
-        renderFunction(textBox)
+        local hovering = renderFunction(textBox)--todo should this be the mask instead?
+        -- if hovering then
+        -- print("Rendering text box", textBox.text, hovering)
+        -- end
         --todo stencil this out, text has no interactivity so it's fine. based on mask.
         Graphics.CSurface.GL_PushStencilMode()
         Graphics.CSurface.GL_SetStencilMode(1,1,1)
@@ -709,6 +809,7 @@ local function buildTextBox(x, y, width, height, visibilityFunction, renderFunct
         Graphics.CSurface.GL_SetColor(oldColor)
         Graphics.CSurface.GL_SetStencilMode(0,1,1)
         Graphics.CSurface.GL_PopStencilMode()
+        return hovering
     end
     
     textBox = lwui.buildObject(x, y, width, height, visibilityFunction, renderText)
@@ -726,7 +827,11 @@ function lwui.buildDynamicHeightTextBox(x, y, width, height, visibilityFunction,
     local function expandingRenderFunction()
         local lowestY = Graphics.freetype.easy_printAutoNewlines(textBox.fontSize, 5000, textBox.getPos().y, textBox.width, textBox.text).y
         textBox.height = lowestY - textBox.getPos().y
-        renderFunction(textBox)
+        local hovering = renderFunction(textBox)
+        -- if hovering then
+        -- print("Rendering dynamic text box", textBox.text, hovering)
+        -- end
+        return hovering
     end
     
     textBox = buildTextBox(x, y, width, height, visibilityFunction, expandingRenderFunction, fontSize)
@@ -738,7 +843,10 @@ end
 function lwui.buildFixedTextBox(x, y, width, height, visibilityFunction, renderFunction, maxFontSize)
     local textBox
     local function scalingFontRenderFunction()
-        renderFunction(textBox)
+        local hovering = renderFunction(textBox)
+        -- if hovering then
+        -- print("Rendering fixed text box", textBox.text, hovering)
+        -- end
         --textBox.text = textBox.text.."f"
         if (#textBox.text > textBox.lastLength) then
             textBox.lastLength = #textBox.text
@@ -758,6 +866,7 @@ function lwui.buildFixedTextBox(x, y, width, height, visibilityFunction, renderF
                 textBox.fontSize = textBox.fontSize + 1
             end
         end
+        return hovering
     end
     
     textBox = buildTextBox(x, y, width, height, visibilityFunction, scalingFontRenderFunction, maxFontSize)
@@ -781,7 +890,7 @@ function lwui.buildToggleButton(x, y, width, height, visibilityFunction, renderF
     local function buttonClick(self)
         self.state = not self.state
         onClick(self, self.state)
-    end --todo move next to buildButton
+    end
     
     button = lwui.buildButton(x, y, width, height, visibilityFunction, renderFunction, buttonClick, NOOP)
     button.className = classNames.TOGGLE_BUTTON
@@ -993,10 +1102,15 @@ local function renderObjects(layerName)
     Graphics.CSurface.GL_PushMatrix()
     local i = 1
     for _, object in ipairs(mTopLevelRenderLists[layerName]) do
-        --print("render object "..i.." on layer "..layerName)
-        if object.renderFunction(object) then
+        local hovered = object.renderFunction(object)
+        if hovered then
             hovering = true
         end
+        -- if (hovered) then
+        --     print("render object "..i.." on layer "..layerName, "hovered=", hovered, lwl.dumpObject(object))
+        -- else
+        --     -- print("render object "..i.." on layer "..layerName, "hovered=", hovered)
+        -- end
         i = i + 1
     end
     if not hovering and mLayersWithoutHover < 100 then --todo probably some reason this is large, kludgy.
@@ -1005,10 +1119,12 @@ local function renderObjects(layerName)
         mLayersWithoutHover = 0
     end
     if (lwui.mHoveredButton ~= nil and mLayersWithoutHover > 2 * lwl.countKeys(mTopLevelRenderLists)) then
-        --print("Went ", mLayersWithoutHover, "layers without hovering, setting hover to nil.")
+        -- print("Went ", mLayersWithoutHover, "layers without hovering, setting hover to nil.")
         --todo this actually makes things feel laggy on some systems.  Revise.
         lwui.mHoveredButton = nil
     end
+    -- print("Went ", mLayersWithoutHover, "layers without hovering")
+    --print("Hovering:", layerName, hovering, lwui.mHoveredButton, mHoveredScrollContainer)
     Graphics.CSurface.GL_PopMatrix()
 end
 
@@ -1036,6 +1152,7 @@ lwl.safe_script.on_internal_event("lwui_clicked_button", Defines.InternalEvents.
     return Defines.Chain.CONTINUE
 end)
 
+--todo handle nested scroll bars, sideways scrolling, and other things?
 lwl.safe_script.on_internal_event("lwui_scroll_action", Defines.InternalEvents.ON_MOUSE_SCROLL, function(direction)
 -- script.on_internal_event(Defines.InternalEvents.ON_MOUSE_SCROLL, function(direction)
     if not mHoveredScrollContainer then return end
@@ -1044,7 +1161,7 @@ lwl.safe_script.on_internal_event("lwui_scroll_action", Defines.InternalEvents.O
     else
         mHoveredScrollContainer.scrollUp()
     end
-    return Defines.Chain.CONTINUE
+    return Defines.Chain.PREEMPT
 end)
 
 local function registerRenderEvents(eventList)
@@ -1074,7 +1191,7 @@ mHelpTextBox.text = "oh yeah baby this rendered some text and it's really big yo
 lwui.addTopLevelObject(mHelpBarContainer, "MOUSE_CONTROL_PRE")
 lwui.addTopLevelObject(mHelpTextBox, "MOUSE_CONTROL_PRE")
 function lwui.addHelpButton(helpButton)
-    print("Added help button", helpButton.lwuiHelpText)
+    --print("Added help button", helpButton.lwuiHelpText)
     mHelpBarContainer.addObject(helpButton)
 end
 
