@@ -112,9 +112,9 @@ lwui.classNames = {
 local classNames = lwui.classNames
 
 local mTopLevelRenderLists = {}
-lwui.mHoveredButton = nil --todo this means you need to update your CEL in lockstep.  todo change to mHoveredObject
+lwui.mHoveredObject = nil --todo this means you need to update your CEL in lockstep.  todo change to mHoveredObject
 local mHoveredScrollContainer = nil
-lwui.mClickedButton = nil --mouseUp will be called on this. --todo rename
+lwui.mClickedObject = nil --mouseUp will be called on this. --todo rename
 local mItemList = {}
 local mLayersWithoutHover = 0
 
@@ -232,7 +232,7 @@ function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunctio
                     -- if not (lwui.mHoveredObject == object) then
                     --     print("button_hovered ", button)
                     -- end
-                    lwui.mHoveredButton = object
+                    lwui.mHoveredObject = object
                 end
             end
             local internalHover = lwl.resolveToBoolean(renderFunction(object)) --todo this is a hack for this returning a function, TODO fix this by ensuring we don't return functions here.
@@ -710,25 +710,25 @@ function lwui.buildInventoryButton(name, x, y, width, height, visibilityFunction
         local mousePos = Hyperspace.Mouse.position
         if (button.item) then
             button.item.trackMouse = false
-            if (lwui.mHoveredButton and lwui.mHoveredButton.addItem) then
+            if (lwui.mHoveredObject and lwui.mHoveredObject.addItem) then
                 
                 --try swapping them
                 local heldItem = button.item
-                local hoveredItem = lwui.mHoveredButton.item
+                local hoveredItem = lwui.mHoveredObject.item
                 if (hoveredItem) then --todo I can probably write the swap code better than this.
                     button.item = nil
-                    lwui.mHoveredButton.item = nil
-                    if (button.allowedItemsFunction(hoveredItem) and lwui.mHoveredButton.allowedItemsFunction(heldItem)) then
+                    lwui.mHoveredObject.item = nil
+                    if (button.allowedItemsFunction(hoveredItem) and lwui.mHoveredObject.allowedItemsFunction(heldItem)) then
                         button.onItemRemovedFunction(button, heldItem)--todo improve this code.
-                        lwui.mHoveredButton.onItemRemovedFunction(lwui.mHoveredButton, hoveredItem)
+                        lwui.mHoveredObject.onItemRemovedFunction(lwui.mHoveredObject, hoveredItem)
                         button.addItem(hoveredItem)
-                        lwui.mHoveredButton.addItem(heldItem)
+                        lwui.mHoveredObject.addItem(heldItem)
                     else
                         button.item = heldItem
-                        lwui.mHoveredButton.item = hoveredItem
+                        lwui.mHoveredObject.item = hoveredItem
                     end
                 else
-                    if (lwui.mHoveredButton.addItem(button.item)) then
+                    if (lwui.mHoveredObject.addItem(button.item)) then
                         button.onItemRemovedFunction(button, button.item)
                         button.item = nil
                     end
@@ -1024,13 +1024,13 @@ function lwui.toggleButtonRenderFunction(off, hoveredOff, on, hoveredOn)
         end
         local enabled = toggleButton.state
         if enabled then
-            if lwui.mHoveredButton == toggleButton then
+            if lwui.mHoveredObject == toggleButton then
                 return 4
             else
                 return 3
             end
         else
-            if lwui.mHoveredButton == toggleButton then
+            if lwui.mHoveredObject == toggleButton then
                 return 2
             else
                 return 1
@@ -1061,7 +1061,7 @@ function lwui.travellerScrollNubRender() --TODO only works for vertical ones.
         local mask = object.maskFunction()
         local nubColor = GL_WHITE
         --If object is hovered
-        if lwui.mHoveredButton == object then
+        if lwui.mHoveredObject == object then
             nubColor = GL_TRAVELLER_BLUE
         end
         --If object cannae scroll
@@ -1118,13 +1118,13 @@ local function renderObjects(layerName)
     else
         mLayersWithoutHover = 0
     end
-    if (lwui.mHoveredButton ~= nil and mLayersWithoutHover > 2 * lwl.countKeys(mTopLevelRenderLists)) then
+    if (lwui.mHoveredObject ~= nil and mLayersWithoutHover > 2 * lwl.countKeys(mTopLevelRenderLists)) then
         -- print("Went ", mLayersWithoutHover, "layers without hovering, setting hover to nil.")
         --todo this actually makes things feel laggy on some systems.  Revise.
-        lwui.mHoveredButton = nil
+        lwui.mHoveredObject = nil
     end
     -- print("Went ", mLayersWithoutHover, "layers without hovering")
-    --print("Hovering:", layerName, hovering, lwui.mHoveredButton, mHoveredScrollContainer)
+    --print("Hovering:", layerName, hovering, lwui.mHoveredObject, mHoveredScrollContainer)
     Graphics.CSurface.GL_PopMatrix()
 end
 
@@ -1133,11 +1133,11 @@ end
 lwl.safe_script.on_internal_event("lwui_hovered_button", Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
 -- script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
     local mousePos = Hyperspace.Mouse.position
-    --print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredButton)
-    if lwui.mHoveredButton then
-        --print("clicked ", lwui.mHoveredButton)
-        lwui.mHoveredButton.onClick(lwui.mHoveredButton, x, y)
-        lwui.mClickedButton = lwui.mHoveredButton
+    --print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredObject)
+    if lwui.mHoveredObject then
+        --print("clicked ", lwui.mHoveredObject)
+        lwui.mHoveredObject.onClick(lwui.mHoveredObject, x, y)
+        lwui.mClickedObject = lwui.mHoveredObject
     end
 
     return Defines.Chain.CONTINUE
@@ -1145,9 +1145,9 @@ end)
 
 lwl.safe_script.on_internal_event("lwui_clicked_button", Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x,y)
 -- script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x,y)
-    if (lwui.mClickedButton) then
-        lwui.mClickedButton.onRelease(lwui.mClickedButton, x, y)
-        lwui.mClickedButton = nil
+    if (lwui.mClickedObject) then
+        lwui.mClickedObject.onRelease(lwui.mClickedObject, x, y)
+        lwui.mClickedObject = nil
     end
     return Defines.Chain.CONTINUE
 end)
@@ -1197,8 +1197,8 @@ end
 
 lwl.safe_script.on_internal_event("lwui_render_help", Defines.InternalEvents.ON_TICK, function()
 -- script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
-    if lwui.mHoveredButton then
-        local helpText = lwui.mHoveredButton.lwuiHelpText
+    if lwui.mHoveredObject then
+        local helpText = lwui.mHoveredObject.lwuiHelpText
         if helpText then
             mHelpTextBox.text = helpText
             mRenderHelp = true
