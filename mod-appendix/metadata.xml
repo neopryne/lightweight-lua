@@ -2,7 +2,7 @@
   <title><![CDATA[ Lightweight Lua]]></title>
   <threadUrl><![CDATA[https://ftlmultiverse.boards.net/thread/115/mv-5-less-managable-crew]]></threadUrl>
   <author><![CDATA[ Limrix ]]></author>
-  <version><![CDATA[ 0.15 ]]></version>
+  <version><![CDATA[ 0.15.1 ]]></version>
   <description>
 <![CDATA[
 # Lightweight Lua
@@ -26,6 +26,10 @@ Informs you of when things happen that are annoying to track.  Supports:
 
 ### Meta and Player Variable Structure
 Gives an object-oriented way of registering persistent variables.  This keeps track of how many of a kind of object are stored, and what properties those objects have.
+
+### Safe Script
+    A wrapper around calls to script that allows you to change or remove the callback.
+    Required for runtime hotswapping of code so that you can deregister the previous iteration.
 
 ### Status Effects Library
 Apply statuses to crew, such as bleed, corruption, and confusion. Used in Grimdark Expy.
