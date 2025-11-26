@@ -155,6 +155,21 @@ height: Vertical size
 visibilityFunction: lets you have further control over when you want things to show up, like in specific menu tabs.
 renderFunction: 
 --]]
+---Creates a generic lwui object.  This is a rectangle that can be given lots of properties.  It renders according to the space it is in.
+---Actually... Ugh.  lwui has no concept of space right now, so anything on the ship layers will render on both ships.
+---I guess I need to fix that before someone (me) runs into that.  I had only been using lwui for global stuff like player interfaces.
+---
+---
+---Properties 
+---
+---@param x number (in pixels) x position relative to this object's container.  If top level, is x position.
+---@param y number (in pixels) y position relative to this object's container.  If top level, is y position.
+---@param width number in pixels
+---@param height number in pixels
+---@param visibilityFunction function returns true if this object should render, and false otherwise.  Takes no arguments.
+---@param renderFunction function Takes one argument, which will be the created object.  This is where you put your render code,
+---@ such as lwui.solidRectRenderFunction.
+---@return table the constructed object
 function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunction)
     local object = {}
 
@@ -195,6 +210,19 @@ function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunctio
 end
 
 --onClick(x, y): args being passed are global position of the cursor when click occurs.
+---comment
+---@param x number (in pixels) x position relative to this object's container.  If top level, is x position.
+---@param y number (in pixels) y position relative to this object's container.  If top level, is y position.
+---@param width number in pixels
+---@param height number in pixels
+---@param visibilityFunction function returns true if this object should render, and false otherwise.  Takes no arguments.
+---@param renderFunction function Takes one argument, which will be the created object.  This is where you put your render code,
+---@ such as lwui.solidRectRenderFunction.
+---@param onClick function|nil Optional function called when button is clicked. Takes three arguments: the object, the x coordinate
+---@    of the mouse click, and the y coordinate of the mouse click.
+---@param onRelease function|nil Optional function called when the mouse is released after clicking this button.
+---@    Takes three arguments: the object, the x coordinate of the mouse click, and the y coordinate of the mouse click.
+---@return table the button
 function lwui.buildButton(x, y, width, height, visibilityFunction, renderFunction, onClick, onRelease)--todo order changed, update calls.
     if not (onRelease) then onRelease = NOOP end
     if not (onClick) then onClick = NOOP end
@@ -985,7 +1013,6 @@ local function renderObjects(layerName)
 end
 
 --item ticking should be left up to the consumers.
-
 --yeah, select those items and hold them!
 lwl.safe_script.on_internal_event("lwui_hovered_button", Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
 -- script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
@@ -1024,8 +1051,8 @@ local function registerRenderEvents(eventList)
     for name, _ in pairs(eventList) do
         mTopLevelRenderLists[name] = {}
         mTopLevelRenderLists[name.."_PRE"] = {}
-        -- lwl.safe_script.on_render_event("lwui_"..name.."render_layer", Defines.RenderEvents[name], function(_)
-        script.on_render_event(Defines.RenderEvents[name], function(_)
+        lwl.safe_script.on_render_event("lwui_"..name.."render_layer", Defines.RenderEvents[name], function(_)
+        -- script.on_render_event(Defines.RenderEvents[name], function(_)
             renderObjects(name .. "_PRE")
         end, function(_)
             renderObjects(name)
@@ -1051,8 +1078,8 @@ function lwui.addHelpButton(helpButton)
     mHelpBarContainer.addObject(helpButton)
 end
 
--- lwl.safe_script.on_internal_event("lwui_render_help", Defines.InternalEvents.ON_TICK, function()
-script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
+lwl.safe_script.on_internal_event("lwui_render_help", Defines.InternalEvents.ON_TICK, function()
+-- script.on_internal_event(Defines.InternalEvents.ON_TICK, function()
     if lwui.mHoveredButton then
         local helpText = lwui.mHoveredButton.lwuiHelpText
         if helpText then
