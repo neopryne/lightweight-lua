@@ -112,8 +112,10 @@ lwui.classNames = {
 local classNames = lwui.classNames
 
 local mTopLevelRenderLists = {}
+local mLayersPerTick
 lwui.mHoveredObject = nil --todo this means you need to update your CEL in lockstep.  todo change to mHoveredObject
 local mHoveredScrollContainer = nil
+local mScrollContainerHoverTimer = 0 --in layers
 lwui.mClickedObject = nil --mouseUp will be called on this. --todo rename
 local mItemList = {}
 local mLayersWithoutHover = 0
@@ -664,6 +666,7 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
         local mousePos = Hyperspace.Mouse.position
         if lwui.isWithinMask(mousePos, scrollContainer.maskFunction()) then
             mHoveredScrollContainer = scrollContainer
+            mScrollContainerHoverTimer = 0
         end
         
         local scrollWindowRange = maxWindowScroll() - minWindowScroll()
@@ -1231,6 +1234,7 @@ local function renderObjects(layerName)
         local hovered = object.renderFunction(object)
         if hovered then
             hovering = true
+            mLayersWithoutHover = 0
         end
         -- if (hovered) then
         --     print("render object "..i.." on layer "..layerName, "hovered=", hovered, lwl.dumpObject(object))
@@ -1239,15 +1243,20 @@ local function renderObjects(layerName)
         -- end
         i = i + 1
     end
-    if not hovering and mLayersWithoutHover < 100 then --todo probably some reason this is large, kludgy.
+    if not hovering and mLayersWithoutHover < 300 then --todo probably some reason this is large, kludgy.
         mLayersWithoutHover = mLayersWithoutHover + 1
-    else
-        mLayersWithoutHover = 0
     end
-    if (lwui.mHoveredObject ~= nil and mLayersWithoutHover > 2 * lwl.countKeys(mTopLevelRenderLists)) then
+    if mScrollContainerHoverTimer < 300 then --todo probably some reason this is large, kludgy.
+        mScrollContainerHoverTimer = mScrollContainerHoverTimer + 1
+    end
+
+    if (lwui.mHoveredObject ~= nil and mLayersWithoutHover > mLayersPerTick) then
         -- print("Went ", mLayersWithoutHover, "layers without hovering, setting hover to nil.")
         --todo this actually makes things feel laggy on some systems.  Revise.
         lwui.mHoveredObject = nil
+    end
+    if mHoveredScrollContainer ~= nil and mScrollContainerHoverTimer > mLayersPerTick then
+        mHoveredScrollContainer = nil
     end
     -- print("Went ", mLayersWithoutHover, "layers without hovering")
     --print("Hovering:", layerName, hovering, lwui.mHoveredObject, mHoveredScrollContainer)
@@ -1301,6 +1310,7 @@ local function registerRenderEvents(eventList)
             renderObjects(name)
         end)
     end
+    mLayersPerTick = 2 * lwl.countKeys(mTopLevelRenderLists)
 end
 registerRenderEvents(RENDER_LAYERS)
 
