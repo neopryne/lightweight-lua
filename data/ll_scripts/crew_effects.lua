@@ -46,21 +46,26 @@ local get_room_at_location = mods.multiverse.get_room_at_location
 ---| '"corruption"'
 ---| '"confusion"'
 ---| '"teleportitis"'
+---| '"slimed"'
 
 ---@class (Exact) StatusEffect
 ---@field name EffectType
 ---@field value number
 ---@field resist number
 ---@field icon table|nil
+---@field onEnd function
+---@field onTick function
+---@field onRender function
 
 ---@class (Exact) ListCrew
 ---@field id number
 ---@field bleed StatusEffect
 ---@field corrpution StatusEffect
 ---@field confusion StatusEffect
+---@field teleportitis StatusEffect
+---@field slimed StatusEffect
 
 --Tracks an internal list of all crew, updates it when crew are lost or gained.
---Not impelmenting persistance as a core feature.  You feel like reloading to clear statuses, go for it.
 local TAG = "LW Crew Effects"
 local function NOOP() end
 local FIRST_SYMBOL_RELATIVE_X = -9
@@ -74,6 +79,7 @@ lwce.KEY_BLEED = "bleed"
 lwce.KEY_CONFUSION = "confusion"
 lwce.KEY_CORRUPTION = "corruption"
 lwce.KEY_TELEPORTITIS = "teleportitis"
+lwce.KEY_SLIMED = "slimed"
 
 --Adding a button which describes all the effects when hovered.
 --A crew object will look something like this effect_crew = {id=, bleed={}, effect2={}}
@@ -153,11 +159,10 @@ end
 local function tickConfusion(effect_crew)
     local confusion = effect_crew.confusion
     if confusion.value > 0 then
-        local crewmem = lwl.getCrewById(effect_crew.id)
+        --local crewmem = lwl.getCrewById(effect_crew.id)
         --print(crewmem:GetName(), "has confusion", confusion.value)
         tickDownEffect(effect_crew, confusion)
     end
-    --todo this needs to use the HS statboost logic.
 end
 
 --clear any remaining stat boost
@@ -194,7 +199,7 @@ end
 
 
 ------------------TELEPORTITIS------------------
-local function ticktTeleportitis(effect_crew)
+local function tickTeleportitis(effect_crew)
     local teleportitis = effect_crew.teleportitis
     if teleportitis.value > 0 then
         local teleportitisStability = (100 + Hyperspace.playerVariables.stability) / 17
@@ -221,6 +226,26 @@ local function ticktTeleportitis(effect_crew)
             teleportitis.instability = 0
             --print("Teleporting", shipManager.iShipId)
         end
+    end
+end
+
+------------------SLIMED------------------
+local function tickSlimed(effect_crew)
+    local slimed = effect_crew.slimed
+    if slimed.value > 0 then
+        --local crewmem = lwl.getCrewById(effect_crew.id)
+        --print(crewmem:GetName(), "has slimed", slimed.value)
+        tickDownEffect(effect_crew, slimed)
+    end
+end
+
+--clear any remaining stat boost
+local function endSlimed(effect_crew)
+    if (effect_crew.slimed.speedStatBoostId) then
+        lwsb.removeStatBoost(effect_crew.slimed.speedStatBoostId)
+    end
+    if (effect_crew.slimed.damageStatBoostId) then
+        lwsb.removeStatBoost(effect_crew.slimed.damageStatBoostId)
     end
 end
 
@@ -323,6 +348,20 @@ function mods.lightweight_crew_effects.applyTeleportitis(crewmem, amount)
     return applyEffect(crewmem, amount, lwce.KEY_TELEPORTITIS)
 end
 
+---Apply amount of slimed to crew. Returns a the new status.
+---@param crewmem Hyperspace.CrewMember
+---@param amount number
+---@return table|nil 
+function mods.lightweight_crew_effects.applySlimed(crewmem, amount)
+    local effect = applyEffect(crewmem, amount, lwce.KEY_SLIMED)
+    if amount > 0 and effect and effect.value == amount then --If this is a new effect for this crew
+        local crewFilterFunction = lwl.generateCrewFilterFunction(crewmem)
+        effect.speedStatBoostId = lwsb.addStatBoost(Hyperspace.CrewStat.MOVE_SPEED_MULTIPLIER, lwsb.TYPE_NUMERIC, lwsb.ACTION_NUMERIC_MULTIPLY, .8, crewFilterFunction)
+        effect.damageStatBoostId = lwsb.addStatBoost(Hyperspace.CrewStat.DAMAGE_MULTIPLIER, lwsb.TYPE_NUMERIC, lwsb.ACTION_NUMERIC_MULTIPLY, .8, crewFilterFunction)
+    end
+    return effect
+end
+
 ---Returns a status object for the given effect.
 ---@param crewmem Hyperspace.CrewMember
 ---@param effectName EffectType
@@ -344,7 +383,8 @@ end
 lwce.createCrewEffectDefinition(lwce.KEY_BLEED, tickBleed, NOOP, NOOP, 1)
 lwce.createCrewEffectDefinition(lwce.KEY_CONFUSION, tickConfusion, endConfusion, NOOP, 2)
 lwce.createCrewEffectDefinition(lwce.KEY_CORRUPTION, tickCorruption, NOOP, NOOP, 3)
-lwce.createCrewEffectDefinition(lwce.KEY_TELEPORTITIS, ticktTeleportitis, NOOP, NOOP, 4)
+lwce.createCrewEffectDefinition(lwce.KEY_TELEPORTITIS, tickTeleportitis, NOOP, NOOP, 4)
+lwce.createCrewEffectDefinition(lwce.KEY_SLIMED, tickSlimed, endSlimed, NOOP, 5)
 --And when you hover the icons it prints a little popup with effect description and remaining duration
 
 
@@ -506,6 +546,7 @@ local function onTick()
             corruptionEffect.didDeathSave = false
             local teleEffect = lwce.applyTeleportitis(realCrew, 0)
             teleEffect.instability = 0
+            lwce.applySlimed(realCrew, 0)
         end
         --print("EFFECT after adding ", crewId, " there are now ", #mCrewList, " crew")
     end
@@ -537,6 +578,6 @@ end)
 -----------------------------LEGEND BUTTON--------------------------------------
 -- print("bottom of lwce1")
 local mHelpButton = lwui.buildButton(1, 0, 11, 11, lwui.alwaysOnVisibilityFunction, lwui.spriteRenderFunction("icons/help/effects_help.png"), NOOP, NOOP)
-mHelpButton.lwuiHelpText = "LWCE Statuses\nBleed:\n    Temporary flat damage over time\n    Resist reduces stacks gained and damage taken\nConfusion:\n    Crew becomes uncontrollable.\n    Resist reduces stacks gained.\nCorruption:\n    Permanent stacking damage over time\n    Resist reduces stacks gained\nTeleportitis:\n    Crew occasionally randomly teleports to another location."
+mHelpButton.lwuiHelpText = "LWCE Statuses\nBleed:\n    Temporary flat damage over time\n    Resist reduces stacks gained and damage taken\nConfusion:\n    Crew becomes uncontrollable.\n    Resist reduces stacks gained.\nCorruption:\n    Permanent stacking damage over time\n    Resist reduces stacks gained\nTeleportitis:\n    Crew occasionally randomly teleports to another location.\nSlimed:\n    Reduced move speed and attack. (80%)"
 -- print("bottom of lwce2")
 lwui.addHelpButton(mHelpButton)

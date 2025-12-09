@@ -982,6 +982,7 @@ local function indentPrint(text, indentLevel)
     print(prefix..text)
 end
 
+--todo I'm not using this anywhere, why not?  Logging doesn't log events anymore, it just prints a standard message.
 function lwl.printEvent(locationEvent)
     if lwl.PRINT_EVENTS then
         lwl.printEventInternal(locationEvent, 0)

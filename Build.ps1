@@ -47,6 +47,7 @@ if (Test-Path $relativeFile) {
 
 # Run patching command
 Push-Location $ftlmanDir
+# The names of your multiverse mods may differ, replace the names if needed.
 .\ftlman.exe patch `
     "Multiverse 5.5 - Assets (Patch above Data).zip" `
     "Multiverse 5.5 - Data.zip" `

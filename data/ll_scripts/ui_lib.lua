@@ -2,8 +2,12 @@
 Usage:
 
 local lwui = mods.lightweight_user_interface
-myTextBox = lwui.buildFixedTextBox(660, 348, 220, 35, , 18)
+local myTextBox = lwui.buildFixedTextBox(660, 348, 220, 35, , 18)
 lwui.addTopLevelObject(mDescriptionHeader, "SHIP_SPARKS")
+
+--todo swap to spriteRenderFunction with the image of your choice.
+local myButton = lwui.buildButton(300, 400, 15, 15, lwui.alwaysOnVisibilityFunction, lwui.solidRectRenderFunction(Graphics.GL_Color(.2, .81, .8, 1)), function() print("button clicked!") end, function() print("button released.") end)
+lwui.addTopLevelObject(myButton, "SHIP_SPARKS")
 
 Objects just render
 Buttons can be hovered and clicked
@@ -1060,6 +1064,10 @@ function lwui.solidRectRenderFunction(glColor)
     end
 end
 
+---To make a button look disabled, have the main color be lighter.  To make it look enabled, have the main color be darker.
+---@param object any
+---@param mainColor any
+---@param frameColor any
 function lwui.inventoryButtonCustomColors(object, mainColor, frameColor)
     if object == nil then
         lwl.logError(TAG, "in inventoryButtonDefault: Object was nil!")

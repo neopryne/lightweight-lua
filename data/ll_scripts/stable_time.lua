@@ -17,10 +17,13 @@ LWST is a library that handles framerate differences for you, giving you consist
 
 Usage:
     local lwst = mods.lightweight_stable_time
-    lwst.reg
+    lwst.registerOnTick("your thing name", function() [do stuff] end, false)
 ]]
 
---todo I need to update this to require a tag like safe_script.
+---comment
+---@param identifier any
+---@param onTick any
+---@param tickWhilePaused any
 lwst.registerOnTick = function(identifier, onTick, tickWhilePaused)
     mSetupRequested = true
     if tickWhilePaused then
