@@ -26,6 +26,8 @@ Teleportitis:
 
 Right now I don't have a ton to do with confusion, as it only affects player crew, and equipment
 are also only for player crew.
+
+todo currently confusion doesn't work properly when loaded in a run.
 --]]
 if (not mods) then mods = {} end
 mods.lightweight_crew_effects = {}
@@ -577,7 +579,9 @@ end)
 
 -----------------------------LEGEND BUTTON--------------------------------------
 -- print("bottom of lwce1")
+local STATUS_EFFECT_HELP_TEXT = "lwl_status_effect_help_text"
 local mHelpButton = lwui.buildButton(1, 0, 11, 11, lwui.alwaysOnVisibilityFunction, lwui.spriteRenderFunction("icons/help/effects_help.png"), NOOP, NOOP)
-mHelpButton.lwuiHelpText = "LWCE Statuses\nBleed:\n    Temporary flat damage over time\n    Resist reduces stacks gained and damage taken\nConfusion:\n    Crew becomes uncontrollable.\n    Resist reduces stacks gained.\nCorruption:\n    Permanent stacking damage over time\n    Resist reduces stacks gained\nTeleportitis:\n    Crew occasionally randomly teleports to another location.\nSlimed:\n    Reduced move speed and attack. (80%)"
+mHelpButton.lwuiHelpText = Hyperspace.Text:GetText(STATUS_EFFECT_HELP_TEXT)
+
 -- print("bottom of lwce2")
 lwui.addHelpButton(mHelpButton)

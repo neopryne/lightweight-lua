@@ -3,26 +3,26 @@
 <FTL>
     <mod:findName type="event" name="COMBAT_CHECK_TOGGLE">
         <mod-append:choice req="lwl_render_blood_splatters" lvl="0" max_lvl="0" blue="false">
-            <text>Enable blood splatters.</text>
+            <text id="lwl_blood_enable_text"/>
             <event>
                 <metaVariable name="lwl_render_blood_splatters" op="set" value="1"/>
             </event>
         </mod-append:choice>
         <mod-append:choice req="lwl_render_blood_splatters" lvl="1" blue="false">
-            <text>Disable blood splatters.</text>
+            <text id="lwl_blood_disable_text"/>
             <event>
                 <metaVariable name="lwl_render_blood_splatters" op="set" value="0"/>
             </event>
         </mod-append:choice>
 
         <mod-append:choice req="lwl_clone_auto_pathing" lvl="0" max_lvl="0" blue="false">
-            <text>Enable auto-path after clone.</text>
+            <text id="lwl_auto_path_after_clone_enable_text"/>
             <event>
                 <metaVariable name="lwl_clone_auto_pathing" op="set" value="1"/>
             </event>
         </mod-append:choice>
         <mod-append:choice req="lwl_clone_auto_pathing" lvl="1" blue="false">
-            <text>Disable auto-path after clone.</text>
+            <text id="lwl_auto_path_after_clone_disable_text"/>
             <event>
                 <metaVariable name="lwl_clone_auto_pathing" op="set" value="0"/>
             </event>
