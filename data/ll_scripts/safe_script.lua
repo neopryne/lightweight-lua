@@ -18,6 +18,7 @@ local lwl = mods.lightweight_lua
 
 --Dear got we need varargs, this entire method is a huge kludge to work around this HS quirk.
 local function safe_varargs_standin_register_event(definesEvent, identifier)
+    print("Attempting to register", definesEvent, "Errors are expected and normal.")
 
     local function makeWrapper(n)
         if n == 0 then
@@ -63,7 +64,7 @@ local function safe_varargs_standin_register_event(definesEvent, identifier)
             print("✅ Successfully registered wrapper with", n, "args for ", definesEvent)
             return eventFunctionWrapper, n
         else
-            -- print("❌ Failed to register wrapper with", n, "args:", err)
+            print("Attempt to register function with", n, "args for", definesEvent, "failed, retrying...")
         end
     end
 

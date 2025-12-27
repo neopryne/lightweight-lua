@@ -14,12 +14,16 @@ PS: I Vim Pulchritude Imagination u
 
 
 ]]
---mods.lightweight_lua = {}
+--todo remove all vCrewList usage, it's flaky.
+local vter = mods.multiverse.vter
+local get_room_at_location = mods.multiverse.get_room_at_location
+
 local lwl = mods.lightweight_lua
 if not mods.brightness then
     error("Brightness Particles was not patched, or was patched after Lightweight Lua.  Install it properly or face undefined behavior.")
 end
 
+--#region internal types
 ---@alias TrackingType
 ---| '"all"'
 ---| '"crew"'
@@ -28,14 +32,12 @@ end
 ---@alias ShipId
 ---| '1'
 ---| '0'
-
---todo remove all vCrewList usage, it's flaky.
-local vter = mods.multiverse.vter
-local get_room_at_location = mods.multiverse.get_room_at_location
+--#endregion internal types
 
 local global = Hyperspace.Global.GetInstance()
 local mCrewMemberFactory = global:GetCrewFactory()
 
+--#region defines
 local TAU = math.pi * 2
 local OWNSHIP = 0
 local ENEMY_SHIP = 1
@@ -51,7 +53,8 @@ function lwl.CONTACT_1() return 1 end
 function lwl.UNSELECTED() return 0 end
 function lwl.SELECTED() return 1 end
 function lwl.SELECTED_HOVER() return 2 end
-
+--#endregion defines
+--#region enums
 local SYS_SHIELDS = 0
 local SYS_ENGINES = 1
 local SYS_OXYGEN = 2
@@ -124,12 +127,9 @@ function lwl.SYS_MIND() return SYS_MIND end
 function lwl.SYS_HACKING() return SYS_HACKING end
 ---@return integer
 function lwl.SYS_TEMPORAL() return SYS_TEMPORAL end
+--#endregion enums
 
---This might be overkill, but it works
-function lwl.isPaused()
-    local commandGui = Hyperspace.Global.GetInstance():GetCApp().gui
-    return commandGui.bPaused or commandGui.bAutoPaused or commandGui.event_pause or commandGui.menu_pause
-end
+--#region general utils
 
 ---usage: object = nilSet(object, value)
 ---@param object any
@@ -150,7 +150,20 @@ function lwl.setIfNil(object, value)
     return lwl.nilSet(object, value)
 end
 
---[[  TABLE UTILS  ]]--
+function lwl.floatEquals(f1, f2, epsilon)
+    epsilon = lwl.nilSet(epsilon, .0001)
+    return math.abs(f1-f2) < epsilon
+end
+
+---logical xor.
+---@param a boolean
+---@param b boolean
+---@return boolean
+function lwl.xor(a,b)
+    return (a or b) and (not(a and b))
+end
+--#endregion general utils
+--#region [[  TABLE UTILS  ]]--
 ---for use in printing all of a table
 
 local function dumpObjectInternal(o, depth, maxDepth)
@@ -383,16 +396,6 @@ function lwl.countKeys(table)
     return count
 end
 
----returns false if value is nil and true otherwise.
----@param name string
----@param value integer
----@return boolean
-function lwl.setMetavar(name, value)
-    if (value ~= nil) then
-        Hyperspace.metaVariables[name] = value
-    end
-    return (value ~= nil)
-end
 
 ---returns a merged deep copy of both tables.  Non-table objects will not be deep-copied.
 ---@param t1 table
@@ -412,17 +415,28 @@ function lwl.tableContains(currentTable, value)
     end
     return false
 end
+--#endregion table utils
+--#region hyperverse utils
 
-
----logical xor.
----@param a boolean
----@param b boolean
+---returns false if value is nil and true otherwise.
+---@param name string
+---@param value integer
 ---@return boolean
-function lwl.xor(a,b)
-    return (a or b) and (not(a and b))
+function lwl.setMetavar(name, value)
+    if (name ~= nil) then
+        Hyperspace.metaVariables[name] = value
+    end
+    return (value ~= nil)
 end
 
-
+---Returns the pause state of the game, covering many internal factors.
+---@return boolean
+function lwl.isPaused()
+    local commandGui = Hyperspace.Global.GetInstance():GetCApp().gui
+    return commandGui.bPaused or commandGui.bAutoPaused or commandGui.event_pause or commandGui.menu_pause
+end
+--#endregion
+--#region ramblings
 --[[
 How about a function that takes a argument and tries to make it into a thing?
 Like, assume it's the type you want, and if it's not but can be eval'd, eval it, and if it still has the same value as before, you can't use it.
@@ -431,10 +445,8 @@ Hmm, actually this is annoying, because the thing that you're really looking for
 Loop patterns larger than that quickly get much rarer and harder to check for/find.
 But the longer you've been evaling for, the more [power|resources] you should spend checking for loops.
 ]]
-
-
-
---[[  LOGGING UTILS  ]]--
+--#endregion
+--#region [[  LOGGING UTILS  ]]--
 lwl.LOG_LEVEL = 1 --Higher is more verbose, feel free to modify this.
 --[[
     0 -- NO logs, not even errors, not recommended.
@@ -499,8 +511,67 @@ end
 function lwl.logVerbose(tag, text, optionalLogLevel)
     logInternal(tag, text, 5, optionalLogLevel)
 end
+--#endregion
+--#region ----------------POINT UTILS---------------------
 
---[[  CREW UTILS  ]]--
+---Returns true if two points are near each other
+---@param p1 Hyperspace.Point|Hyperspace.Pointf
+---@param p2 Hyperspace.Point|Hyperspace.Pointf
+---@param epsilon number How far apart they can be, in pixels.
+---@return boolean true if they are at least within epsilon pixels of each other.
+function lwl.pointFuzzyEquals(p1, p2, epsilon) --todo this should actually check the straight distance. As is it's a square.
+    if not epsilon then
+        epsilon = 1
+    end
+    --print("compare xx,yy", p1.x, p2.x, p1.y, p2.y)
+    return lwl.floatEquals(p1.x, p2.x, epsilon) and lwl.floatEquals(p1.y, p2.y, epsilon)
+end
+
+---Returns if a goalPoint actually exists, or is a value that indicates that it doesn't, but they didn't want to put nil.
+---@param goalPoint Hyperspace.Pointf a goal from a CrewMember object
+---@return boolean true if the goal exists, and false if the goal is the dummy, fake one.
+function lwl.goalExists(goalPoint)
+    return not (lwl.floatEquals(goalPoint.x, -1) and lwl.floatEquals(goalPoint.y, -1))
+end
+
+---Returns the distance in pixels between two points.  Pythagorian.
+---@param point1 Hyperspace.Point|Hyperspace.Pointf
+---@param point2 Hyperspace.Point|Hyperspace.Pointf
+---@return number
+function lwl.distanceBetweenPoints(point1, point2)
+    return math.sqrt((point1.x - point2.x)^2 + (point1.y - point2.y)^2)
+end
+
+---Returns a new point given an existing point, an angle, and a distance.
+---@param origin Hyperspace.Point|Hyperspace.Pointf Point to calculate from.
+---@param angle number Angle in radians, 0 is straight right.
+---@param distance number in pixels
+---@return Hyperspace.Pointf the new point relative to the origin
+function lwl.getPoint(origin, angle, distance)
+    return Hyperspace.Pointf(origin.x - (distance * math.cos(angle)), origin.y - (distance * math.sin(angle)))
+end
+
+function lwl.getDistance(origin, target)
+    return math.abs(math.sqrt((origin.x - target.x)^2 + (origin.y - target.y)^2))
+end
+
+---Returns the angle in degrees, 0 being straight up.
+---@param origin Hyperspace.Point|Hyperspace.Pointf
+---@param target Hyperspace.Point|Hyperspace.Pointf
+---@return number FTL Angle in the direction of target from origin.
+function lwl.getAngle(origin, target)
+    local deltaX = origin.x - target.x
+    local deltaY = origin.y - target.y
+    local innerAngle = math.atan(deltaY, deltaX)
+    --print("Angle is ", innerAngle)
+    return innerAngle
+end
+--#endregion ----------------END POINT UTILS---------------------
+--#region [[  CREW UTILS  ]]--
+function lwl.isMoving(crewmem)
+    return crewmem.speed_x + crewmem.speed_y > 0
+end
+
 ---@param crewmem Hyperspace.CrewMember
 ---@param name string
 function lwl.setCrewName(crewmem, name)
@@ -656,6 +727,13 @@ function lwl.getRoomAtCrewmember(crewmem)
     return room
 end
 
+---This doesn't actually do anything, crew speed is screen speed.
+function lwl.crewSpeedToScreenSpeed(crewSpeed)
+    return crewSpeed
+end
+--#endregion crew utils
+--#region ship utils
+
 ---If two rooms have multiple doors, returns all of them.
 ---@param shipId ShipId
 ---@param roomIdFirst number
@@ -767,25 +845,22 @@ function lwl.damageEnemyCrewInSameRoom(activeCrew, amount, stunTime)
     end
 end
 
-local mTeleportConditions = {}
-
 --nil if none exists.
-function mods.lightweight_lua.getRoomAtLocation(position)
+function lwl.getRoomAtLocation(position)
     --Ships in mv don't overlap, so check both ships --poinf?
     local retRoom = get_room_at_location(Hyperspace.ships(OWNSHIP), lwl.convertMousePositionToPlayerShipPosition(position), true)
     if retRoom then return retRoom end
     return get_room_at_location(Hyperspace.ships(ENEMY_SHIP), lwl.convertMousePositionToEnemyShipPosition(position), true)
 end
+--#endregion ship utils
+--#region [[  GEOMETRY UTILS  ]]--
 
---[[  GEOMETRY UTILS  ]]--
----
 ---@param pointf Hyperspace.Pointf
 ---@return Hyperspace.Point
 function lwl.pointfToPoint(pointf)
     return Hyperspace.Point(math.floor(pointf.x), math.floor(pointf.y))
 end
 
----
 ---@param point Hyperspace.Point
 ---@return Hyperspace.Pointf
 function lwl.pointToPointf(point)
@@ -800,10 +875,6 @@ function mods.lightweight_lua.pointEquals(point1, point2)
     return point1.x == point2.x and point1.y == point2.y
 end
 
-function lwl.floatCompare(a, b, epsilon)
-    epsilon = epsilon or 1e-6
-    return a == b or math.abs(a - b) < epsilon
-end
 
 --- Generate a random point radius away from a point
 ---modified from vertexUtils random_point_radius
@@ -892,6 +963,8 @@ function lwl.slotIdAtPoint(point, shipManager)
     local indexY = math.floor(deltaY / TILE_SIZE)
     return indexX + (indexY * width)
 end
+--#endregion point utils
+--#region room utils
 
 ---Returns the number of slots/tiles in a given room on a ship.
 ---@param roomNumber number
@@ -916,6 +989,9 @@ end
 function lwl.getRandomSystem(shipManager)
     return shipManager.vSystemList[math.random(1, shipManager.vSystemList:size())]
 end
+--#endregion room utils
+--#region filter functions
+
 ---Note: Filter functions must not maintain a reference to CrewMember objects as they can go out of scope if you quit to menu and continue.
 ---TODO: I might need to use memory safe crew for all filter functions that need to access dynamic crew fields.
 ---@param crewmem Hyperspace.CrewMember
@@ -956,9 +1032,9 @@ function lwl.generateOpposingCrewFilter(crewmem)
         return crew.iShipId ~= allegiance
     end
 end
+--#endregion filter functions
+--#region [[  EVENT INTERACTION UTILS  ]]--
 
-
---[[  EVENT INTERACTION UTILS  ]]--
 --toggle with INSert key, because this can be quite verbose
 --storage checks, sylvan, and the starting beacon are all very long.
 --Call the internal version instead if you ALWAYS want to print
@@ -1008,6 +1084,8 @@ local function appendEventText(event, text)
     event.text.data = eventText
     event.text.isLiteral = true
 end
+--#endregion event utils
+--#region event printing
 
 --somehow this doesn't cause issues with recursive checks.
 lwl.printChoiceInternal = function(choice, level)
@@ -1027,6 +1105,8 @@ lwl.printEventInternal = function(locationEvent, level)
         lwl.printChoiceInternal(choice, level + 1)
     end
 end
+--#endregion
+--#region mouse utils
 
 -- written by arc
 function lwl.convertMousePositionToPlayerShipPosition(mousePosition)
@@ -1046,18 +1126,9 @@ end
     local enemyShipOriginY = position.y + targetPosition.y
     return Hyperspace.Point(mousePosition.x - enemyShipOriginX, mousePosition.y - enemyShipOriginY)
 end
+--#endregion
+--#region ---------------------------CONTROL FLOW------------------------------
 
-local mTeleportConditions = {}
-
---nil if none exists.
-function lwl.getRoomAtLocation(position)
-    --Ships in mv don't overlap, so check both ships --poinf?
-    local retRoom = get_room_at_location(Hyperspace.ships(OWNSHIP), lwl.convertMousePositionToPlayerShipPosition(mousePos), true)
-    if retRoom then return retRoom end
-    return get_room_at_location(Hyperspace.ships(ENEMY_SHIP), lwl.convertMousePositionToEnemyShipPosition(mousePos), true)
-end
-
------------------------------CONTROL FLOW------------------------------
 ---Returns a Function that returns true once every trueEvery calls.
 ---@param trueEvery function
 ---@return function
@@ -1073,77 +1144,9 @@ function lwl.createIncrementalConditonal(trueEvery)
         return counter == 1
     end
 end
+--endregion control flow
+--#region ----------------ANGLE UTILS---------------------
 
-
-
-function lwl.floatEquals(f1, f2, epsilon)
-    epsilon = lwl.nilSet(epsilon, .0001)
-    return math.abs(f1-f2) < epsilon
-end
-
-function lwl.isMoving(crewmem)
-    return crewmem.speed_x + crewmem.speed_y > 0
-end
-
-------------------POINT UTILS---------------------
----Returns true if two points are near each other
----@param p1 Hyperspace.Point|Hyperspace.Pointf
----@param p2 Hyperspace.Point|Hyperspace.Pointf
----@param epsilon number How far apart they can be, in pixels.
----@return boolean true if they are at least within epsilon pixels of each other.
-function lwl.pointFuzzyEquals(p1, p2, epsilon) --todo this should actually check the straight distance. As is it's a square.
-    if not epsilon then
-        epsilon = 1
-    end
-    --print("compare xx,yy", p1.x, p2.x, p1.y, p2.y)
-    return lwl.floatEquals(p1.x, p2.x, epsilon) and lwl.floatEquals(p1.y, p2.y, epsilon)
-end
-
----Returns if a goalPoint actually exists, or is a value that indicates that it doesn't, but they didn't want to put nil.
----@param goalPoint Hyperspace.Pointf a goal from a CrewMember object
----@return boolean true if the goal exists, and false if the goal is the dummy, fake one.
-function lwl.goalExists(goalPoint)
-    return not (lwl.floatEquals(goalPoint.x, -1) and lwl.floatEquals(goalPoint.y, -1))
-end
-
----Returns the distance in pixels between two points.  Pythagorian.
----@param point1 Hyperspace.Point|Hyperspace.Pointf
----@param point2 Hyperspace.Point|Hyperspace.Pointf
----@return number
-function lwl.distanceBetweenPoints(point1, point2)
-    return math.sqrt((point1.x - point2.x)^2 + (point1.y - point2.y)^2)
-end
-
----Returns a new point given an existing point, an angle, and a distance.
----@param origin Hyperspace.Point|Hyperspace.Pointf Point to calculate from.
----@param angle number Angle in radians, 0 is straight right.
----@param distance number in pixels
----@return Hyperspace.Pointf the new point relative to the origin
-function lwl.getPoint(origin, angle, distance)
-    return Hyperspace.Pointf(origin.x - (distance * math.cos(angle)), origin.y - (distance * math.sin(angle)))
-end
-
-function lwl.getDistance(origin, target)
-    return math.abs(math.sqrt((origin.x - target.x)^2 + (origin.y - target.y)^2))
-end
-
----Returns the angle in degrees, 0 being straight up.
----@param origin Hyperspace.Point|Hyperspace.Pointf
----@param target Hyperspace.Point|Hyperspace.Pointf
----@return number FTL Angle in the direction of target from origin.
-function lwl.getAngle(origin, target)
-    local deltaX = origin.x - target.x
-    local deltaY = origin.y - target.y
-    local innerAngle = math.atan(deltaY, deltaX)
-    --print("Angle is ", innerAngle)
-    return innerAngle
-end
-------------------END POINT UTILS---------------------
----This doesn't actually do anything, crew speed is screen speed.
-function lwl.crewSpeedToScreenSpeed(crewSpeed)
-    return crewSpeed
-end
-------------------ANGLE UTILS---------------------
 ---Converts an FTL style angle to a Brightness Particles style one.
 ---That is, it rotates it by 90 degrees and converts it to degrees.
 ---@param angle number FTL Angle (Radians, 0 is right)
@@ -1218,9 +1221,9 @@ function lwl.animationDirectionToFtlAngle(direction)
 end
 
 ---TODO! IT'S VERY IMPORTANT NOT TO MIX BRIGHTNESS ANGLES WITH NON-BRIGHTNESS ANGLES!
-------------------END ANGLE UTILS---------------------
-
--------------------------------Stuff for Nauter----------------------------------
+--#endregion ----------------END ANGLE UTILS---------------------
+--#region -----------------------------Stuff for Nauter----------------------------------
+local mTeleportConditions = {}
 --crewFilterFunction(crewmember): which crew this should apply to, conditionFunction(crewmember): when it should apply to them
 ---Allow types of crew to use wither-style personal teleporters under certain circumstances.
 ---@param conditionFunction function
@@ -1277,13 +1280,9 @@ local function waitForInitialization(blockedFunction, localVar, varGetter)
     end
 end
 --]]
+--#endregion nauter stuff
+--#region --Black Magic
 
-
-
-
-
-
-----Black Magic
 --[[
 When a thing fails, it should say how it failed, and then inform its calling process that it failed.
 Usually with how things are written these days, this bubbles all the way up to the main runtime.
@@ -1361,12 +1360,6 @@ end
 function lwl.resolveToString(value)
     return resolveToTypeInternal(value, "string", nil, 0)
 end
-
-
-
-
-
-
-
+--#endregion
 
 

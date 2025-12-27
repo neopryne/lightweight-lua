@@ -21,7 +21,7 @@ You can have numbers or number-indexed tables.  You can't store strings here.
 The hard thing this helps with is being able to return you a list of all the uuids for a given interface.
 Then you can kind of refer to the registered things as objects, with properties you can get through this interface.
 
-There is no way to remove items from the list as it stands.
+TODO fix this, remove duplicate tab addition from GEXPY
 ]]
 
 local GLOBAL_NAME = "lwl_player_vars"
@@ -33,7 +33,6 @@ local GLOBAL_UUID_KEY = "_uuidindex_"
 --These numbers don't mean anything by themselves, you will need to parse them, or build a layer.
 --Maybe having people define an enum is enough.  Yeah, just build a table of the things you want this to return, and it will do that.
 --tables are implicitly indexed by number.  You should define them yourself, and the translations from number to other thing.
-local typeTable = {"basic", "advanced", "custom"}
 
 local mRegisteredNames = {}
 
