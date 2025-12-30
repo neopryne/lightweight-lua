@@ -162,6 +162,34 @@ end
 function lwl.xor(a,b)
     return (a or b) and (not(a and b))
 end
+
+---
+---@param number number below 2^52
+---@return number The number rounded to the nearest whole number
+function lwl.round(number)
+    return number + (2^52 + 2^51) - (2^52 + 2^51) --https://stackoverflow.com/questions/18313171/lua-rounding-numbers-and-then-truncate/58411671#58411671
+end
+--#region testRound
+local function testRound(number, expected)
+    local result = lwl.round(number)
+    if not (expected == result) then
+        print("ERROR! Round failed on your computer!  Tell the mod author that this cannot be relied on!", number, expected, result)
+    end
+end
+testRound(.5, 0)
+testRound(0.49999999999999994, 0)
+testRound(1.5, 2)
+testRound(6.4, 6)
+testRound(6.6, 7)
+testRound(0, 0)
+testRound(1, 1)
+testRound(7.4, 7)
+testRound(7.6, 8)
+testRound(16.4, 16)
+testRound(16.6, 17)
+testRound(66.4, 66)
+testRound(66.6, 67)
+--#endregion
 --#endregion general utils
 --#region [[  TABLE UTILS  ]]--
 ---for use in printing all of a table
