@@ -1329,7 +1329,12 @@ local mRenderHelp = false
 local function helpTextVisibilityFunction()
     return mRenderHelp
 end
-local mHelpBarContainer = lwui.buildVerticalContainer(1264, 10, 13, 200, lwui.alwaysOnVisibilityFunction, lwui.solidRectRenderFunction(Graphics.GL_Color(.2, .3, .4, .5)), {}, false, true, 2)
+
+local function helpBarVisibilityFunction()
+    return (lwl.setIfNil(Hyperspace.metaVariables["lwl_display_help"], 0) == 1)
+end
+
+local mHelpBarContainer = lwui.buildVerticalContainer(1264, 10, 13, 200, helpBarVisibilityFunction, lwui.solidRectRenderFunction(Graphics.GL_Color(.2, .3, .4, .5)), {}, false, true, 2)
 local mHelpTextBox = lwui.buildDynamicHeightTextBox(927, 25, 330, 90, helpTextVisibilityFunction, lwui.solidRectRenderFunction(Graphics.GL_Color(.1, .1, .1, .74)), 11)
 mHelpTextBox.text = "oh yeah baby this rendered some text and it's really big yo dode"
 lwui.addTopLevelObject(mHelpBarContainer, "MOUSE_CONTROL_PRE")

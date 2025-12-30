@@ -5,5 +5,7 @@
     <text name="lwl_blood_disable_text">Disable blood splatters.</text>
     <text name="lwl_auto_path_after_clone_enable_text">Enable auto-path after clone.</text>
     <text name="lwl_auto_path_after_clone_disable_text">Disable auto-path after clone.</text>
+    <text name="lwl_display_help_enable_text">Enable lwl help bar.</text>
+    <text name="lwl_display_help_disable_text">Disable lwl help bar.</text>
     <text name="lwl_status_effect_help_text">LWCE Statuses\nBleed:\n    Temporary flat damage over time\n    Resist reduces stacks gained and damage taken\nConfusion:\n    Crew becomes uncontrollable.\n    Resist reduces stacks gained.\nCorruption:\n    Permanent stacking damage over time\n    Resist reduces stacks gained\nTeleportitis:\n    Crew occasionally randomly teleports to another location.\nSlimed:\n    Reduced move speed and attack. (80%)</text>
 </FTL>

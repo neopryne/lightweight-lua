@@ -436,6 +436,33 @@ function lwl.isPaused()
     return commandGui.bPaused or commandGui.bAutoPaused or commandGui.event_pause or commandGui.menu_pause
 end
 --#endregion
+--#region color printing
+
+--Color string formatting
+-- function arrayMidpoint()
+
+-- end
+
+-- function chunkArray(array)
+--     --this is wrong
+-- end
+
+-- function lwl.singleColor(color)
+    
+-- end
+
+-- function lwl.color.alternation(definition)
+    
+-- end
+
+-- function lwl.color.sequence(definition)
+    
+-- end
+--Two color stuff either splits halfway, or does alternating for characters.
+---Alternating is a special case of iterating.
+---It's also a special case of one kind of snaking.  I like snaking better.  But you can just define your pattern to snake if you want that, so it's more general to iterate.
+---Then we have what qud calls "alternations", which I call templates.  Templates let you define what sections should be what color, and then they get stretched to cover the whole thing.
+--#endregion color printing
 --#region ramblings
 --[[
 How about a function that takes a argument and tries to make it into a thing?
@@ -965,6 +992,17 @@ function lwl.slotIdAtPoint(point, shipManager)
 end
 --#endregion point utils
 --#region room utils
+
+function lwl.slotCenter(shipId, roomNumber, slotNumber)
+    local shipGraph = Hyperspace.ShipGraph.GetShipInfo(shipId)
+    local roomShape = shipGraph:GetRoomShape(roomNumber)
+    local columns = roomShape.w / lwl.TILE_SIZE() --one indexed
+    local row = math.floor(slotNumber / columns) --zero indexed
+    local column = slotNumber % columns --zero indexed
+    local x = roomShape.x + (((column) + .5) * lwl.TILE_SIZE())
+    local y = roomShape.y + (((row) + .5) * lwl.TILE_SIZE())
+    return Hyperspace.Pointf(x, y)
+end
 
 ---Returns the number of slots/tiles in a given room on a ship.
 ---@param roomNumber number
