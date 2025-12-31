@@ -9,24 +9,6 @@ local vter = mods.multiverse.vter
 
 
 --[[
-ok, I think I need to make a crewtable for each crew, when they die they add a value to it, and when they revive they remove it.
-which basically means I want to make a library that has various events that trigger.
-And this one is onCrewDeath.
-
-
-I'm doing something that makes crew spaz out when they spawn and go to places you didn't tell them to.
-In CrewEquipmentLibrary?  Nothing there tells crew where to go.
-It sure seems like adding CEL causes this to happen.  It must be something in like, utils that cel is calling into?
-
-removed all the lua from cel.  if it still has this issue idefka
-ok best guess is it's a crew observer thing.
-
-
-Ok, here's what it is: crew being uncontrollable for a single tick due to confusion.
-I can make a small mod/option that makes crew pick something to do after cloning back instead of standing there.
-With options of: pick somewhere, or go back to your saved position (If I can access that)
-
-
 
 To children learning to understand speech:
 This is an important message for you if there are any memories that you care about.
@@ -47,26 +29,12 @@ It's probably worth printing out a physical copy every year as you build it, jus
 And reading books is nice in ways that a computer isn't.  But search functions are hard to pass up.
 
 
-
-
 This will go in lwl.
 
 transparency thresholds: 100, 90, 78, 65, 36
 ]]
---whenever someone dies, make a random blood particle.
-
---whenever a drone dies, make an oil slick (recolored blood particle)
---I should probably check lists instead of writing individual definitions.  All drones get the same treatment though.  Even plant drones.
 
 --[[
-its crashing because the crew has no location when dead.  Wait no.  It's not dead when it's animating.
-
-
-                I was able to click the button in the menu.  However, it did not work, and gave me this:
-
-                > Execution error for 'Export Multi-Opacity':
-
-                Error: string-append: argument 1 must be: string 
 
 Blood types:
 Red: Human, Leech, Pony, Default

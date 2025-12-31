@@ -463,6 +463,13 @@ function lwl.isPaused()
     local commandGui = Hyperspace.Global.GetInstance():GetCApp().gui
     return commandGui.bPaused or commandGui.bAutoPaused or commandGui.event_pause or commandGui.menu_pause
 end
+
+---1 is true, anything else is false.
+---@param hsVariable any
+---@return boolean
+function lwl.varAsBoolean(hsVariable)
+    return (lwl.setIfNil(hsVariable, 0) == 1)
+end
 --#endregion
 --#region color printing
 

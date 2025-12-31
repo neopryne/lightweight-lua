@@ -1331,7 +1331,7 @@ local function helpTextVisibilityFunction()
 end
 
 local function helpBarVisibilityFunction()
-    return (lwl.setIfNil(Hyperspace.metaVariables["lwl_display_help"], 0) == 1)
+    return lwl.varAsBoolean(Hyperspace.metaVariables["lwl_display_help"])
 end
 
 local mHelpBarContainer = lwui.buildVerticalContainer(1264, 10, 13, 200, helpBarVisibilityFunction, lwui.solidRectRenderFunction(Graphics.GL_Color(.2, .3, .4, .5)), {}, false, true, 2)

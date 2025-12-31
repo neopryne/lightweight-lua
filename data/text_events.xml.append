@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <FTL>
+    <text name="lwl_back">Back.</text>
+    <text name="lwl_internal_toggle_options_select">LWL Toggles</text>
+    <text name="lwl_debug_options_select">Debug Options</text>
+
+    <text name="lwl_print_mouse_enable">Show mouse position.</text>
+    <text name="lwl_print_room_info_enable">Show room and slot numbers.</text>
+
+    <text name="lwl_print_mouse_disable">Hide mouse position.</text>
+    <text name="lwl_print_room_info_disable">Hide room and slot numbers.</text>
+
     <text name="lwl_blood_enable_text">Enable blood splatters.</text>
     <text name="lwl_blood_disable_text">Disable blood splatters.</text>
     <text name="lwl_auto_path_after_clone_enable_text">Enable auto-path after clone.</text>

@@ -1,46 +1,104 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <FTL>
-    <mod:findName type="event" name="COMBAT_CHECK_TOGGLE">
-        <mod-append:choice req="lwl_render_blood_splatters" lvl="0" max_lvl="0" blue="false">
+
+    <event name="LWL_TOGGLE_DEBUG_OPTIONS">
+        <text>Debug Options:</text>
+        <choice blue="false">
+            <text id="lwl_back"/>
+            <event>
+                <loadEvent>LWL_TOGGLE_OPTIONS</loadEvent>
+            </event>
+        </choice>
+
+        <choice req="lwl_print_mouse_position" lvl="0" max_lvl="0" blue="false">
+            <text id="lwl_print_mouse_enable"/>
+            <event>
+                <metaVariable name="lwl_print_mouse_position" op="set" value="1"/>
+            </event>
+        </choice>
+        <choice req="lwl_print_mouse_position" lvl="1" blue="false">
+            <text id="lwl_print_mouse_disable"/>
+            <event>
+                <metaVariable name="lwl_print_mouse_position" op="set" value="0"/>
+            </event>
+        </choice>
+
+
+        <choice req="lwl_print_room_info" lvl="0" max_lvl="0" blue="false">
+            <text id="lwl_print_room_info_enable"/>
+            <event>
+                <metaVariable name="lwl_print_room_info" op="set" value="1"/>
+            </event>
+        </choice>
+        <choice req="lwl_print_room_info" lvl="1" blue="false">
+            <text id="lwl_print_room_info_disable"/>
+            <event>
+                <metaVariable name="lwl_print_room_info" op="set" value="0"/>
+            </event>
+        </choice>
+    </event>
+
+    <event name="LWL_TOGGLE_OPTIONS">
+        <text>LWL Options:</text>
+        <choice blue="false">
+            <text id="lwl_back"/>
+            <event>
+                <loadEvent>COMBAT_CHECK_TOGGLE</loadEvent>
+            </event>
+        </choice>
+
+        <choice blue="false">
+            <text id="lwl_debug_options_select"/>
+            <event load="LWL_TOGGLE_DEBUG_OPTIONS"/>
+        </choice>
+        
+        <choice req="lwl_render_blood_splatters" lvl="0" max_lvl="0" blue="false">
             <text id="lwl_blood_enable_text"/>
             <event>
                 <metaVariable name="lwl_render_blood_splatters" op="set" value="1"/>
             </event>
-        </mod-append:choice>
-        <mod-append:choice req="lwl_render_blood_splatters" lvl="1" blue="false">
+        </choice>
+        <choice req="lwl_render_blood_splatters" lvl="1" blue="false">
             <text id="lwl_blood_disable_text"/>
             <event>
                 <metaVariable name="lwl_render_blood_splatters" op="set" value="0"/>
             </event>
-        </mod-append:choice>
+        </choice>
 
-
-        <mod-append:choice req="lwl_clone_auto_pathing" lvl="0" max_lvl="0" blue="false">
+        <choice req="lwl_clone_auto_pathing" lvl="0" max_lvl="0" blue="false">
             <text id="lwl_auto_path_after_clone_enable_text"/>
             <event>
                 <metaVariable name="lwl_clone_auto_pathing" op="set" value="1"/>
             </event>
-        </mod-append:choice>
-        <mod-append:choice req="lwl_clone_auto_pathing" lvl="1" blue="false">
+        </choice>
+        <choice req="lwl_clone_auto_pathing" lvl="1" blue="false">
             <text id="lwl_auto_path_after_clone_disable_text"/>
             <event>
                 <metaVariable name="lwl_clone_auto_pathing" op="set" value="0"/>
             </event>
-        </mod-append:choice>
+        </choice>
 
-        
-        <mod-append:choice req="lwl_display_help" lvl="1" blue="false">
+        <choice req="lwl_display_help" lvl="1" blue="false">
             <text id="lwl_display_help_disable_text"/>
             <event>
                 <metaVariable name="lwl_display_help" op="set" value="0"/>
             </event>
-        </mod-append:choice>
-        <mod-append:choice req="lwl_display_help" lvl="0" max_lvl="0" blue="false">
+        </choice>
+        <choice req="lwl_display_help" lvl="0" max_lvl="0" blue="false">
             <text id="lwl_display_help_enable_text"/>
             <event>
                 <metaVariable name="lwl_display_help" op="set" value="1"/>
             </event>
+        </choice>
+    </event>
+
+
+
+    <mod:findName type="event" name="COMBAT_CHECK_TOGGLE">
+        <mod-append:choice blue="false">
+            <text id="lwl_internal_toggle_options_select"/>
+            <event load="LWL_TOGGLE_OPTIONS" />
         </mod-append:choice>
     </mod:findName>
 </FTL>
