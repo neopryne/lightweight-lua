@@ -61,6 +61,7 @@ end
 local CREW_LISTS = {}
 local function addCrewList(name)
     local crewList = lwl.getBlueprintListSafe(name)
+    crewList = lwl.setIfNil(crewList, {})
     table.insert(CREW_LISTS, crewList)
     return crewList
 end
@@ -84,6 +85,20 @@ local salt = addCrewList("LIST_CREW_OBYN")
 local morph = addCrewList("LIST_CREW_MORPH")
 local siren = addCrewList("LIST_CREW_SIREN")
 local eldritch = addCrewList("LIST_CREW_ELDRITCH")
+local ffftl = addCrewList("LIST_CREW_FFFTL")
+local darkestDesireDisparity = addCrewList("LIST_CREW_DISPARITY")
+local darkestDesireDeepOnes = addCrewList("LIST_CREW_DEEPONES")
+local darkestDesireNightmares = addCrewList("LIST_DDNIGHTMARES")
+local darkestDesireEnlightenedHorror = addCrewList("LIST_ENLIGHTENED_HORRORS")
+local darkestDesireRifts = addCrewList("LIST_DDRIFTS") --warm static, actually.
+local darkestDesireTemplars = addCrewList("LIST_CREW_DDDARKTEMPLAR_STUFF_YEAH")
+-- local darkestDesireSeraphim = addCrewList("LIST_CREW_DDSERAPHIM") --burning gold
+-- local darkestDesireSeraphimEnemy = addCrewList("LIST_CREW_DDSERAPHIM_ENEMY") --burning gold
+local darkestDesireIlldrythk = addCrewList("LIST_DDCREW_ILLDRYTHK_ALLGOOBERS")
+local darkestDesireSoulplague = addCrewList("LIST_DDSOULPLAGUE_ALIGNED")
+local darkestDesireTempest = addCrewList("LIST_CREW_DDTEMPEST_ALIGNED")
+local darkestDesireLightborne = addCrewList("LIST_CREW_DDLIGHTBORNE")
+local darkestDesireHungeringShadow = addCrewList("LIST_CREW_DDHUNGERINGSHADOW")
 
 local function allCrewList()
     local completeSet = {}
@@ -99,19 +114,22 @@ local plant_drones = addCrewList("LIST_DRONES_VAMPWEED")
 ----Non-drones
 local bloodOrange = {orchid, lanius, plant_drones}
 local bloodGreen = {zoltan, shell, mantis, slug, spider, lizard}
-local bloodBlue = {engi, crystal, ghost}
+local bloodBlue = {engi, crystal, ghost, darkestDesireTempest}
 local bloodPurple = {cognitive, siren}
 local bloodBrown = {rock}
 local bloodGrey = {obelisk, morph, salt}
 
 local bloodHer = {eldritch}
-local bloodBlack = {} --DD, SS, HB, CD
-local bloodWarmStatic = {} --FFFTL
+local bloodBlack = {darkestDesireDisparity, darkestDesireDeepOnes, darkestDesireNightmares,
+        darkestDesireEnlightenedHorror, darkestDesireTemplars, darkestDesireIlldrythk,
+        darkestDesireHungeringShadow} --DD, SS, HB, CD, JK, all their blood is red.
+local bloodWarmStatic = {ffftl, darkestDesireRifts, darkestDesireLightborne} --FFFTL
+local bloodGlistening = {darkestDesireSoulplague} --Boogiepop and others.
 --Anything not on this list is red blood.
 ----Drones default to brown.
 ---todo add other mod crew dynamically.
 
-local mBloodTypes = {"orange", "green", "blue", "purple", "brown", "grey", "her", "black", "static"}
+local mBloodTypes = {"orange", "green", "blue", "purple", "brown", "grey", "her", "black", "static", "glistening"}
 
 local mColorMap = {
     orange = bloodOrange,
@@ -122,7 +140,8 @@ local mColorMap = {
     grey = bloodGrey,
     her = bloodHer,
     black = bloodBlack,
-    static = bloodWarmStatic }
+    static = bloodWarmStatic,
+    glistening = bloodGlistening }
 
 local mBloodMap = {} --Map of species names to blood colors
 
