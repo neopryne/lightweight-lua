@@ -18,7 +18,8 @@
 		<mod-append:script>data/ll_scripts/crew_effects.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/blood.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/clone_orders.lua</mod-append:script>
-		<mod-append:script>data/ll_scripts/print_mouse_position.lua</mod-append:script>
-		<mod-append:script>data/ll_scripts/print_room_info.lua</mod-append:script>
+		<mod-append:script>data/ll_scripts/devtools/print_mouse_position.lua</mod-append:script>
+		<mod-append:script>data/ll_scripts/devtools/print_room_info.lua</mod-append:script>
+		<mod-append:script>data/ll_scripts/devtools/floor_bubble_visualizer.lua</mod-append:script>
 	</mod:findLike>
 </FTL>

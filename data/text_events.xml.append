@@ -7,9 +7,11 @@
 
     <text name="lwl_print_mouse_enable">Show mouse position.</text>
     <text name="lwl_print_room_info_enable">Show room and slot numbers.</text>
+    <text name="lwl_render_floor_bubbles">Render bubbles around floor tile centers.</text>
 
     <text name="lwl_print_mouse_disable">Hide mouse position.</text>
     <text name="lwl_print_room_info_disable">Hide room and slot numbers.</text>
+    <text name="lwl_hide_floor_bubbles">Hide bubbles around floor tile centers.</text>
 
     <text name="lwl_blood_enable_text">Enable blood splatters.</text>
     <text name="lwl_blood_disable_text">Disable blood splatters.</text>

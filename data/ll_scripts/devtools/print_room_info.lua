@@ -4,6 +4,8 @@ local vter = mods.multiverse.vter
 Usage: Patch this mod.
 --]]
 
+--todo listen for event and only check metavars then.
+
 lwl.safe_script.on_render_event("lwl_print_room_info", Defines.RenderEvents.SHIP_SPARKS, function() end, function(ship)
     if not (lwl.varAsBoolean(Hyperspace.metaVariables["lwl_print_room_info"])) then return end
     local shipManager = Hyperspace.ships(ship.iShipId)

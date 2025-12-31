@@ -7,9 +7,11 @@
 
     <text name="lwl_print_mouse_enable" language="ru">Показать положение</text>
     <text name="lwl_print_room_info_enable" language="ru">Номера выставочных залов и слотов.</text>
+    <text name="lwl_render_floor_bubbles" language="ru">Рендеринг пузырьков вокруг центров плиток пола.</text>
 
     <text name="lwl_print_mouse_disable" language="ru">Скрыть положение мыши.</text>
     <text name="lwl_print_room_info_disable" language="ru">Скрыть номера комнат и слотов.</text>
+    <text name="lwl_hide_floor_bubbles" language="ru">Скрыть пузырьки вокруг центров плиток пола.</text>
 
     <text name="lwl_blood_enable_text" language="ru">Включить разбрызгивание крови.</text>
     <text name="lwl_blood_disable_text" language="ru">Отключить разбрызгивание крови.</text>

@@ -15,12 +15,14 @@
             <text id="lwl_print_mouse_enable"/>
             <event>
                 <metaVariable name="lwl_print_mouse_position" op="set" value="1"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_OPTIONS</loadEvent>
             </event>
         </choice>
         <choice req="lwl_print_mouse_position" lvl="1" blue="false">
             <text id="lwl_print_mouse_disable"/>
             <event>
                 <metaVariable name="lwl_print_mouse_position" op="set" value="0"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_OPTIONS</loadEvent>
             </event>
         </choice>
 
@@ -29,12 +31,30 @@
             <text id="lwl_print_room_info_enable"/>
             <event>
                 <metaVariable name="lwl_print_room_info" op="set" value="1"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_OPTIONS</loadEvent>
             </event>
         </choice>
         <choice req="lwl_print_room_info" lvl="1" blue="false">
             <text id="lwl_print_room_info_disable"/>
             <event>
                 <metaVariable name="lwl_print_room_info" op="set" value="0"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_OPTIONS</loadEvent>
+            </event>
+        </choice>
+
+
+        <choice req="lwl_render_floor_bubbles" lvl="0" max_lvl="0" blue="false">
+            <text id="lwl_render_floor_bubbles"/>
+            <event>
+                <metaVariable name="lwl_render_floor_bubbles" op="set" value="1"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_OPTIONS</loadEvent>
+            </event>
+        </choice>
+        <choice req="lwl_render_floor_bubbles" lvl="1" blue="false">
+            <text id="lwl_hide_floor_bubbles"/>
+            <event>
+                <metaVariable name="lwl_render_floor_bubbles" op="set" value="0"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_OPTIONS</loadEvent>
             </event>
         </choice>
     </event>
@@ -57,12 +77,14 @@
             <text id="lwl_blood_enable_text"/>
             <event>
                 <metaVariable name="lwl_render_blood_splatters" op="set" value="1"/>
+                <loadEvent>LWL_TOGGLE_OPTIONS</loadEvent>
             </event>
         </choice>
         <choice req="lwl_render_blood_splatters" lvl="1" blue="false">
             <text id="lwl_blood_disable_text"/>
             <event>
                 <metaVariable name="lwl_render_blood_splatters" op="set" value="0"/>
+                <loadEvent>LWL_TOGGLE_OPTIONS</loadEvent>
             </event>
         </choice>
 
@@ -70,12 +92,14 @@
             <text id="lwl_auto_path_after_clone_enable_text"/>
             <event>
                 <metaVariable name="lwl_clone_auto_pathing" op="set" value="1"/>
+                <loadEvent>LWL_TOGGLE_OPTIONS</loadEvent>
             </event>
         </choice>
         <choice req="lwl_clone_auto_pathing" lvl="1" blue="false">
             <text id="lwl_auto_path_after_clone_disable_text"/>
             <event>
                 <metaVariable name="lwl_clone_auto_pathing" op="set" value="0"/>
+                <loadEvent>LWL_TOGGLE_OPTIONS</loadEvent>
             </event>
         </choice>
 
@@ -83,12 +107,14 @@
             <text id="lwl_display_help_disable_text"/>
             <event>
                 <metaVariable name="lwl_display_help" op="set" value="0"/>
+                <loadEvent>LWL_TOGGLE_OPTIONS</loadEvent>
             </event>
         </choice>
         <choice req="lwl_display_help" lvl="0" max_lvl="0" blue="false">
             <text id="lwl_display_help_enable_text"/>
             <event>
                 <metaVariable name="lwl_display_help" op="set" value="1"/>
+                <loadEvent>LWL_TOGGLE_OPTIONS</loadEvent>
             </event>
         </choice>
     </event>
