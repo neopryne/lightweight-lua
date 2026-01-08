@@ -509,31 +509,46 @@ But the longer you've been evaling for, the more [power|resources] you should sp
 ]]
 --#endregion
 --#region [[  LOGGING UTILS  ]]--
-lwl.LOG_LEVEL = 1 --Higher is more verbose, feel free to modify this.
 --[[
-    0 -- NO logs, not even errors, not recommended.
-    1 -- Errors only
-    2 -- Adds Warnings
-    3 -- Adds Debug
-    4 -- Adds Info
-    5 -- Verbose
+    -1 -- NO logs, not even errors, not recommended.  Also breaks the menu.
+    0 -- Errors only
+    1 -- Adds Warnings
+    2 -- Adds Debug
+    3 -- Adds Info
+    4 -- Verbose
     
     Usage:
-    MY_MOD_LOG_LEVEL = 3
+    Add stuff in events_special_storage.xml.append to the event LWL_TOGGLE_DEBUG_LOGS_SUBMODULES
+
+    MY_MOD_LOG_OVERRIDE = "mymod_log_level"
     
-    lwl.logWarn(MYTAG, "This will use the globally defined debug level anyone can modify!") -- Recommended for libraries
-    lwl.logWarn(MYTAG, "This will use my debug level!", MY_MOD_LOG_LEVEL) -- Recommended for standalone packages
+    lwl.logWarn(MYTAG, "This will use the globally defined debug level anyone can modify!") --Not Recommended
+    lwl.logWarn(MYTAG, "This will use my debug level if set, and the global otherwise.", MY_MOD_LOG_OVERRIDE) -- Recommended
 --]]
 local LOG_LEVELS = {
-    {text="ERROR", level=1},
-    {text="WARN", level=2},
-    {text="DEBUG", level=3},
-    {text="INFO", level=4},
-    {text="VERBOSE", level=5}}
-local function logInternal(tag, text, messageLogLevel, optionalLogLevel)
-    local maxLogLevel = optionalLogLevel
+    {text="ERROR", level=0},
+    {text="WARN", level=1},
+    {text="DEBUG", level=2},
+    {text="INFO", level=3},
+    {text="VERBOSE", level=4}}
+
+---comment
+---@param name string name of the metavariable tracking this log level.
+---@return nil|number nil if this should not override, and the log level to override with if it should.
+function lwl.logShouldOverride(name)
+    if name == nil then return nil end
+    local VAR = Hyperspace.metaVariables[name]
+    if not VAR or VAR == -1 then
+        return nil
+    else
+        return VAR
+    end
+end
+
+local function logInternal(tag, text, messageLogLevel, overrideVarName)
+    local maxLogLevel = lwl.logShouldOverride(overrideVarName)
     if (maxLogLevel == nil) then
-        maxLogLevel = lwl.LOG_LEVEL
+        maxLogLevel = Hyperspace.metaVariables["lwl_global_log_level"]
     end
     if (messageLogLevel <= maxLogLevel) then
         print(LOG_LEVELS[messageLogLevel].text..": "..tag.." - "..text)
@@ -545,33 +560,33 @@ end
 
 ---@param tag string Denote the source of the log
 ---@param text string
----@param optionalLogLevel integer|nil
-function lwl.logError(tag, text, optionalLogLevel)
-    logInternal(tag, text, 1, optionalLogLevel)
+---@param overrideVarName string
+function lwl.logError(tag, text, overrideVarName)
+    logInternal(tag, text, 1, overrideVarName)
 end
 ---@param tag string Denote the source of the log
 ---@param text string
----@param optionalLogLevel integer|nil
-function lwl.logWarn(tag, text, optionalLogLevel)
-    logInternal(tag, text, 2, optionalLogLevel)
+---@param overrideVarName string
+function lwl.logWarn(tag, text, overrideVarName)
+    logInternal(tag, text, 2, overrideVarName)
 end
 ---@param tag string Denote the source of the log
 ---@param text string
----@param optionalLogLevel integer|nil
-function lwl.logDebug(tag, text, optionalLogLevel)
-    logInternal(tag, text, 3, optionalLogLevel)
+---@param overrideVarName string
+function lwl.logDebug(tag, text, overrideVarName)
+    logInternal(tag, text, 3, overrideVarName)
 end
 ---@param tag string Denote the source of the log
 ---@param text string
----@param optionalLogLevel integer|nil
-function lwl.logInfo(tag, text, optionalLogLevel)
-    logInternal(tag, text, 4, optionalLogLevel)
+---@param overrideVarName string
+function lwl.logInfo(tag, text, overrideVarName)
+    logInternal(tag, text, 4, overrideVarName)
 end
 ---@param tag string Denote the source of the log
 ---@param text string
----@param optionalLogLevel integer|nil
-function lwl.logVerbose(tag, text, optionalLogLevel)
-    logInternal(tag, text, 5, optionalLogLevel)
+---@param overrideVarName string
+function lwl.logVerbose(tag, text, overrideVarName)
+    logInternal(tag, text, 5, overrideVarName)
 end
 --#endregion
 --#region ----------------POINT UTILS---------------------

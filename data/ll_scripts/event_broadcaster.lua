@@ -14,9 +14,8 @@ local lwl = mods.lightweight_lua
 mods.lightweight_event_broadcaster = lwl.setIfNil(mods.lightweight_event_broadcaster, {})
 local lweb = mods.lightweight_event_broadcaster
 
-
-
-local TAG = "LW Tele Status Observer"
+local LOG_OVERRIDE = "lwl_event_broadcast_log_level"
+local TAG = "lweb Event Broadcaster"
 local KEY_DEATH = "CREW_DEATH_EVENT"
 local KEY_DEATH_ANIMATION = "CREW_DEATH_ANIMATION"
 local KEY_CREW_CLONED = "CREW_CLONED_EVENT"
@@ -27,7 +26,7 @@ local KEYS_LIST = {KEY_DEATH, KEY_DEATH_ANIMATION, KEY_CREW_CLONED, KEY_PLAYER_V
 local KEY_HAS_RUN = "metavars_run_saved"
 local hasRun = Hyperspace.metaVariables[KEY_HAS_RUN]
 local mRunInitializationCode = false
-local mHangarBroadcastSent = false
+local mPreviousHangarState = false
 local mRunInitialized = false
 local mNewGame = false
 
@@ -38,6 +37,13 @@ for _,key in ipairs(KEYS_LIST) do
     mListenerCategories[key] = lwl.setIfNil(mListenerCategories[key], {})
 end
 
+
+--Returns nil or the log level that should be used here.
+--Actually the writing required for this is more complex than I thought
+--Inherit, error, warn, debug, info, verbose.
+
+
+
 local function observerUpdate(condition, key)
     --[[todo genericize this.
     for each thing this event could happen to
@@ -46,20 +52,27 @@ local function observerUpdate(condition, key)
     ]]
 end
 
-local function crewObserverUpdate(condition, key, updateListeners)
+---Actually screw it, I'm making a toggle menu for all of my stuff.  But watching those values is hard.
+---On the other hand, I get persistance for free.  that's pretty cool, right?
+---
+---
+local function crewObserverUpdate(condition, key, updateListeners) --TODO oh, this is stuff to do with crew id reuse, isn't it?  That's why these are sometimes spazzing out at the start of a fight.
     if not mListenerCategories[key] then return end
     local allCrew = lwl.getAllMemberCrewFromFactory(lwl.noFilter)
     for _,crewmem in ipairs(allCrew) do
-        local wasMarked = Hyperspace.playerVariables[key..crewmem.extend.selfId]
+        local crewId = crewmem.extend.selfId
+        local wasMarked = Hyperspace.playerVariables[key..crewId]
         if condition(crewmem) then
             if wasMarked == 0 then
-                Hyperspace.playerVariables[key..crewmem.extend.selfId] = 1
+                Hyperspace.playerVariables[key..crewId] = 1
                 for _,listener in ipairs(mListenerCategories[key]) do
+                    lwl.logDebug(TAG, "Sent "..key.." event for crew "..crewmem:GetName().." ID: "..crewId, LOG_OVERRIDE)
                     listener(crewmem)
+                    --print("finished calling listener.")
                 end
             end
         else
-            Hyperspace.playerVariables[key..crewmem.extend.selfId] = 0
+            Hyperspace.playerVariables[key..crewId] = 0
         end
     end
 end
@@ -86,17 +99,16 @@ local function deathAnimationUpdate(updateListeners)
 end
 
 local function hangarStatusUpdate()
-    local inHanger = (Hyperspace.ships(0)) and Hyperspace.ships(0).iCustomizeMode == 2
-    if inHanger then
-        if not mHangarBroadcastSent then
-            for _,listener in ipairs(mListenerCategories[KEY_ENTERED_HANGAR]) do
-                listener()
-            end
-            mHangarBroadcastSent = true
+    local inHanger = ((Hyperspace.ships(0) ~= nil) and Hyperspace.ships(0).iCustomizeMode == 2)
+    if not (mPreviousHangarState == inHanger) then
+        lwl.logDebug(TAG, "Sent hangar state broadcast, state: "..inHanger, LOG_OVERRIDE)
+        for _,listener in ipairs(mListenerCategories[KEY_ENTERED_HANGAR]) do
+            listener(inHanger)
+        end
+        mPreviousHangarState = inHanger
+        if inHanger then
             mRunInitialized = false
         end
-    else
-        mHangarBroadcastSent = false
     end
 end
 
@@ -207,3 +219,10 @@ end
 -----kind of want a gimp script to export several files at different opacities.
 ---Then change the color and do it again.
 ---basically blood splatters are tedious and scriptable.
+---I need to add debug logs I can toggle on with a global variable.  That way I can enable them mid-run and have them be actually useful instead of needing to recompile.
+---Basically the more I can do the faster the more targeted the better.  Reload less.
+---I have this already with my log utils and mods.lightweight_lua.LOG_LEVEL
+---
+---
+---
+---TODO make a sector FFF that's surreal in an DC EVA JAIL vibe way.  It will make you question reality in ways that DD does not.

@@ -58,6 +58,7 @@ function lwl.getBlueprintListSafe(name)
     return lwl.setIfNil(Hyperspace.Blueprints:GetBlueprintList(name), {})
 end
 
+local TAG = "blood"
 local CREW_LISTS = {}
 local function addCrewList(name)
     local crewList = lwl.getBlueprintListSafe(name)
@@ -190,7 +191,7 @@ end
 
 local function splatter(crewmem)
     if not (lwl.setIfNil(Hyperspace.metaVariables["lwl_render_blood_splatters"], 0) == 1) then return end
-
+    --lwl.logDebug(TAG, "Bloodsplatter for "..crewmem:GetName())
     local folderName = "particles/blood/"..getBloodType(crewmem).."/"..randomFolder()
     Brightness.create_particle(folderName, 5, 6.7, lwl.pointToPointf(crewmem:GetPosition()), math.random(0,359), crewmem.currentShipId, "SHIP_SPARKS")
 end

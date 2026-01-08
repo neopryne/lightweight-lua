@@ -20,10 +20,10 @@ Usage:
     lwst.registerOnTick("your thing name", function() [do stuff] end, false)
 ]]
 
----comment
----@param identifier any
----@param onTick any
----@param tickWhilePaused any
+---Register a method to be called a consistent amount of times regardless of framerate while the game is not paused.
+---@param identifier string
+---@param onTick function
+---@param tickWhilePaused boolean
 lwst.registerOnTick = function(identifier, onTick, tickWhilePaused)
     mSetupRequested = true
     if tickWhilePaused then
@@ -33,6 +33,10 @@ lwst.registerOnTick = function(identifier, onTick, tickWhilePaused)
     end
 end
 
+---Register a method to be called _every_ tick, even if the game is paused.
+---@param identifier string
+---@param onTick function
+---@param tickWhilePaused boolean
 lwst.registerTrueOnTick = function(identifier, onTick, tickWhilePaused)
     mSetupRequested = true
     if tickWhilePaused then
@@ -42,17 +46,23 @@ lwst.registerTrueOnTick = function(identifier, onTick, tickWhilePaused)
     end
 end
 
-local function doTicks(pauseBehavior)
-    for _,onTick in pairs(mOnTickList[pauseBehavior]) do
-        onTick()
+local function doTicks(pauseBehavior) --For things that should render, or compute regardless of timescale.
+    for identifier,onTick in pairs(mOnTickList[pauseBehavior]) do
+        local success, error = pcall(onTick)
+        if not success then
+            print("Error true ticking function", identifier, "!  Call failed, see error.", error)
+        end
     end
 end
 
 local function advanceTicks(pauseBehavior)
     mScaledLocalTime[pauseBehavior] = mScaledLocalTime[pauseBehavior] + (Hyperspace.FPS.SpeedFactor * 16 / 10)
     if (mScaledLocalTime[pauseBehavior] > 1) then
-        for _,onTick in pairs(mOnTickList[pauseBehavior]) do
-            onTick()
+        for identifier,onTick in pairs(mOnTickList[pauseBehavior]) do
+            local success, error = pcall(onTick)
+            if not success then
+                print("Error ticking function", identifier, "!  Call failed, see error.", error)
+            end
         end
         mScaledLocalTime[pauseBehavior] = 0
     end

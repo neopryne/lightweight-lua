@@ -1298,7 +1298,7 @@ end)
 --todo handle nested scroll bars, sideways scrolling, and other things?
 lwl.safe_script.on_internal_event("lwui_scroll_action", Defines.InternalEvents.ON_MOUSE_SCROLL, function(direction)
 -- script.on_internal_event(Defines.InternalEvents.ON_MOUSE_SCROLL, function(direction)
-    if not mHoveredScrollContainer then return end
+    if not mHoveredScrollContainer then return end --Only preempt if we actually are using it.
     if lwl.xor(direction > 0, mHoveredScrollContainer.invertScroll) then
         mHoveredScrollContainer.scrollDown()
     else

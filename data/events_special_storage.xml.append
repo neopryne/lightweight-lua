@@ -2,12 +2,144 @@
 
 <FTL>
 
+    <event name="LWL_TOGGLE_DEBUG_LOGS_SUBMODULE_EVENT_BROADCAST">
+        <text id="lwl_logs_event_broadcaster"/>
+        <choice blue="false">
+            <text id="lwl_back"/>
+            <event>
+                <loadEvent>LWL_TOGGLE_DEBUG_LOGS_SUBMODULES</loadEvent>
+            </event>
+        </choice>
+
+        <choice req="lwl_event_broadcast_log_level" lvl="-1" max_lvl="-1" blue="false">
+            <text id="lwl_log_level_default"/>
+            <event>
+                <metaVariable name="lwl_event_broadcast_log_level" op="set" value="0"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_LOGS_SUBMODULE_EVENT_BROADCAST</loadEvent>
+            </event>
+        </choice>
+        <choice req="lwl_event_broadcast_log_level" lvl="0" max_lvl="0" blue="false">
+            <text id="lwl_log_level_error"/>
+            <event>
+                <metaVariable name="lwl_event_broadcast_log_level" op="set" value="1"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_LOGS_SUBMODULE_EVENT_BROADCAST</loadEvent>
+            </event>
+        </choice>
+        <choice req="lwl_event_broadcast_log_level" lvl="1" max_lvl="1" blue="false">
+            <text id="lwl_log_level_warn"/>
+            <event>
+                <metaVariable name="lwl_event_broadcast_log_level" op="set" value="2"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_LOGS_SUBMODULE_EVENT_BROADCAST</loadEvent>
+            </event>
+        </choice>
+        <choice req="lwl_event_broadcast_log_level" lvl="2" max_lvl="2" blue="false">
+            <text id="lwl_log_level_debug"/>
+            <event>
+                <metaVariable name="lwl_event_broadcast_log_level" op="set" value="3"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_LOGS_SUBMODULE_EVENT_BROADCAST</loadEvent>
+            </event>
+        </choice>
+        <choice req="lwl_event_broadcast_log_level" lvl="3" max_lvl="3" blue="false">
+            <text id="lwl_log_level_info"/>
+            <event>
+                <metaVariable name="lwl_event_broadcast_log_level" op="set" value="4"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_LOGS_SUBMODULE_EVENT_BROADCAST</loadEvent>
+            </event>
+        </choice>
+        <choice req="lwl_event_broadcast_log_level" lvl="4" max_lvl="4" blue="false">
+            <text id="lwl_log_level_verbose"/>
+            <event>
+                <metaVariable name="lwl_event_broadcast_log_level" op="set" value="-1"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_LOGS_SUBMODULE_EVENT_BROADCAST</loadEvent>
+            </event>
+        </choice>
+
+    </event>
+
+    <event name="LWL_TOGGLE_DEBUG_LOGS_SUBMODULES">
+        <text>Individual Logging Overrides:</text>
+        <choice blue="false">
+            <text id="lwl_back"/>
+            <event>
+                <loadEvent>LWL_TOGGLE_DEBUG_LOGS</loadEvent>
+            </event>
+        </choice>
+
+        <choice blue="false">
+            <text id="lwl_logs_event_broadcaster"/>
+            <event>
+                <loadEvent>LWL_TOGGLE_DEBUG_LOGS_SUBMODULE_EVENT_BROADCAST</loadEvent>
+            </event>
+        </choice>
+
+    </event>
+
+
+    <event name="LWL_TOGGLE_DEBUG_LOGS">
+        <text>Current Global Log Settings:</text>
+        <choice blue="false">
+            <text id="lwl_back"/>
+            <event>
+                <loadEvent>LWL_TOGGLE_DEBUG_OPTIONS</loadEvent>
+            </event>
+        </choice>
+
+        <choice req="lwl_global_log_level" lvl="0" max_lvl="0" blue="false">
+            <text id="lwl_log_level_error"/>
+            <event>
+                <metaVariable name="lwl_global_log_level" op="set" value="1"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_LOGS</loadEvent>
+            </event>
+        </choice>
+        <choice req="lwl_global_log_level" lvl="1" max_lvl="1" blue="false">
+            <text id="lwl_log_level_warn"/>
+            <event>
+                <metaVariable name="lwl_global_log_level" op="set" value="2"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_LOGS</loadEvent>
+            </event>
+        </choice>
+        <choice req="lwl_global_log_level" lvl="2" max_lvl="2" blue="false">
+            <text id="lwl_log_level_debug"/>
+            <event>
+                <metaVariable name="lwl_global_log_level" op="set" value="3"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_LOGS</loadEvent>
+            </event>
+        </choice>
+        <choice req="lwl_global_log_level" lvl="3" max_lvl="3" blue="false">
+            <text id="lwl_log_level_info"/>
+            <event>
+                <metaVariable name="lwl_global_log_level" op="set" value="4"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_LOGS</loadEvent>
+            </event>
+        </choice>
+        <choice req="lwl_global_log_level" lvl="4" max_lvl="4" blue="false">
+            <text id="lwl_log_level_verbose"/>
+            <event>
+                <metaVariable name="lwl_global_log_level" op="set" value="0"/>
+                <loadEvent>LWL_TOGGLE_DEBUG_LOGS</loadEvent>
+            </event>
+        </choice>
+
+        <choice blue="false">
+            <text id="lwl_debug_modules"/>
+            <event>
+                <loadEvent>LWL_TOGGLE_DEBUG_LOGS_SUBMODULES</loadEvent>
+            </event>
+        </choice>
+    </event>
+
     <event name="LWL_TOGGLE_DEBUG_OPTIONS">
         <text>Debug Options:</text>
         <choice blue="false">
             <text id="lwl_back"/>
             <event>
                 <loadEvent>LWL_TOGGLE_OPTIONS</loadEvent>
+            </event>
+        </choice>
+        <choice blue="false">
+            <text id="lwl_logging_options"/>
+            <event>
+                <loadEvent>LWL_TOGGLE_DEBUG_LOGS</loadEvent>
             </event>
         </choice>
 

@@ -8,6 +8,7 @@ if not lwk then
 end
 
 local KEY_PMP = "lwl_print_mouse_position" --Defined in events_special_storage.xml.append
+local color = Graphics.GL_Color(1, 1, 1, .3)
 
 lwl.safe_script.on_render_event(KEY_PMP, Defines.RenderEvents.MOUSE_CONTROL, function() end, function()
         if not (lwl.varAsBoolean(Hyperspace.metaVariables[KEY_PMP])) then return end
