@@ -52,10 +52,6 @@ local function observerUpdate(condition, key)
     ]]
 end
 
----Actually screw it, I'm making a toggle menu for all of my stuff.  But watching those values is hard.
----On the other hand, I get persistance for free.  that's pretty cool, right?
----
----
 local function crewObserverUpdate(condition, key, updateListeners) --TODO oh, this is stuff to do with crew id reuse, isn't it?  That's why these are sometimes spazzing out at the start of a fight.
     if not mListenerCategories[key] then return end
     local allCrew = lwl.getAllMemberCrewFromFactory(lwl.noFilter)
@@ -91,6 +87,9 @@ local function deathUpdate(updateListeners)
     crewObserverUpdate(deathCheck, KEY_DEATH, updateListeners)
 end
 
+--TODO this is erroring because crew can go out of memory and not trigger this until the reclaimed area turns into a negative number.
+--The real issue is this doesn't account that crew can die without losing health.
+--So this needs to track death updates?
 local function deathAnimationUpdate(updateListeners)
     local function deathAnimCheck(crewmem)
         return crewmem.health.first <= 0
@@ -101,7 +100,7 @@ end
 local function hangarStatusUpdate()
     local inHanger = ((Hyperspace.ships(0) ~= nil) and Hyperspace.ships(0).iCustomizeMode == 2)
     if not (mPreviousHangarState == inHanger) then
-        lwl.logDebug(TAG, "Sent hangar state broadcast, state: "..inHanger, LOG_OVERRIDE)
+        lwl.logDebug(TAG, "Sent hangar state broadcast, state: "..tostring(inHanger), LOG_OVERRIDE)
         for _,listener in ipairs(mListenerCategories[KEY_ENTERED_HANGAR]) do
             listener(inHanger)
         end

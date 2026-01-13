@@ -189,8 +189,19 @@ local function randomFolder()
     return "blood_7"
 end
 
+local jumpedLastFrame = false
+local function justJumped()
+    if not Hyperspace.ships(0) then return end
+    jumpedLastFrame = Hyperspace.ships(0).bJumping
+    return jumpedLastFrame
+end
+lwl.safe_script.on_internal_event("blood_onjump", Defines.InternalEvents.ON_TICK, justJumped)
+
+--Needs to not trigger if a jump happened on the last frame.
 local function splatter(crewmem)
     if not (lwl.setIfNil(Hyperspace.metaVariables["lwl_render_blood_splatters"], 0) == 1) then return end
+    local lastJumpSaved = jumpedLastFrame
+    if not (lastJumpSaved == justJumped()) then print("Skipped blood due to jump.") return end
     --lwl.logDebug(TAG, "Bloodsplatter for "..crewmem:GetName())
     local folderName = "particles/blood/"..getBloodType(crewmem).."/"..randomFolder()
     Brightness.create_particle(folderName, 5, 6.7, lwl.pointToPointf(crewmem:GetPosition()), math.random(0,359), crewmem.currentShipId, "SHIP_SPARKS")
