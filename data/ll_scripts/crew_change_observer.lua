@@ -41,16 +41,14 @@ lwl.safe_script.on_internal_event(TAG.."onTick", Defines.InternalEvents.ON_TICK,
     end
 end)
 
--- script.on_game_event("START_BEACON_REAL", false, function() --reset observers on restart.  --todo also for tele if I still need it.  I do, but the way I use CCO means I personally don't.
-lwl.safe_script.on_game_event(TAG.."_reset_at_start_beacon", "START_BEACON_REAL", false, function()
-    --todo see if I can move this to on_init
-        for _,crewChangeObserver in ipairs(mCrewChangeObservers) do
-            if crewChangeObserver.selfIsInitialized then
-                crewChangeObserver.crew = {}
-            end
+script.on_init(function(newGame)
+    for _,crewChangeObserver in ipairs(mCrewChangeObservers) do
+        if crewChangeObserver.selfIsInitialized then
+            crewChangeObserver.crew = {}
             crewChangeObserver.resetUpdate = true
         end
-        end)
+    end
+end)
 
 --[[todo remove dead crew  :OutOfGame()?:IsDead()
     bool :PermanentDeath()
