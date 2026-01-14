@@ -61,11 +61,13 @@ local function crewObserverUpdate(condition, key, updateListeners) --TODO oh, th
         if condition(crewmem) then
             if wasMarked == 0 then
                 Hyperspace.playerVariables[key..crewId] = 1
-                for _,listener in ipairs(mListenerCategories[key]) do
+                --if updateListeners then
                     lwl.logDebug(TAG, "Sent "..key.." event for crew "..crewmem:GetName().." ID: "..crewId, LOG_OVERRIDE)
-                    listener(crewmem)
-                    --print("finished calling listener.")
-                end
+                    for _,listener in ipairs(mListenerCategories[key]) do
+                        listener(crewmem)
+                        --print("finished calling listener.")
+                    end
+                --end
             end
         else
             Hyperspace.playerVariables[key..crewId] = 0

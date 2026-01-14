@@ -165,6 +165,9 @@ buildBloodMap()
 
 local mDangItRonPaulMode = false
 
+---Need to clear all blood splatters on the enemy ship on jump.
+local mEnemyShipBloodsplatters = {}
+
 ---comment
 ---@param crewmem any
 ---@return string
@@ -189,22 +192,39 @@ local function randomFolder()
     return "blood_7"
 end
 
-local jumpedLastFrame = false
+--This doesn't work, because blood has to be created when the crew exists on screen.
+---I think what I'll do is check that the...
+local jumpingLastFrame = false
 local function justJumped()
     if not Hyperspace.ships(0) then return end
-    jumpedLastFrame = Hyperspace.ships(0).bJumping
-    return jumpedLastFrame
+    jumpingLastFrame = Hyperspace.ships(0).bJumping
+    return jumpingLastFrame
 end
-lwl.safe_script.on_internal_event("blood_onjump", Defines.InternalEvents.ON_TICK, justJumped)
+
+local function onJumpArrive(shipManager)
+    for _,particle in ipairs(mEnemyShipBloodsplatters) do
+        if (particle.indexNum ~= -1) then
+            Brightness.destroy_particle(particle)
+        end
+    end
+    mEnemyShipBloodsplatters = {}
+end
+
+lwl.safe_script.on_internal_event("blood_onjump", Defines.InternalEvents.JUMP_ARRIVE, onJumpArrive)
+
+lwl.safe_script.on_internal_event("blood_tick_checkjumps", Defines.InternalEvents.ON_TICK, justJumped)
 
 --Needs to not trigger if a jump happened on the last frame.
 local function splatter(crewmem)
     if not (lwl.setIfNil(Hyperspace.metaVariables["lwl_render_blood_splatters"], 0) == 1) then return end
-    local lastJumpSaved = jumpedLastFrame
+    local lastJumpSaved = jumpingLastFrame
     if not (lastJumpSaved == justJumped()) then print("Skipped blood due to jump.") return end
     --lwl.logDebug(TAG, "Bloodsplatter for "..crewmem:GetName())
     local folderName = "particles/blood/"..getBloodType(crewmem).."/"..randomFolder()
-    Brightness.create_particle(folderName, 5, 6.7, lwl.pointToPointf(crewmem:GetPosition()), math.random(0,359), crewmem.currentShipId, "SHIP_SPARKS")
+    local bloodParticle = Brightness.create_particle(folderName, 5, 6.7, lwl.pointToPointf(crewmem:GetPosition()), math.random(0,359), crewmem.currentShipId, "SHIP_SPARKS")
+    if crewmem.currentShipId ~= lwl.OWNSHIP() then
+        table.insert(mEnemyShipBloodsplatters, bloodParticle)
+    end
 end
 
 lweb.registerDeathAnimationListener(splatter)
