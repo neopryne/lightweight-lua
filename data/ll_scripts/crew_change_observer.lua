@@ -55,6 +55,8 @@ end)
 tracking={"crew", "drones", or "all"}  If no value is passed, defaults to all.
 shipId = {0,1} If not set, defaults to ownship.
 extend:GetDefinition().noWarning
+
+I want a thing that lets me track crew by filterFunction, that attaches to them when they spawn and knows when they die.
 --]]
 function lwcco.createCrewChangeObserver(filterFunction)
     mSetupRequested = true

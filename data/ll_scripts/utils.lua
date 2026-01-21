@@ -804,6 +804,14 @@ function lwl.getRoomAtCrewmember(crewmem)
     return room
 end
 
+---Returns the room object for a given roomId on a ship.
+---@param shipId number
+---@param roomId number
+---@return Hyperspace.Room
+function lwl.getRoomById(shipId, roomId)
+    return Hyperspace.ships(shipId).ship.vRoomList[roomId]
+end
+
 ---This doesn't actually do anything, crew speed is screen speed.
 function lwl.crewSpeedToScreenSpeed(crewSpeed)
     return crewSpeed

@@ -28,6 +28,8 @@ Right now I don't have a ton to do with confusion, as it only affects player cre
 are also only for player crew.
 
 todo currently confusion doesn't work properly when loaded in a run.
+If you want to add a new status, you will need an 11x11 image with a one pixel black outline for the icon, and to 
+modify all the parts here where you see other statuses mentioned.
 --]]
 if (not mods) then mods = {} end
 mods.lightweight_crew_effects = {}
@@ -98,7 +100,7 @@ local mInitialized = false
 local mSetupRequested = false
 
 --Strongly recommend that if you're creating effects with this, add them to this library instead of your mod if they don't have too many dependencies.
------------------------------HELPER FUNCTIONS--------------------------------------
+--#region ---------------------------HELPER FUNCTIONS--------------------------------------
 
 ---@param crewmem Hyperspace.CrewMember
 ---@param effect StatusEffect
@@ -144,9 +146,11 @@ end
 local function tickDownEffect(effect_crew, effect)
     effect.value = math.max(0, effect.value - 1)
 end
+--#endregion
 
------------------------------EFFECT DEFINITIONS--------------------------------------
-------------------BLEED------------------
+--#region ---------------------------EFFECT DEFINITIONS--------------------------------------
+
+--#region ----------------BLEED------------------
 local function tickBleed(effect_crew)
     local bleed = effect_crew.bleed
     if bleed.value > 0 then
@@ -156,8 +160,8 @@ local function tickBleed(effect_crew)
         tickDownEffect(effect_crew, bleed)
     end
 end
-
-------------------CONFUSION------------------
+--#endregion
+--#region ----------------CONFUSION------------------
 local function tickConfusion(effect_crew)
     local confusion = effect_crew.confusion
     if confusion.value > 0 then
@@ -173,8 +177,8 @@ local function endConfusion(effect_crew)
         lwsb.removeStatBoost(effect_crew.confusion.statBoostId)
     end
 end
-
-------------------CORRUPTION------------------
+--#endregion
+--#region ----------------CORRUPTION------------------
 --Certain effects give corrpution, which is a stacking effect not removed through normal means.  
 local function tickCorruption(effect_crew)
     local corruption = effect_crew.corruption
@@ -197,10 +201,8 @@ local function tickCorruption(effect_crew)
         --print(crewmem:GetName(), "has corruption", corruption.value)
     end
 end
-
-
-
-------------------TELEPORTITIS------------------
+--#endregion
+--#region ----------------TELEPORTITIS------------------
 local function tickTeleportitis(effect_crew)
     local teleportitis = effect_crew.teleportitis
     if teleportitis.value > 0 then
@@ -230,8 +232,8 @@ local function tickTeleportitis(effect_crew)
         end
     end
 end
-
-------------------SLIMED------------------
+--#endregion
+--#region ----------------SLIMED------------------
 local function tickSlimed(effect_crew)
     local slimed = effect_crew.slimed
     if slimed.value > 0 then
@@ -250,10 +252,12 @@ local function endSlimed(effect_crew)
         lwsb.removeStatBoost(effect_crew.slimed.damageStatBoostId)
     end
 end
+--#endregion
+--#endregion
 
------------------------------EXTERNAL API--------------------------------------
+--#region ---------------------------EXTERNAL API--------------------------------------
+
 --todo This should take a crew ID instead Once I figure out why crewmem is null
-
 ---@param crewmem Hyperspace.CrewMember
 ---@param amount number
 ---@param effectName EffectType
@@ -376,8 +380,8 @@ function mods.lightweight_crew_effects.getEffect(crewmem, effectName)
     end
     return listCrew[effectName]
 end
-
------------------------------EFFECT LIST CREATION--------------------------------------
+--#endregion
+--#region ---------------------------EFFECT LIST CREATION--------------------------------------
 function lwce.createCrewEffectDefinition(name, onTick, onEnd, onRender, flagValue)
     mEffectDefinitions[name] = {name=name, onTick=onTick, onRender=onRender, onEnd=onEnd, flagValue=flagValue}
 end
@@ -388,8 +392,9 @@ lwce.createCrewEffectDefinition(lwce.KEY_CORRUPTION, tickCorruption, NOOP, NOOP,
 lwce.createCrewEffectDefinition(lwce.KEY_TELEPORTITIS, tickTeleportitis, NOOP, NOOP, 4)
 lwce.createCrewEffectDefinition(lwce.KEY_SLIMED, tickSlimed, endSlimed, NOOP, 5)
 --And when you hover the icons it prints a little popup with effect description and remaining duration
+--#endregion
 
-
+--#region ---------------------------PERSISTANCE--------------------------------------
 
 --[[
 We persist all effects for all crew, and all listCrew have all effects
@@ -397,7 +402,6 @@ We persist all effects for all crew, and all listCrew have all effects
 ----Value
 ----Resist
 --]]
------------------------------PERSISTANCE--------------------------------------
 local function persistEffects()
     local factoryCrew = mCrewFactory.crewMembers --statuses should define which kinds of crew they can apply to.
     for crewmem in vter(factoryCrew) do
@@ -456,8 +460,10 @@ local function resetEffects()
         end
     end
 end
+--#endregion
 
------------------------------ICON RENDERING LOGIC--------------------------------------
+--#region ---------------------------ICON RENDERING LOGIC--------------------------------------
+
 --features required to make lwui support this: removing objects from containers, vertical containers that extend upwards.
 --vs I know exactly how to do this in brightness.
 --Ok let's brightness, and maybe I'll find a good way to combine these.
@@ -488,10 +494,11 @@ local function repositionEffectStack(listCrew)
         end
     end
 end
+--#endregion
 
 --w/e ill make them buttons with no onClick.
 --maybe I will use brightness for rendering the status effect animations.  It's pretty good at that.
------------------------------ON TICK LOGIC--------------------------------------
+--#region ---------------------------ON TICK LOGIC--------------------------------------
 local function tickEffects()
     --print("ticking effects")
     for _,effect_crew in ipairs(mCrewList) do
@@ -576,8 +583,8 @@ lwl.safe_script.on_internal_event("lwce_reposition_stack", Defines.InternalEvent
     end
     --print("Icons repositioned!")
 end)
-
------------------------------LEGEND BUTTON--------------------------------------
+--#endregion
+--#region ---------------------------LEGEND BUTTON--------------------------------------
 -- print("bottom of lwce1")
 local STATUS_EFFECT_HELP_TEXT = "lwl_status_effect_help_text"
 local mHelpButton = lwui.buildButton(1, 0, 11, 11, lwui.alwaysOnVisibilityFunction, lwui.spriteRenderFunction("icons/help/effects_help.png"), NOOP, NOOP)
@@ -585,3 +592,4 @@ mHelpButton.lwuiHelpText = Hyperspace.Text:GetText(STATUS_EFFECT_HELP_TEXT)
 
 -- print("bottom of lwce2")
 lwui.addHelpButton(mHelpButton)
+--#endregion

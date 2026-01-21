@@ -129,6 +129,10 @@ local bloodGlistening = {darkestDesireSoulplague} --Boogiepop and others.
 --Anything not on this list is red blood.
 ----Drones default to brown.
 ---todo add other mod crew dynamically.
+---Humongous Bastard
+---Darkener Deserved
+---Catty Dilettante
+---Swashbucking Scoundrel
 
 local mBloodTypes = {"orange", "green", "blue", "purple", "brown", "grey", "her", "black", "static", "glistening"}
 

@@ -8,9 +8,13 @@
 
 
 
+--[[
 
 
 
+Parts
+    A confidence score for how likely a thing is to be true.
+    Like, you may only think that you know something, you have to account that you may have hallucinated it.
 
 
 
@@ -28,6 +32,15 @@ It's like binary, but for machines.
 The point is to get it very compact and dense and rhyming so that learned information is multiapplicable.
 
 
+
+
+Timebox items, during training, you will be trying to estimate how much time you should spend on stuff.
+
+
+
+
+
+]]
 
 
 

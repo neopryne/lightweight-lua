@@ -127,9 +127,9 @@ function mods.lightweight_3d.drawRelativeLine(mesh, vertex1, vertex2, position, 
 end
 
 function mods.lightweight_3d.glDrawTriangle_Wrapper(mesh, vertex1, vertex2, vertex3, position, color)
-    point1 = mods.lightweight_3d.relativeVertexByIndex(mesh, vertex1, position)
-    point2 = mods.lightweight_3d.relativeVertexByIndex(mesh, vertex2, position)
-    point3 = mods.lightweight_3d.relativeVertexByIndex(mesh, vertex3, position)
+    local point1 = mods.lightweight_3d.relativeVertexByIndex(mesh, vertex1, position)
+    local point2 = mods.lightweight_3d.relativeVertexByIndex(mesh, vertex2, position)
+    local point3 = mods.lightweight_3d.relativeVertexByIndex(mesh, vertex3, position)
     
     --print("rendering triangle", point1.x, ", ", point1.y, " -- ", point2.x, ", ", point2.y, " -- ", point3.x, ", ", point3.y)
     Graphics.CSurface.GL_DrawTriangle(point1, point2, point3, color)
