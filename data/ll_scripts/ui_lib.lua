@@ -133,6 +133,10 @@ function lwui.isWithinMask(mousePos, mask)
 end
 
 --Used to register your top level objects so they render themselves / their contents.
+--I just need to copy what Brightness does for this.  You know, the thing that I fixed inside it.  I should pull that out for reuse.
+--Because for crew that use this UI (Nier), I need to be able to remove things.
+--I could just do it all with brightness particles I guess...
+--But I do need to copy this over.  Particles for now so that I actually do things, I
 function lwui.addTopLevelObject(object, renderLayer)
     for name,_ in pairs(mTopLevelRenderLists) do
         if (name == renderLayer) then

@@ -6,6 +6,8 @@ Wait for crewChangeObserver.isInitialized() to become true.
 Then call crewChangeObserver.getAddedCrew() and getRemovedCrew() when you want to know what changed since you last saved,
     and saveLastSeenState() when you want to let the observer know you're up to date.
 CCO is an alternative to saving crew.  If you're using CCO, don't persist your crew; rely on CCO to tell you who's around.
+
+This is failing when you load this, and then quit back to menu.  It should pause execution while on the main menu.
 --]]
 
 if (not mods) then mods = {} end
@@ -42,10 +44,12 @@ lwl.safe_script.on_internal_event(TAG.."onTick", Defines.InternalEvents.ON_TICK,
 end)
 
 script.on_init(function(newGame)
-    for _,crewChangeObserver in ipairs(mCrewChangeObservers) do
-        if crewChangeObserver.selfIsInitialized then
-            crewChangeObserver.crew = {}
-            crewChangeObserver.resetUpdate = true
+    if (newGame) then
+        for _,crewChangeObserver in ipairs(mCrewChangeObservers) do
+            if crewChangeObserver.selfIsInitialized then
+                crewChangeObserver.crew = {}
+                crewChangeObserver.resetUpdate = true
+            end
         end
     end
 end)

@@ -62,6 +62,7 @@ end
 ---@param type string Describes the kind of data contained in amountValue
 ---@param action string One of lwsb.ACTION_SET, lwsb.ACTION_NUMERIC_ADD, lwsb.ACTION_NUMERIC_MULTIPLY
 ---@param amountValue any The numeric amount, boolean value, string, or other content associated with this boot type.
+---                       You can also pass a zero-arugment function that returns the correct type.
 ---@param filterFunction function with one argument, a Hyperspace.CrewMember.  Should return true if this boost should apply to that crew, and false otherwise.
 ---@return integer ID of the boost, for use with removeStatBoost.
 function lwsb.addStatBoost(crewStat, type, action, amountValue, filterFunction)

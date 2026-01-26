@@ -32,7 +32,7 @@ mods.lightweight_3d = {} --todo actually you don't need to avoid resetting this 
 local X_RENDER_OFFSET = -15
 local Y_RENDER_OFFSET = -15
 
-local HIGHLIGHT_YELLOW = Graphics.GL_Color(.8, .8, .0, 1)
+local HIGHLIGHT_YELLOW = Graphics.GL_Color(1, 1, .0, 1)
 local HIGHLIGHT_GREEN = Graphics.GL_Color(.0, .8, .0, 1)
 
 
@@ -210,7 +210,7 @@ end
 --changes the faces to match the crewmember's selected status
 function mods.lightweight_3d.recolorForHighlight(object_faces, crewmem)
     if (crewmem.selectionState == 0) then--not selected, do nothing
-        return object_faces
+        return mods.lightweight_3d.recolorFaces(object_faces, {outline=true, outline_color=HIGHLIGHT_YELLOW, line_width=1})
     elseif (crewmem.selectionState == 1) then --selected, relative green fill
         return mods.lightweight_3d.recolorFaces(object_faces, {filled=true, fill_color = HIGHLIGHT_GREEN}, true)
     elseif (crewmem.selectionState == 2) then --hover, green edges

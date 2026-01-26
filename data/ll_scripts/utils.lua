@@ -473,6 +473,15 @@ end
 --#endregion
 --#region color printing
 
+---Given a color string and text string, format the text to apply the color.
+---@param color string of the form rrggbb, where each character is a hex value.
+---@param string string the text to colorize
+---@return string The formatted string
+function lwl.colorString(color, string)
+    return "[style[color:"..color.."]]"..string.."[[/style]]"
+end
+
+
 --Color string formatting
 -- function arrayMidpoint()
 
@@ -1238,6 +1247,22 @@ function lwl.createIncrementalConditonal(trueEvery)
             counter = 1
         end
         return counter == 1
+    end
+end
+
+---Returns a function that calls the given function once every period calls.
+---@param period number how many calls until the underlying function should be called.
+---@param periodicFunction function to call every period calls.
+---@return function
+function lwl.createTimerFunction(period, periodicFunction)
+    local updatePeriod = period
+    local timer = 0
+    return function ()
+        timer = timer + 1
+        if timer >= updatePeriod then
+            timer = 0
+            periodicFunction()
+        end
     end
 end
 --endregion control flow

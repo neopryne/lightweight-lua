@@ -89,6 +89,9 @@ function lwl.CreateMetaVariableInterface(name)
     ---@param key string name of the variable to set
     ---@param value number value of the variable
     interface.setVariable = function(uuid, key, value)
+        if value == nil then
+            lwl.logError(GLOBAL_NAME, "Value must not be nil!")
+        end
         local object = interface.uuidToObjectTable[uuid]
         ---If object is not present, create it, else find its index.
         if not object then

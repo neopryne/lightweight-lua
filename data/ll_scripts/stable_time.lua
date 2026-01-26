@@ -21,6 +21,7 @@ Usage:
 ]]
 
 ---Register a method to be called a consistent amount of times regardless of framerate while the game is not paused.
+---Call again with nil onTick to deregister.
 ---@param identifier string
 ---@param onTick function
 ---@param tickWhilePaused boolean
@@ -33,7 +34,7 @@ lwst.registerOnTick = function(identifier, onTick, tickWhilePaused)
     end
 end
 
----Register a method to be called _every_ tick, even if the game is paused.
+---Register a method to be called _every_ tick, even if the game is paused.  Call again with nil onTick to deregister.
 ---@param identifier string
 ---@param onTick function
 ---@param tickWhilePaused boolean
@@ -45,6 +46,7 @@ lwst.registerTrueOnTick = function(identifier, onTick, tickWhilePaused)
         mOnTickList[NO_SCALING_PAUSE][identifier] = onTick
     end
 end
+
 
 local function doTicks(pauseBehavior) --For things that should render, or compute regardless of timescale.
     for identifier,onTick in pairs(mOnTickList[pauseBehavior]) do
