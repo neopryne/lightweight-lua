@@ -191,6 +191,27 @@ testRound(66.4, 66)
 testRound(66.6, 67)
 --#endregion
 --#endregion general utils
+--#region class utils
+
+--todo idk if I will use this.
+function lwl.addType(object, type)
+    for k, v in pairs(source) do
+        if target[k] == nil then
+            target[k] = v
+        end
+    end
+end
+
+---helper function to create a class object.
+---@param parent table|nil nil if this has no parent, or a parent created by this method.
+---@return table a class that can be used in inheritance.
+function lwl.createClass(parent)
+    local c = {}
+    c.__index = c
+    setmetatable(c, { __index = parent })
+    return c
+end
+--#endregion
 --#region [[  TABLE UTILS  ]]--
 ---for use in printing all of a table
 

@@ -51,7 +51,6 @@ Push-Location $ftlmanDir
 .\ftlman.exe patch `
     "Multiverse 5.5 - Assets (Patch above Data).zip" `
     "Multiverse 5.5 - Data.zip" `
-    "Vertex-Util.ftl" `
 	"Brightness Particles 1.4.1.zip" `
     $relativeFile `
     "Crew_Equipment_Library.zip" `
