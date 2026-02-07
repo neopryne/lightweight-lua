@@ -148,50 +148,6 @@ function lwui.addTopLevelObject(object, renderLayer)
     error("Invalid layer name ", renderLayer)
 end
 
---chatgpt created
-function lwl.print_function_source(f)
-    local info = debug.getinfo(f, "S")
-
-    -- 1. No source available (e.g. C function, stripped bytecode)
-    if info.what ~= "Lua" then
-        print("No Lua source available for this function.")
-        return
-    end
-
-    -- 2. Function created with load/loadfile? The source is inside info.source.
-    -- If it's from a file, info.source starts with '@'.
-    if info.source:sub(1,1) == "@" then
-        print("File source")
-        local filename = info.source:sub(2)
-        local file = io.open(filename, "r")
-        if not file then
-            print("Could not open file:", filename)
-            return
-        end
-        local lines = {}
-        for line in file:lines() do
-            table.insert(lines, line)
-        end
-        file:close()
-
-        print("File source", filename, info.linedefined, info.lastlinedefined)
-        -- print only the lines that correspond to this function
-        for i = info.linedefined, info.lastlinedefined do
-            print(lines[i] or "")
-        end
-        return
-    end
-
-    -- 3. Function created from a string chunk: source *is literally the string*
-    -- and includes the leading '=' or actual source text.
-    if info.source:sub(1,1) == "=" then
-        print("String source ", info.source:sub(2))
-        return
-    end
-
-    -- 4. Raw chunk from load("...") — entire source is inside info.source
-    print("Raw source", info.source)
-end
 
 --[[
 Objects must be registered somehow with the topLevelRenderList to appear, be visible, and thus be interacted with.
@@ -255,6 +211,9 @@ function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunctio
                     --     print("button_hovered ", button)
                     -- end
                     lwui.mHoveredObject = object
+                    --todo make this optional.  Prevents normal hover behavior if hovering lwui things.
+                    Hyperspace.Mouse:SetDoor(0)
+                    Hyperspace.Mouse.tooltip = ""
                 end
             end
             local internalHover = lwl.resolveToBoolean(renderFunction(object)) --todo this is a hack for this returning a function, TODO fix this by ensuring we don't return functions here.
@@ -419,8 +378,11 @@ function lwui.buildContainer(x, y, width, height, visibilityFunction, renderFunc
                 container.width = math.max(container.width, object.x + object.width)
             end
             --print("render object at ", object.getPos().x, ", ", object.getPos().y)
-            if object.renderFunction(object) then
-                hovering = true
+            if renderOutsideBounds or (object.y + object.height > 0 and object.y < container.height and
+                object.x + object.width > 0 and object.x < container.width) then
+                if object.renderFunction(object) then
+                    hovering = true
+                end
             end
             i = i + 1
         end
@@ -647,8 +609,6 @@ function lwui.buildVerticalScrollContainer(x, y, width, height, visibilityFuncti
         return math.max(minWindowScroll(), content.height - contentContainer.height)
     end
     
-    --TODO test scroll bar with too small thing inside.
-    --todo I don't think this math is right...  Check that scroll makes things do right numbers.
     local function scrollToNub(scrollValue)
         return nubMinPos() + ((scrollValue - minWindowScroll()) / math.max(1, (maxWindowScroll() - minWindowScroll())) * (nubMaxPos() - nubMinPos()))
     end
@@ -1255,10 +1215,10 @@ local function renderObjects(layerName)
         -- end
         i = i + 1
     end
-    if not hovering and mLayersWithoutHover < 300 then --todo probably some reason this is large, kludgy.
+    if not hovering and mLayersWithoutHover < 300 then --arbitrary large number to prevent overflow
         mLayersWithoutHover = mLayersWithoutHover + 1
     end
-    if mScrollContainerHoverTimer < 300 then --todo probably some reason this is large, kludgy.
+    if mScrollContainerHoverTimer < 300 then
         mScrollContainerHoverTimer = mScrollContainerHoverTimer + 1
     end
 

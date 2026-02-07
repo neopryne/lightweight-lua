@@ -12,6 +12,11 @@ lwce.applyBleed(crewmem, amount)
 lwce.addResist(crewmem, lwce.KEY_BLEED, 1)
 This applies bleed to a crew and then makes them immune to it.  Note that not all resistances work the same.
 
+
+I need to fix this to not always tick for all crew for all effects, instead removing effects when they are not applied.
+The current setup is hacky and wastes cycles, which in FTL are precious.
+
+
 **Statuses**
 Bleed:
     Temporary duration damage over time
@@ -51,6 +56,7 @@ local get_room_at_location = mods.multiverse.get_room_at_location
 ---| '"confusion"'
 ---| '"teleportitis"'
 ---| '"slimed"'
+---| '"scorch"'
 
 ---@class (Exact) StatusEffect
 ---@field name EffectType
@@ -68,6 +74,7 @@ local get_room_at_location = mods.multiverse.get_room_at_location
 ---@field confusion StatusEffect
 ---@field teleportitis StatusEffect
 ---@field slimed StatusEffect
+---@field scorch StatusEffect
 
 --Tracks an internal list of all crew, updates it when crew are lost or gained.
 local TAG = "LW Crew Effects"
@@ -84,6 +91,7 @@ lwce.KEY_CONFUSION = "confusion"
 lwce.KEY_CORRUPTION = "corruption"
 lwce.KEY_TELEPORTITIS = "teleportitis"
 lwce.KEY_SLIMED = "slimed"
+lwce.KEY_SCORCH = "scorch"
 
 --Adding a button which describes all the effects when hovered.
 --A crew object will look something like this effect_crew = {id=, bleed={}, effect2={}}
@@ -253,6 +261,27 @@ local function endSlimed(effect_crew)
     end
 end
 --#endregion
+--#region ----------------SCORCH------------------
+local function tickScorch(effect_crew)
+    local scorch = effect_crew.scorch
+    if scorch.value > 0 then
+        --local crewmem = lwl.getCrewById(effect_crew.id)
+        --print(crewmem:GetName(), "has slimed", slimed.value)
+        crewmem:DirectModifyHealth(-.047 * (1 - scorch.resist))
+        tickDownEffect(effect_crew, scorch) --todo if moving tick down double.
+    end
+end
+
+--clear any remaining stat boost
+local function endScorch(effect_crew)
+    if (effect_crew.scorch.canManStatBoostId) then
+        lwsb.removeStatBoost(effect_crew.scorch.canManStatBoostId)
+    end
+    if (effect_crew.scorch.canRepairStatBoostId) then
+        lwsb.removeStatBoost(effect_crew.scorch.canRepairStatBoostId)
+    end
+end
+--#endregion
 --#endregion
 
 --#region ---------------------------EXTERNAL API--------------------------------------
@@ -368,6 +397,20 @@ function mods.lightweight_crew_effects.applySlimed(crewmem, amount)
     return effect
 end
 
+---Apply amount of scorch to crew. Returns a the new status.
+---@param crewmem Hyperspace.CrewMember
+---@param amount number
+---@return table|nil 
+function mods.lightweight_crew_effects.applyScorch(crewmem, amount)
+    local effect = applyEffect(crewmem, amount, lwce.KEY_SCORCH)
+    if amount > 0 and effect and effect.value == amount then --If this is a new effect for this crew
+        local crewFilterFunction = lwl.generateCrewFilterFunction(crewmem)
+        effect.canManStatBoostId = lwsb.addStatBoost(Hyperspace.CrewStat.CAN_MAN, lwsb.TYPE_BOOLEAN, lwsb.ACTION_SET, false, crewFilterFunction)
+        effect.canRepairStatBoostId = lwsb.addStatBoost(Hyperspace.CrewStat.CAN_REPAIR, lwsb.TYPE_BOOLEAN, lwsb.ACTION_SET, false, crewFilterFunction)
+    end
+    return effect
+end
+
 ---Returns a status object for the given effect.
 ---@param crewmem Hyperspace.CrewMember
 ---@param effectName EffectType
@@ -391,6 +434,7 @@ lwce.createCrewEffectDefinition(lwce.KEY_CONFUSION, tickConfusion, endConfusion,
 lwce.createCrewEffectDefinition(lwce.KEY_CORRUPTION, tickCorruption, NOOP, NOOP, 3)
 lwce.createCrewEffectDefinition(lwce.KEY_TELEPORTITIS, tickTeleportitis, NOOP, NOOP, 4)
 lwce.createCrewEffectDefinition(lwce.KEY_SLIMED, tickSlimed, endSlimed, NOOP, 5)
+lwce.createCrewEffectDefinition(lwce.KEY_SCORCH, tickScorch, endScorch, NOOP, 6)
 --And when you hover the icons it prints a little popup with effect description and remaining duration
 --#endregion
 
@@ -546,7 +590,7 @@ local function onTick()
     for _,crewId in ipairs(addedCrew) do
         --print("EFFECT Added crew: ", lwl.getCrewById(crewId):GetName())
         table.insert(mCrewList, {id=crewId}) --probably never added any crew 
-        --Set values.  ALL VALUES MUST BE SET HERE.
+        --Set values.  ALL VALUES MUST BE SET HERE. todo does this scale?
         local realCrew = lwl.getCrewById(crewId)
         if realCrew then
             lwce.applyBleed(realCrew, 0)
@@ -556,6 +600,7 @@ local function onTick()
             local teleEffect = lwce.applyTeleportitis(realCrew, 0)
             teleEffect.instability = 0
             lwce.applySlimed(realCrew, 0)
+            lwce.applyScorch(realCrew, 0)
         end
         --print("EFFECT after adding ", crewId, " there are now ", #mCrewList, " crew")
     end

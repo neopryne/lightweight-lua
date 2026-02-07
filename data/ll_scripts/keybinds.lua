@@ -4,7 +4,8 @@ local lwk = mods.lightweight_keybinds
 
 local lwl = mods.lightweight_lua
 
-local keyNameTable = {
+--Useful for getting the names of keys.
+lwk.keyNameTable = {
     [0] = "KEY_UNKNOWN",
     [8] = "KEY_BACKSPACE",
     [9] = "KEY_TAB",
@@ -257,6 +258,13 @@ end
 
 function lwk.metaPressed()
     return isPressed(Defines.SDL_KEY_RMETA) or isPressed(Defines.SDL_KEY_LMETA) or isPressed(Defines.SDL_KEY_RALT) or isPressed(Defines.SDL_KEY_LALT)
+end
+
+---Returns the name of the associated key.
+---@param id number the SDL.Defines id of the key
+---@return string the name of the key
+function lwk.getKeyNameById(id)
+    return lwk.keyNameTable[id]
 end
 
 --todo I should really make a syntax for "or" and "and" for modifiers.  Right now it's always "and".

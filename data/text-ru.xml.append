@@ -20,4 +20,14 @@
     <text name="lwl_display_help_enable_text" language="ru">Включить панель справки lwl.</text>
     <text name="lwl_display_help_disable_text" language="ru">Отключить панель справки lwl.</text>
     <text name="lwl_status_effect_help_text" language="ru">Статусы LWCE\nКровотечение:\n    Временный постоянный урон с течением времени\n    Сопротивление уменьшает количество накопленных зарядов и получаемый урон\nСмятение:\n    Экипаж становится неуправляемым.\n    Сопротивление уменьшает количество накопленных зарядов.\nПорча:\n    Постоянный накопительный урон с течением времени\n    Сопротивление уменьшает количество накопленных зарядов\nТелепортация:\n    Экипаж время от времени случайным образом телепортируется в другое место</text>
+
+    <text name="lwl_logging_options" language="ru">Изменить уровни журнала</text>
+    <text name="lwl_debug_modules" language="ru">Уровни логирования по компонентам</text>
+    <text name="lwl_logs_event_broadcaster" language="ru">Журналы трансляции событий:</text>
+    <text name="lwl_log_level_default" language="ru">Используйте глобальное значение</text>
+    <text name="lwl_log_level_error" language="ru">Ошибка</text>
+    <text name="lwl_log_level_warn" language="ru">Предупреждать</text>
+    <text name="lwl_log_level_debug" language="ru">Отлаживать</text>
+    <text name="lwl_log_level_info" language="ru">Информация</text>
+    <text name="lwl_log_level_verbose" language="ru">Подробный (все записи)</text>
 </FTL>

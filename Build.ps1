@@ -1,7 +1,7 @@
 # Build.ps1
 
 # Variables
-$relativeFile = "Lightweight Lua.zip"
+$relativeFile = "Lightweight_Lua.zip"
 $ftlmanDir = "C:\Users\GunBuild-1\Documents\Workspace\ftlman-x86_64-pc-windows-gnu\ftlman"
 $ftlGamePath = "C:\Program Files (x86)\Steam\steamapps\common\FTL Faster Than Light\FTLGame.exe"
 
@@ -51,7 +51,7 @@ Push-Location $ftlmanDir
 .\ftlman.exe patch `
     "Multiverse 5.5 - Assets (Patch above Data).zip" `
     "Multiverse 5.5 - Data.zip" `
-	"Brightness Particles 1.4.1.zip" `
+	"Brightness_Particles.zip" `
     $relativeFile `
     "Crew_Equipment_Library.zip" `
 	"Grimdark_Expy.zip"
