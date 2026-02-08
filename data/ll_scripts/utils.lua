@@ -528,6 +528,40 @@ end
 ---It's also a special case of one kind of snaking.  I like snaking better.  But you can just define your pattern to snake if you want that, so it's more general to iterate.
 ---Then we have what qud calls "alternations", which I call templates.  Templates let you define what sections should be what color, and then they get stretched to cover the whole thing.
 --#endregion color printing
+--#region graphics utils
+--From 𝐄𝐯𝐢𝐥 𝐏𝐞𝐩𝐩𝐞𝐫𝐏𝐥𝐚𝐲𝐳
+local mCrewPortraitCache = {}
+
+function lwl.tryCrewAnim(baseId)
+    if not baseId or baseId == "" then return nil end
+    local animName = baseId .. "_walk_down"
+    local anim = Hyperspace.Animations:GetAnimation(animName)
+    if not anim or not anim.info then return nil end
+    if anim.info.frameWidth and anim.info.frameWidth > 0 and anim.info.frameHeight and anim.info.frameHeight > 0 then
+        anim.info.numFrames = 1
+        anim:SetCurrentFrame(0)
+        return anim, animName, anim.info.frameWidth, anim.info.frameHeight
+    end
+    return nil
+end
+
+function lwl.getCrewPortraitAnim(baseId, fallbackId)
+    if baseId and mCrewPortraitCache[baseId] then
+        return mCrewPortraitCache[baseId]
+    end
+    local anim, animName, frameW, frameH = lwl.tryCrewAnim(baseId)
+    if not anim and fallbackId then
+        anim, animName, frameW, frameH = lwl.tryCrewAnim(fallbackId)
+    end
+    if not anim then return nil end
+    local cached = {anim=anim, animName=animName, frameW=frameW, frameH=frameH}
+    if baseId then
+        mCrewPortraitCache[baseId] = cached
+    end
+    return cached
+end
+
+--#endregion
 --#region ramblings
 --[[
 How about a function that takes a argument and tries to make it into a thing?
@@ -580,8 +614,9 @@ local function logInternal(tag, text, messageLogLevel, overrideVarName)
     if (maxLogLevel == nil) then
         maxLogLevel = Hyperspace.metaVariables["lwl_global_log_level"]
     end
-    if (messageLogLevel <= maxLogLevel) then
-        print(LOG_LEVELS[messageLogLevel].text..": "..tag.." - "..text)
+    local logLevel = LOG_LEVELS[messageLogLevel]
+    if (logLevel.level <= maxLogLevel) then
+        print(logLevel.text..": "..tag.." - "..text)
     end
 end
 --Optionally, pass the desired log level.  This lets you store that locally and change it in your mod.
