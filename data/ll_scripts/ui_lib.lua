@@ -1248,8 +1248,11 @@ lwl.safe_script.on_internal_event("lwui_hovered_button", Defines.InternalEvents.
     --print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredObject)
     if lwui.mHoveredObject then
         --print("clicked ", lwui.mHoveredObject)
-        lwui.mHoveredObject.onClick(lwui.mHoveredObject, x, y)
+        lwui.mHoveredObject.onClick(lwui.mHoveredObject, mousePos.x, mousePos.y)
         lwui.mClickedObject = lwui.mHoveredObject
+        if lwui.mHoveredObject.preemptClick then
+            return Defines.Chain.PREEMPT
+        end
     end
 
     return Defines.Chain.CONTINUE
