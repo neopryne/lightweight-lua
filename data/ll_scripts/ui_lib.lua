@@ -880,7 +880,11 @@ local function buildTextBox(x, y, width, height, visibilityFunction, renderFunct
         --Actually print the text
         local oldColor = Graphics.CSurface.GL_GetColor()
         Graphics.CSurface.GL_SetColor(textBox.textColor)
-        Graphics.freetype.easy_printAutoNewlines(textBox.fontSize, textBox.getPos().x, textBox.getPos().y, textBox.width, textBox.text)
+        local renderText = textBox.text
+        if textBox.textStyleFunction then
+            renderText = textBox.textStyleFunction(renderText)
+        end
+        Graphics.freetype.easy_printAutoNewlines(textBox.fontSize, textBox.getPos().x, textBox.getPos().y, textBox.width, renderText)
         Graphics.CSurface.GL_SetColor(oldColor)
         Graphics.CSurface.GL_SetStencilMode(0,1,1)
         Graphics.CSurface.GL_PopStencilMode()
@@ -1001,6 +1005,7 @@ end
 
 local primitiveList = {}
 --Allows a render event to refer to an already-existing primitive of a png file if possible to avoid creating duplicates.
+--todo librarify from this and Brightness, make it standard to use for primatives.
 local function primitiveListManager(string)
     if not primitiveList[string] then
         local stringID = Hyperspace.Resources:GetImageId(string)

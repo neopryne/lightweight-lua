@@ -22,4 +22,7 @@
 		<mod-append:script>data/ll_scripts/devtools/print_room_info.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/devtools/floor_bubble_visualizer.lua</mod-append:script>
 	</mod:findLike>
+
+<customTextStyle enabled="true"/>
+
 </FTL>
