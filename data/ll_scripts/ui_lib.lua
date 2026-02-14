@@ -192,14 +192,24 @@ renderFunction:
 function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunction)
     local object = {}
     object.focusable = false
+    object.renderedLastFrame = false --todo containers also probably need to call into their children
 
     local function renderObject(mask)
+        local retVal
         --print("should render? ", visibilityFunction())
         if not object.visibilityFunction then
             lwl.logError(TAG, "vis func for object "..object.getPos().x..", "..object.getPos().y.." is nil!")
             return true
         end
-        if object.visibilityFunction() then
+        
+        local shouldRender = object.visibilityFunction()
+        if shouldRender then
+            if not object.renderedLastFrame then
+                if object.onBecomeVisible then
+                    object.onBecomeVisible(object)
+                end
+            end
+
             local hovering = false
             if object.focusable then
                 local mousePos = Hyperspace.Mouse.position
@@ -221,8 +231,11 @@ function lwui.buildObject(x, y, width, height, visibilityFunction, renderFunctio
             --     print("robject", x, y, internalHover, hovering)
             --     --lwl.print_function_source(thing)
             -- end
-            return hovering or internalHover --TODO ensure every render function returns the proper hover values.
+            retVal = hovering or internalHover --TODO ensure every render function returns the proper hover values.
         end
+        
+        object.renderedLastFrame = shouldRender
+        return retVal
     end
     
     local function getPosition()
@@ -1244,10 +1257,10 @@ end
 --yeah, select those items and hold them!
 lwl.safe_script.on_internal_event("lwui_hovered_button", Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
 -- script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_DOWN, function(x,y)
-    local mousePos = Hyperspace.Mouse.position
     --print("clicked ", mousePos.x, mousePos.y, ", button_hovered ", lwui.mHoveredObject)
     if lwui.mHoveredObject then
         --print("clicked ", lwui.mHoveredObject)
+        local mousePos = Hyperspace.Mouse.position
         lwui.mHoveredObject.onClick(lwui.mHoveredObject, mousePos.x, mousePos.y)
         lwui.mClickedObject = lwui.mHoveredObject
         if lwui.mHoveredObject.preemptClick then
@@ -1261,6 +1274,7 @@ end)
 lwl.safe_script.on_internal_event("lwui_clicked_button", Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x,y)
 -- script.on_internal_event(Defines.InternalEvents.ON_MOUSE_L_BUTTON_UP, function(x,y)
     if (lwui.mClickedObject) then
+        local mousePos = Hyperspace.Mouse.position
         lwui.mClickedObject.onRelease(lwui.mClickedObject, x, y)
         lwui.mClickedObject = nil
     end

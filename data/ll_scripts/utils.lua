@@ -73,6 +73,7 @@ local SYS_MIND = 14
 local SYS_HACKING = 15
 local SYS_TEMPORAL = 20
 
+
 local SKILL_PILOT = 0
 local SKILL_ENGINES = 1
 local SKILL_SHIELDS = 2
@@ -1239,7 +1240,7 @@ function lwl.prependEventText(event, text)
     event.text.isLiteral = true
 end
 
-local function appendEventText(event, text)
+function lwl.appendEventText(event, text)
     local eventText = event.text:GetText()
     eventText = eventText..text
     event.text.data = eventText

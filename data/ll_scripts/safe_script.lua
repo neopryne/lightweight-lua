@@ -17,7 +17,7 @@ end --todo lwl.setIfNil is what you should use for this once lwl is loaded.
 local lwl = mods.lightweight_lua
 
 --Dear got we need varargs, this entire method is a huge kludge to work around this HS quirk.
-local function safe_varargs_standin_register_event(definesEvent, identifier)
+local function safe_varargs_standin_register_event(definesEvent, identifier, optionalPriority)
     print("Attempting to register", definesEvent, "Errors are expected and normal.")
 
     local function makeWrapper(n)
@@ -57,7 +57,7 @@ local function safe_varargs_standin_register_event(definesEvent, identifier)
     for n = 5, 0, -1 do
         local eventFunctionWrapper = makeWrapper(n)
         local success, err = pcall(function()
-            script.on_internal_event(definesEvent, eventFunctionWrapper)
+            script.on_internal_event(definesEvent, eventFunctionWrapper, optionalPriority)
         end)
 
         if success then
@@ -139,16 +139,20 @@ end
 ---The first parameter is a unique identifier.
 ---The rest of the parameters are what you would normally pass to script.on_internal_event.
 ---@param identifier string Unique to the call, you must ensure that nothing else uses the same name or this will fail to register your event.
----@param definesEvent integer event name from Hyperspace.Defines
+---@param definesEvent string event name from Hyperspace.Defines
 ---@param eventFunction function Called before the event
-lwl.safe_script.on_internal_event = function(identifier, definesEvent, eventFunction) --TODO MAKE THESE VARARGS WHEN HYPERSPACE SUPPORTS IT.
+---@param optionalPriority number Don't use this unless you can't get your stuff working without it.  Bigger is higher.
+lwl.safe_script.on_internal_event = function(identifier, definesEvent, eventFunction, optionalPriority) --TODO MAKE THESE VARARGS WHEN HYPERSPACE SUPPORTS IT.
     print("Registering internal event", identifier)
     local firstCreation = lwl.safe_script.eventFunctionWrappers[identifier] == nil
+    if not optionalPriority then
+        optionalPriority = 0
+    end
 
     lwl.safe_script.eventFunctionWrappers[identifier] = eventFunction
 
     if firstCreation then
-        safe_varargs_standin_register_event(definesEvent, identifier)
+        safe_varargs_standin_register_event(definesEvent, identifier, optionalPriority)
     end
 end
 ---todo ok, I might have to make a function that unpacks the arguments.
