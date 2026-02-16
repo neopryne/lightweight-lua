@@ -1,4 +1,3 @@
-mods.lightweight_doublylinkedlist = {}
 mods.lightweight_doublylinkedlist.__index = mods.lightweight_doublylinkedlist
 
 --[[Usage:

@@ -32,9 +32,8 @@ lwui.addHelpButton(mHelpButton)
 
 if (not mods) then mods = {} end
 local lwl = mods.lightweight_lua
-mods.lightweight_user_interface = lwl.setIfNil(mods.lightweight_user_interface, {})
+local Brightness = mods.brightness
 local lwui = mods.lightweight_user_interface
-
 --[[
 
 TODO:
@@ -1016,25 +1015,6 @@ function lwui.alwaysOnVisibilityFunction()
     return true
 end
 
-local primitiveList = {}
---Allows a render event to refer to an already-existing primitive of a png file if possible to avoid creating duplicates.
---todo librarify from this and Brightness, make it standard to use for primatives.
-local function primitiveListManager(string)
-    if not primitiveList[string] then
-        local stringID = Hyperspace.Resources:GetImageId(string)
-        primitiveList[string] = Hyperspace.Resources:CreateImagePrimitiveString(
-            string,
-            0,
-            0,
-            0,
-            Graphics.GL_Color(1, 1, 1, 1),
-            1.0,
-            false
-        )
-    end
-    return primitiveList[string]
-end
-
 function lwui.solidRectRenderFunction(glColor)
     return function(object)
         if object == nil then
@@ -1119,7 +1099,7 @@ function lwui.dynamicSpriteRenderFunction(spritePaths, indexSelectFunction)
         --Render sprite image, might be larger than the stencil
         Graphics.CSurface.GL_PushMatrix()
         --TODO scale primative to the size of the object, but for now just get it working rendering images for things.
-        local primitive = primitiveListManager(spritePaths[indexSelectFunction(object)])
+        local primitive = Brightness.primitiveListManager(spritePaths[indexSelectFunction(object)], false)
         Graphics.CSurface.GL_Translate(object.getPos().x, object.getPos().y, 0)
         Graphics.CSurface.GL_RenderPrimitive(primitive)
         Graphics.CSurface.GL_PopMatrix()

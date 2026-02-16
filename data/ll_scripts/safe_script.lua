@@ -8,12 +8,6 @@ Usage:
 This is a breaking change for Crew Equipment Library and Grimdark Expy, and you must update those if you update this.
 --kanban would be perfect if boards could be cards.
 ]]
-
-if not mods.lightweight_lua then
-    mods.lightweight_lua = {}
-    mods.lightweight_lua.safe_script = {}
-    mods.lightweight_lua.safe_script.eventFunctionWrappers = {}
-end --todo lwl.setIfNil is what you should use for this once lwl is loaded.
 local lwl = mods.lightweight_lua
 
 --Dear got we need varargs, this entire method is a huge kludge to work around this HS quirk.

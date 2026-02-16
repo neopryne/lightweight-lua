@@ -1,5 +1,4 @@
 if (not mods) then mods = {} end
-mods.lightweight_keybinds = {}
 local lwk = mods.lightweight_keybinds
 
 local lwl = mods.lightweight_lua
