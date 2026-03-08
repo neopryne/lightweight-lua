@@ -3,28 +3,45 @@
 local lwl = mods.lightweight_lua
 
 --Chatgpt, 2026
--- helper: build subkeys
-local function makeKey(base, index)
-    return base .. ":" .. index
-end
+local ASCII_MAX = 127
+local CYRILLIC_BASE = 0x0400
 
--- helper: string → codepoints
-local function stringToCodepoints(str)
-    local t = {}
-    for _, code in utf8.codes(str) do
-        t[#t+1] = code
+
+-- encode unicode codepoint → byte
+local function encodeChar(code)
+    if code <= ASCII_MAX then
+        return code
+    else
+        return (code - CYRILLIC_BASE) + 128
     end
-    return t
 end
 
--- helper: codepoints → string
-local function codepointsToString(t)
-    if #t == 0 then
-        return ""
+
+-- decode byte → unicode codepoint
+local function decodeChar(byte)
+    if byte <= ASCII_MAX then
+        return byte
+    else
+        return (byte - 128) + CYRILLIC_BASE
     end
-    return utf8.char(table.unpack(t))
 end
 
+
+local function packBytes(b1,b2,b3,b4)
+    return (b1)
+        | (b2 << 8)
+        | (b3 << 16)
+        | (b4 << 24)
+end
+
+
+local function unpackBytes(n)
+    local b1 =  n        & 0xFF
+    local b2 = (n >> 8)  & 0xFF
+    local b3 = (n >> 16) & 0xFF
+    local b4 = (n >> 24) & 0xFF
+    return b1,b2,b3,b4
+end
 
 ---
 ---@param key string Unique identifier for this object.
@@ -38,18 +55,34 @@ function lwl.persistString(key, value, isMeta)
         storageMedium = Hyperspace.playerVariables
     end
 
-    local codepoints = stringToCodepoints(value)
-    local length = #codepoints
+    local bytes = {}
 
-    -- store length
-    storageMedium[makeKey(key, "len")] = length
+    -- encode characters
+    for _,code in utf8.codes(value) do
+        bytes[#bytes+1] = encodeChar(code)
+    end
 
-    -- store characters
-    for i = 1, length do
-        storageMedium[makeKey(key, i)] = codepoints[i]
+    local length = #bytes
+    storageMedium[key..":len"] = length
+
+    local storageIndex = 1
+    local i = 1
+
+    while i <= length do
+
+        -- explicit padding
+        local b1 = bytes[i]     or 0
+        local b2 = bytes[i + 1] or 0
+        local b3 = bytes[i + 2] or 0
+        local b4 = bytes[i + 3] or 0
+
+        storageMedium[key..":"..storageIndex] =
+            packBytes(b1,b2,b3,b4)
+
+        i = i + 4
+        storageIndex = storageIndex + 1
     end
 end
-
 
 ---
 ---@param key string Unique identifier for this object.
@@ -63,37 +96,50 @@ function lwl.loadString(key, isMeta)
         storageMedium = Hyperspace.playerVariables
     end
 
-    local length = storageMedium[makeKey(key, "len")]
-
-    if not length or length == 0 then
+    local length = storageMedium[key..":len"]
+    if not length then
         return ""
     end
 
-    local codepoints = {}
+    local bytes = {}
+    local storageIndex = 1
 
-    for i = 1, length do
-        codepoints[i] = storageMedium[makeKey(key, i)]
+    while #bytes < length do
+
+        local packed = storageMedium[key..":"..storageIndex] or 0
+        local b1,b2,b3,b4 = unpackBytes(packed)
+
+        if #bytes < length then bytes[#bytes+1] = b1 end
+        if #bytes < length then bytes[#bytes+1] = b2 end
+        if #bytes < length then bytes[#bytes+1] = b3 end
+        if #bytes < length then bytes[#bytes+1] = b4 end
+
+        storageIndex = storageIndex + 1
     end
 
-    local value = codepointsToString(codepoints)
-    return value
-end
 
+    local codepoints = {}
+
+    for i=1,length do
+        codepoints[i] = decodeChar(bytes[i])
+    end
+
+    return utf8.char(table.unpack(codepoints))
+end
 
 ---
 ---@param key string Unique identifier for this object.
----@return string|nil The string stored at this key
+---@return string The string stored at this key, or the empty string if not found.
 function lwl.loadStringPlayerVariable(key)
     return lwl.loadString(key, false)
 end
 
 ---
 ---@param key string Unique identifier for this object.
----@return string The string stored at this key.
+---@return string The string stored at this key, or the empty string if not found.
 function lwl.loadStringMetaVariable(key)
     return lwl.loadString(key, true)
 end
-
 
 ---
 ---@param key string Unique identifier for this object.
@@ -109,11 +155,11 @@ function lwl.persistStringMetaVariable(key, value)
     return lwl.persistString(key, value, true)
 end
 
--- mods.lightweight_lua.persistStringMetaVariable("name", "ЖA")
--- print("metavar name:", mods.lightweight_lua.loadStringMetaVariable("name"))
+-- mods.lightweight_lua.persistStringMetaVariable("name2", "ЖAasdfsadfsdf")
+-- print("metavar name:", mods.lightweight_lua.loadStringMetaVariable("name2"))
 
--- mods.lightweight_lua.persistStringPlayerVariable("name", "dasfsdf")
--- print("player var name:", mods.lightweight_lua.loadStringPlayerVariable("name"))
+-- mods.lightweight_lua.persistStringPlayerVariable("name2", "ЖAasdfsadfs")
+-- print("player var name:", mods.lightweight_lua.loadStringPlayerVariable("name2"))
 
 -- mods.lightweight_lua.persistStringPlayerVariable("name", "dasfsdf")
 -- print("player var name:", mods.lightweight_lua.loadStringPlayerVariable("name"))
