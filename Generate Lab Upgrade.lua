@@ -142,11 +142,7 @@ STORAGE_CHECK_LAB_CREW_MIDDLE = [[
 ]]
 
 STORAGE_CHECK_LAB_CREW_END = [[
-	<choice req="LAB_%s_INSTALLED" lvl="1" max_group="%d" blue="false" hidden="true">
-		<text>Pas: %s. [An upgrade is already installed]</text>
-		<event load="OPTION_INVALID"/>
-	</choice>
-	<choice req="LAB_%s_INSTALLED" lvl="0" max_group="%d" blue="false" hidden="true">
+	<choice req="LAB_%s_INSTALLED" lvl="0" max_lvl="0" max_group="%d" blue="false" hidden="true">
 		<text>Pas: %s. [Cost: %d~]</text>
 		<event load="STORAGE_CHECK_%s"/>
 	</choice>
@@ -161,7 +157,7 @@ function storageCheckLabCrew(augmentList)
         labCrewChecks = labCrewChecks..string.format(STORAGE_CHECK_LAB_CREW, 
             augName, augment.AUG_FRIENDLY_NAME, augment.AUG_DESCRIPTION)
         labCrewChecksEnd = labCrewChecksEnd..string.format(STORAGE_CHECK_LAB_CREW_END,
-            augmentList.CREW_NAME_INTERNAL, i, augment.AUG_FRIENDLY_NAME, augmentList.CREW_NAME_INTERNAL, i, augment.AUG_FRIENDLY_NAME, augment.SCRAP_COST, augName)
+            augmentList.CREW_NAME_INTERNAL, i, augment.AUG_FRIENDLY_NAME, augment.SCRAP_COST, augName)
     end
     return labCrewChecks..STORAGE_CHECK_LAB_CREW_MIDDLE..labCrewChecksEnd
 end
@@ -171,8 +167,8 @@ function storageCheckAugment(augmentList)
     for i = 1,#augmentList do
         local augment = augmentList[i]
         local augName = string.format("LAB_%s_%s", augmentList.CREW_NAME_INTERNAL, programmifyString(augment.AUG_FRIENDLY_NAME))
-        eventString = eventString..string.format(STORAGE_CHECK_AUGMENT, 
-            augName, augment.AUG_FRIENDLY_NAME, augment.AUG_LONG_DESCRIPTION, CREW_NAME, augment.SCRAP_COST, augment.SCRAP_COST, augment.SCRAP_COST, augName,
+        eventString = eventString..string.format(STORAGE_CHECK_AUGMENT,
+            augName, augment.AUG_FRIENDLY_NAME, augment.AUG_LONG_DESCRIPTION, CREW_NAME, augment.SCRAP_COST, augment.SCRAP_COST, augment.SCRAP_COST, augName, augmentList.CREW_NAME_INTERNAL,
             augName, augName, augmentList.CREW_NAME_INTERNAL, augmentList.CREW_NAME_INTERNAL)
     end
     return eventString
@@ -199,7 +195,7 @@ STORAGE_CHECK_AUGMENT = [[
 	</choice>
 	<choice req="pilot" lvl="1" max_group="1" blue="false" hidden="true">
 		<text>Nevermind.</text>
-		<event load="STORAGE_CHECK_LAB_LOAD"/>
+		<event load="STORAGE_CHECK_LAB_%s_LOAD"/>
 	</choice>
 </event>
 
@@ -225,14 +221,18 @@ local specialStorageHeader = [[
 
 local specialStorageText = [[
 <!-- Begin generated lab events for %s-->
+<event name="STORAGE_CHECK_LAB_%s_LOAD">
+	<loadEvent>STORAGE_CHECK_LAB_%s</loadEvent>
+</event>
 
 <event name="STORAGE_CHECK_LAB_%s">
 	<text>You are viewing the lab menu for: [%s]</text>
-%s
-	<choice req="pilot" lvl="1" max_group="999" blue="false" hidden="true">
+    
+	<choice req="pilot" lvl="1" max_group="0" blue="false" hidden="true">
 		<text>Go back.</text>
 		<event load="STORAGE_CHECK_LAB_LOAD"/>
 	</choice>
+%s
 </event>
 
 %s
@@ -248,8 +248,9 @@ local function getSpecialStorageHeader(labList)
 end
 
 local function getSpecialStorageEntry(augmentList)
-    return string.format(specialStorageText, 
+    return string.format(specialStorageText,
         augmentList.CREW_NAME,
+        augmentList.CREW_NAME_INTERNAL, augmentList.CREW_NAME_INTERNAL,
         augmentList.CREW_NAME_INTERNAL, augmentList.CREW_NAME, storageCheckLabCrew(augmentList),
         storageCheckAugment(augmentList),
         augmentList.CREW_NAME)

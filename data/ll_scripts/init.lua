@@ -4,3 +4,4 @@ mods.lightweight_lua.safe_script.eventFunctionWrappers = {}
 mods.lightweight_keybinds = {}
 mods.lightweight_doublylinkedlist = {}
 mods.lightweight_user_interface = {}
+mods.lightweight_lua.primitiveList = {}

@@ -711,8 +711,12 @@ function lwl.getAngle(origin, target)
 end
 --#endregion ----------------END POINT UTILS---------------------
 --#region [[  CREW UTILS  ]]--
+
+---From @evilpepperplayz
+---@param crewmem any
+---@return boolean
 function lwl.isMoving(crewmem)
-    return crewmem.speed_x + crewmem.speed_y > 0
+    return (not crewmem:AtFinalGoal()) and crewmem.blockingDoor == nil
 end
 
 ---@param crewmem Hyperspace.CrewMember

@@ -1099,7 +1099,7 @@ function lwui.dynamicSpriteRenderFunction(spritePaths, indexSelectFunction)
         --Render sprite image, might be larger than the stencil
         Graphics.CSurface.GL_PushMatrix()
         --TODO scale primative to the size of the object, but for now just get it working rendering images for things.
-        local primitive = Brightness.primitiveListManager(spritePaths[indexSelectFunction(object)], false)
+        local primitive = lwl.primitiveListManager(spritePaths[indexSelectFunction(object)], false)
         Graphics.CSurface.GL_Translate(object.getPos().x, object.getPos().y, 0)
         Graphics.CSurface.GL_RenderPrimitive(primitive)
         Graphics.CSurface.GL_PopMatrix()

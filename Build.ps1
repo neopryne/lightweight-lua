@@ -54,7 +54,9 @@ Push-Location $ftlmanDir
 	"Brightness_Particles.zip" `
     $relativeFile `
     "Crew_Equipment_Library.zip" `
-	"Grimdark_Expy.zip"
+	"Grimdark_Expy.zip" `
+	"NoConsole.zip" `
+	"CrewStatsViewer.zip"
 Pop-Location
 
 # Launch FTL

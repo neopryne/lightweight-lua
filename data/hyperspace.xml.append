@@ -15,8 +15,10 @@
 		<mod-append:script>data/ll_scripts/event_broadcaster.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/player_variable_structure.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/meta_variable_structure.lua</mod-append:script>
+		<mod-append:script>data/ll_scripts/string_persistance.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/stat_boosts.lua</mod-append:script>
 
+		<mod-append:script>data/ll_scripts/ui/graphics_manager.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/ui/3d_lib.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/ui/ui_lib.lua</mod-append:script>
 

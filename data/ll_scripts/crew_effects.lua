@@ -267,8 +267,12 @@ local function tickScorch(effect_crew)
     if scorch.value > 0 then
         --local crewmem = lwl.getCrewById(effect_crew.id)
         --print(crewmem:GetName(), "has slimed", slimed.value)
-        crewmem:DirectModifyHealth(-.047 * (1 - scorch.resist))
-        tickDownEffect(effect_crew, scorch) --todo if moving tick down double.
+        local realCrew = lwl.getCrewById(effect_crew.id)
+        realCrew:DirectModifyHealth(-.047 * (1 - scorch.resist))
+        tickDownEffect(effect_crew, scorch) --if moving tick down double.
+        if lwl.isMoving(realCrew) then
+            tickDownEffect(effect_crew, scorch)
+        end
     end
 end
 
