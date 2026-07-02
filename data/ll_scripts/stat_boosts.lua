@@ -104,18 +104,29 @@ end
 ------------------------------------END External API-------------------------
 --[[
 Ipairs is only valid for contigious tables, so I can't put holes in them.
+
+I need to find what the amount and value are for the effect boosts.  Both power and death.  If neither of them is some kind of table, then I'm going to have a hard time.
+
 ]]
 
 
 -- script.on_internal_event(Defines.InternalEvents.CALCULATE_STAT_PRE,
+--todo the wiki says def is unstable and should not be used, so hyperspace may just not support this rn.
 lwl.safe_script.on_internal_event("lwsb_stat_replace_pre", Defines.InternalEvents.CALCULATE_STAT_PRE,
 function(crew, stat, def, amount, value)
     -- print("sb 0")
+
+    -- if stat == Hyperspace.CrewStat.DEATH_EFFECT then
+    --     print("Death effect, amount:", lwl.dumpObject(amount), "value:", lwl.dumpObject(value), "def:", lwl.dumpObject(def))
+    -- elseif stat == Hyperspace.CrewStat.POWER_EFFECT then
+    --         print("Power effect, amount:", lwl.dumpObject(amount), "value:", lwl.dumpObject(value), "def:", lwl.dumpObject(def))
+    -- end
+
     for _,crewStat in pairs(Hyperspace.CrewStat) do
         --print("sb 1", crewStat)
         if stat == crewStat then
             -- print("sb 2", stat)
-            --Apply all valid stat boosts; if any applied, preempt
+            --Apply all valid stat boosts
             local appliedBoost = false
             local boostValues = {}
             boostValues[lwsb.ACTION_NUMERIC_ADD] = 0
@@ -160,10 +171,11 @@ function(crew, stat, def, amount, value)
                     --This is the only stat boost that uses a string value.
                     crew.extend.transformRace = boostValues[lwsb.TYPE_STRING]
                 elseif stat == Hyperspace.CrewStat.DEATH_EFFECT then
-                    --todo
+                    --print("Death effect, amount:", lwl.dumpObject(amount), "value:", lwl.dumpObject(value))
                 elseif stat == Hyperspace.CrewStat.POWER_EFFECT then
-                     --todo
+                     --print("Power effect, amount:", lwl.dumpObject(amount), "value:", lwl.dumpObject(value))
                 end
+                
                 --todo this works, but only because max one of these is ever checked at a time.
                 --So it's fine that we set the other one to null a lot, because... uh, actually the math might break.
                 if boostValues[lwsb.TYPE_BOOLEAN] ~= nil then

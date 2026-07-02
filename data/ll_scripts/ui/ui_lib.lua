@@ -1186,6 +1186,14 @@ lwui.defaultScrollBarSkin = lwui.constructScrollBarSkin(
         GEN_NOOP, --lwui.solidRectRenderFunction(Graphics.GL_Color(.06, .06, .1, .5)),
         16)
 
+lwui.testScrollBarSkin2 = lwui.constructScrollBarSkin(--todo remove.  Also, does this work outside this file?
+        lwui.spriteRenderFunction("scrollbarStyles/traveller/scroll_up_on.png"),
+        lwui.spriteRenderFunction("scrollbarStyles/traveller/scroll_down_on.png"),
+        lwui.travellerScrollNubRender(),
+        lwui.spriteRenderFunction("scrollbarStyles/traveller/scroll_bar.png"),
+        lwui.solidRectRenderFunction(Graphics.GL_Color(.2, .8, .8, .3)),
+        16)
+
 lwui.testScrollBarSkin = lwui.constructScrollBarSkin(
         lwui.solidRectRenderFunction(Graphics.GL_Color(0, 1, 1, 1)),
         lwui.solidRectRenderFunction(Graphics.GL_Color(0, 1, 1, 1)),

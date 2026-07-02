@@ -68,8 +68,6 @@ function lwl.CreatePlayerVariableInterface(name)
         -- print("uuidtable", lwl.dumpObject(buildUuidToIndexTable()))
     end
 
-
-
     interface.getVariable = function(uuid, key)
         return Hyperspace.playerVariables[buildVariableKey(uuid, key, name)]
     end

@@ -8,6 +8,7 @@ Things that should be cached.  Centralized because it should be and to reduce co
 
 --This won't be as useful as I thought outside of this, as it can't do other parameters.
 --Allows a render event to refer to an already-existing primitive of a png file if possible to avoid creating duplicates.
+--TODO update to the Brightness version with position saved.
 function lwl.primitiveListManager(string, createCentered)
     local x, y = 0, 0
     local cacheString = string..tostring(createCentered)

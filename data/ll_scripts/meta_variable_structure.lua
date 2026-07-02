@@ -83,7 +83,6 @@ function lwl.CreateMetaVariableInterface(name)
         return uuids
     end
 
-
     ---Sets a variable of an object, creating the object if it does not already exist.
     ---@param uuid number uniquely identifies the object
     ---@param key string name of the variable to set

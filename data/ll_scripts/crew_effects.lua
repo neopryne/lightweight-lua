@@ -16,6 +16,8 @@ This applies bleed to a crew and then makes them immune to it.  Note that not al
 I need to fix this to not always tick for all crew for all effects, instead removing effects when they are not applied.
 The current setup is hacky and wastes cycles, which in FTL are precious.
 
+I need a UI for the amount of all existing statuses.  This likely means adding mouseover text to Brightness.
+Yeah, that is what that means.
 
 **Statuses**
 Bleed:
@@ -37,7 +39,6 @@ If you want to add a new status, you will need an 11x11 image with a one pixel b
 modify all the parts here where you see other statuses mentioned.
 --]]
 if (not mods) then mods = {} end
-mods.lightweight_crew_effects = {}
 local lwce = mods.lightweight_crew_effects
 
 local lwl = mods.lightweight_lua
@@ -62,6 +63,7 @@ local get_room_at_location = mods.multiverse.get_room_at_location
 ---@field name EffectType
 ---@field value number
 ---@field resist number
+---@field description string
 ---@field icon table|nil
 ---@field onEnd function
 ---@field onTick function
@@ -92,6 +94,17 @@ lwce.KEY_CORRUPTION = "corruption"
 lwce.KEY_TELEPORTITIS = "teleportitis"
 lwce.KEY_SLIMED = "slimed"
 lwce.KEY_SCORCH = "scorch"
+RESIST_EFFECT = "resistEffect"
+RESIST_STACKS = "resistStacks"
+
+--todo RESIST_EFFECT is unused, as I haven't made the relevent code common. todo nit.
+EFFECT_DEFINITIONS = {} --todo autoadd resistance text? "  Resistance reduces damage taken."  "  Resistance reduces stacks gained."
+EFFECT_DEFINITIONS[lwce.KEY_BLEED] = {description="Deals .035 flat damage per tick.", resistType=RESIST_EFFECT}
+EFFECT_DEFINITIONS[lwce.KEY_CONFUSION] = {description="Makes crew uncontrollable.", resistType=RESIST_STACKS}
+EFFECT_DEFINITIONS[lwce.KEY_CORRUPTION] = {description="Stacks are permanent and deal .004 damage per tick.", resistType=RESIST_EFFECT}
+EFFECT_DEFINITIONS[lwce.KEY_TELEPORTITIS] = {description="Affected crew will occasionally teleport to a random location on their ship.", resistType=RESIST_STACKS}
+EFFECT_DEFINITIONS[lwce.KEY_SLIMED] = {description="Affected crew are slowed and deal 20% less damage.", resistType=RESIST_STACKS}
+EFFECT_DEFINITIONS[lwce.KEY_SCORCH] = {description="Deals .047 damage per tick.  Clears faster while moving.", resistType=RESIST_EFFECT}
 
 --Adding a button which describes all the effects when hovered.
 --A crew object will look something like this effect_crew = {id=, bleed={}, effect2={}}
@@ -99,7 +112,6 @@ lwce.KEY_SCORCH = "scorch"
 ---I need to be able to make surethat the particles for a crew get cleaned upand that is why I have a crew list.
 ---
 local mCrewList = {} --all the crew, both sides. it's just an ID list.  --todo change this to a crewmem list?
-local mScaledLocalTime = 0
 local mCrewChangeObserver
 local mEffectDefinitions = {}
 local mGlobal = Hyperspace.Global.GetInstance()
@@ -127,6 +139,12 @@ local function getListCrew(crewmem)
     return nil
 end
 
+---@param effect StatusEffect
+---@return string
+local function getDescription(effect)
+    return EFFECT_DEFINITIONS[effect.name].description
+end
+
 ---Returns the icon if it's rendering, and nil otherwise
 ---@param effect_crew ListCrew
 ---@param effect StatusEffect
@@ -144,6 +162,7 @@ local function renderEffectStandard(effect_crew, effect)
                 createIcon(crewmem, effect)
             end
         end
+        effect.icon.mouseoverText = effect.name..": "..tostring(effect.value).."\n\n"..getDescription(effect)
     end
     return effect.icon
 end
@@ -204,7 +223,7 @@ local function tickCorruption(effect_crew)
             end
         else
             corruption.didDeathSave = false
-            crewmem:DirectModifyHealth(-.004 * corruption.value)
+            crewmem:DirectModifyHealth(-.004 * corruption.value * (1 - corruption.resist))
         end
         --print(crewmem:GetName(), "has corruption", corruption.value)
     end
@@ -308,7 +327,10 @@ local function applyEffect(crewmem, amount, effectName)
     local crewEffect = listCrew[effectName]
     --print("applying", amount, effectName, "to", crewEffect)
     if crewEffect then
-        crewEffect.value = math.max(0, crewEffect.value + (amount * (1 - crewEffect.resist)))
+        if EFFECT_DEFINITIONS[effectName].resistType == RESIST_STACKS then
+            amount = amount * (1 - crewEffect.resist)
+        end
+        crewEffect.value = math.max(0, crewEffect.value + amount)
     else
         --print("Did not find", effectName, "for crew", crewmem:GetName(), ", creating it with", amount)
         --Init new effect
