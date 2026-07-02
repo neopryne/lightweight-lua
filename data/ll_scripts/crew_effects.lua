@@ -142,7 +142,14 @@ end
 ---@param effect StatusEffect
 ---@return string
 local function getDescription(effect)
-    return EFFECT_DEFINITIONS[effect.name].description
+    local effectDefinition = EFFECT_DEFINITIONS[effect.name]
+    local resistDescription = " Resistance affects"
+    if effectDefinition == RESIST_EFFECT then
+        resistDescription = resistDescription.." damage taken."
+    else
+        resistDescription = resistDescription.." stacks gained."
+    end
+    return effectDefinition.description..resistDescription
 end
 
 ---Returns the icon if it's rendering, and nil otherwise
