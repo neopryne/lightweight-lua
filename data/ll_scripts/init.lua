@@ -20,6 +20,7 @@ local function initIfNil(modTable)
 end
 
 mods.lightweight_lua = initIfNil(mods.lightweight_lua)
+mods.lightweight_lua.sound_manager = initIfNil(mods.lightweight_lua.sound_manager)
 mods.lightweight_lua.safe_script = initIfNil(mods.lightweight_lua.safe_script)
 mods.lightweight_lua.safe_script.eventFunctionWrappers = initIfNil(mods.lightweight_lua.safe_script.eventFunctionWrappers)
 mods.lightweight_keybinds = initIfNil(mods.lightweight_keybinds)

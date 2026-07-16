@@ -18,6 +18,20 @@ LWST is a library that handles framerate differences for you, giving you consist
 Usage:
     local lwst = mods.lightweight_stable_time
     lwst.registerOnTick("your thing name", function() [do stuff] end, false)
+
+
+---TODO maybe use time increment, but also I've been trying to remove my reliance on MV.
+local time_increment = mods.multiverse.time_increment
+local engines_charge_speed = 1
+script.on_internal_event(Defines.InternalEvents.SHIP_LOOP, function(shipManager)
+    if shipManager:HasAugmentation("YOUR_AUG") > 0 and shipManager:HasSystem(1) and shipManager:HasSystem(6) then
+        local engines_status = shipManager:GetSystem(1):GetEffectivePower() <= 0
+        local pilot_status = shipManager:GetSystem(6):GetEffectivePower() <= 0 or not shipManager:GetSystem(6).bManned
+        if engine_status or pilot_status then
+            shipManager.jump_timer.first = shipManager.jump_timer.first + engines_charge_speed * time_increment(true)
+        end
+    end
+end)
 ]]
 
 ---Register a method to be called a consistent amount of times regardless of framerate while the game is not paused.
