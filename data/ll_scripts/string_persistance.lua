@@ -48,6 +48,7 @@ end
 ---@param value string The string you want to persist.
 ---@param isMeta boolean true for metavariable, false for player variable.
 function lwl.persistString(key, value, isMeta)
+    -- print("Saving string", key, value, isMeta)
     local storageMedium
     if isMeta then
         storageMedium = Hyperspace.metaVariables
@@ -64,6 +65,7 @@ function lwl.persistString(key, value, isMeta)
 
     local length = #bytes
     storageMedium[key..":len"] = length
+    -- print("Saved length ", storageMedium[key..":len"], "as", key..":len")
 
     local storageIndex = 1
     local i = 1
@@ -97,6 +99,7 @@ function lwl.loadString(key, isMeta)
     end
 
     local length = storageMedium[key..":len"]
+    -- print("Loaded length ", key..":len", "as", storageMedium[key..":len"])
     if not length then
         return ""
     end
@@ -124,7 +127,9 @@ function lwl.loadString(key, isMeta)
         codepoints[i] = decodeChar(bytes[i])
     end
 
-    return utf8.char(table.unpack(codepoints))
+    local loadedString = utf8.char(table.unpack(codepoints))
+    -- print("Loading string", key, loadedString, isMeta)
+    return loadedString
 end
 
 ---
@@ -163,3 +168,7 @@ end
 
 -- mods.lightweight_lua.persistStringPlayerVariable("name", "dasfsdf")
 -- print("player var name:", mods.lightweight_lua.loadStringPlayerVariable("name"))
+
+
+-- mods.lightweight_lua.persistStringPlayerVariable("a long name that has spaces in it really really long name", "rrrrrrrrrrrrrr")
+-- print("player var name:", mods.lightweight_lua.loadStringPlayerVariable("a long name that has spaces in it really really long name"))

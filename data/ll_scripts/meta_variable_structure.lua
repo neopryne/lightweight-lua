@@ -54,8 +54,23 @@ function lwl.CreateMetaVariableInterface(name)
         -- print("uuidtable", lwl.dumpObject(buildUuidToIndexTable()))
     end
 
-    interface.getVariable = function(uuid, key)
-        return Hyperspace.metaVariables[buildVariableKey(uuid, key, name)]
+    local function buildUuidKey(i)
+        return buildObjectKey(name)..i
+    end
+
+    ---Print the current value of this interface.
+    ---@param keys table of the form {strings={}, numbers={}}, where strings is all keys used to save string values,
+    ---and numbers is all keys used to save number values.
+    interface.printSelf = function(keys)
+        for _,uuid in ipairs(interface.getUuids()) do
+            print("print object uuid", uuid, interface.getCount())
+            for _,key in ipairs(keys.strings) do
+                print("\t", key, interface.getVariableString(uuid, key))
+            end
+            for _,key in ipairs(keys.numbers) do
+                print("\t", key, interface.getVariable(uuid, key))
+            end
+        end
     end
 
     interface.getCount = function()
@@ -67,7 +82,7 @@ function lwl.CreateMetaVariableInterface(name)
     interface.getUuids = function()
         local uuids = {}
         for i=1,interface.getCount() do
-            table.insert(uuids, Hyperspace.metaVariables[buildInterfaceKey(name)..i])
+            table.insert(uuids, Hyperspace.metaVariables[buildUuidKey(i)])
         end
         return uuids
     end
@@ -98,13 +113,43 @@ function lwl.CreateMetaVariableInterface(name)
             local newIndex = 1 + #interface.uuidToObjectTable
             interface.uuidToObjectTable[uuid] = {}
             interface.uuidToObjectTable[uuid].index = newIndex
-            Hyperspace.metaVariables[buildObjectKey(name)..newIndex] = uuid
+            Hyperspace.metaVariables[buildUuidKey(newIndex)] = uuid
             Hyperspace.metaVariables[buildInterfaceKey(name)] = lwl.setIfNil(interface.getCount(), 0) + 1
         end
 
         Hyperspace.metaVariables[buildVariableKey(uuid, key, name)] = value
         -- print("set variable", buildKey(uuid, key), Hyperspace.playerVariables[buildKey(uuid, key)])
         printInterface(interface)
+    end
+
+    ---Sets a String variable of an object, creating the object if it does not already exist.
+    ---@param uuid number uniquely identifies the object
+    ---@param key string name of the variable to set
+    ---@param value string value of the variable
+    interface.setVariableString = function(uuid, key, value)
+        if uuid == 0 then print("Error in setVariableString: uuid cannot be zero") return end
+        if value == nil then
+            lwl.logError(GLOBAL_NAME, "Value must not be nil!")
+        end
+        local object = interface.uuidToObjectTable[uuid]
+        ---If object is not present, create it, else find its index.
+        if not object then
+            interface.createObject(uuid)
+            object = interface.uuidToObjectTable[uuid]
+        end
+
+        lwl.persistStringPlayerVariable(buildVariableKey(uuid, key, name), value)
+        -- print("set variable", buildKey(uuid, key), Hyperspace.playerVariables[buildKey(uuid, key)])
+        printInterface(interface)
+    end
+
+    interface.getVariableString = function(uuid, key)
+        printInterface(interface)
+        return lwl.loadStringPlayerVariable(buildVariableKey(uuid, key, name))
+    end
+
+    interface.getVariable = function(uuid, key)
+        return Hyperspace.metaVariables[buildVariableKey(uuid, key, name)]
     end
 
     interface.removeInternal = function(uuid)

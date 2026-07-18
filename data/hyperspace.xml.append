@@ -13,9 +13,9 @@
 
 		<mod-append:script>data/ll_scripts/stable_time.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/event_broadcaster.lua</mod-append:script>
+		<mod-append:script>data/ll_scripts/string_persistance.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/player_variable_structure.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/meta_variable_structure.lua</mod-append:script>
-		<mod-append:script>data/ll_scripts/string_persistance.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/stat_boosts.lua</mod-append:script>
 		<mod-append:script>data/ll_scripts/sound_manager.lua</mod-append:script>
 
